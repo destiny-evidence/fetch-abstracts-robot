@@ -7,26 +7,24 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from pytest_httpx import HTTPXMock
 
-from app.main import app
 
-client = TestClient(app)
-
-
-def test_root() -> None:
+def test_root(test_client: TestClient) -> None:
     """Test the root endpoint."""
-    response = client.get("/")
+    response = test_client.get("/")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"message": "I am the Fetch Abstracts Robot (FAR)."}
 
 
-def test_health() -> None:
+def test_health(test_client: TestClient) -> None:
     """Test the health endpoint."""
-    response = client.get("/health")
+    response = test_client.get("/health")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"status": "healthy"}
 
 
-def test_create_toy_enhancement_happy_path(httpx_mock: HTTPXMock) -> None:
+def test_create_toy_enhancement_happy_path(
+    test_client: TestClient, httpx_mock: HTTPXMock
+) -> None:
     """Test that we can create an enhancement."""
     request_id = uuid.uuid4()
     reference_id = uuid.uuid4()
@@ -52,7 +50,7 @@ def test_create_toy_enhancement_happy_path(httpx_mock: HTTPXMock) -> None:
         "extra_fields": {},
     }
 
-    response = client.post("/toy/enhancement/single/", json=request_body)
+    response = test_client.post("/toy/enhancement/single/", json=request_body)
 
     assert response.status_code == status.HTTP_202_ACCEPTED
 
