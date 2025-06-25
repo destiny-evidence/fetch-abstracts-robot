@@ -64,7 +64,8 @@ def generate_abstract_enhancement(
         reference_id=reference_id,
         source=TITLE,
         visibility=destiny_sdk.visibility.Visibility.PUBLIC,
-        robot_version=str(robot_version),
+        # robot_version=str(robot_version), # NOTE this needs some kind of enhancement in pyproject.toml to work... not sure RN what that may be
+        robot_version="0.1.0",
         content_version=f"{uuid.uuid4()}",
         content=destiny_sdk.enhancements.AnnotationEnhancement(
             annotations=[
