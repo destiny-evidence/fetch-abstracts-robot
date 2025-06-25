@@ -67,13 +67,10 @@ def generate_abstract_enhancement(
         # robot_version=str(robot_version), # NOTE this needs some kind of enhancement in pyproject.toml to work... not sure RN what that may be
         robot_version="0.1.0",
         content_version=f"{uuid.uuid4()}",
-        content=destiny_sdk.enhancements.AnnotationEnhancement(
-            annotations=[
-                destiny_sdk.enhancements.AbstractContentEnhancement(
-                    process=destiny_sdk.enhancements.AbstractProcessType.OTHER,  # NOTE -- unsure whether this is the right process type for our abstract?
-                    abstract=the_abstract,
-                )
-            ]
+        enhancement_type=destiny_sdk.enhancements.EnhancementType.ABSTRACT,
+        content=destiny_sdk.enhancements.AbstractContentEnhancement(
+            process=destiny_sdk.enhancements.AbstractProcessType.OTHER,  # NOTE -- unsure whether this is the right process type for our abstract?
+            abstract=the_abstract,
         ),
     )
 
