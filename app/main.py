@@ -48,28 +48,6 @@ async def health_check() -> dict[str, str]:
     return {"status": "healthy"}
 
 
-TOYS = [
-    "Woody",
-    "Jessie",
-    "Bullseye",
-    "Stinky Pete",
-    "Buzz Lightyear",
-    "Rex",
-    "Mr. Potatohead",
-    "Mrs. Potato Head",
-    "Bo Peep",
-    "Slinky Dog",
-    "Etch a Sketch",
-    "Hamm",
-    "Lenny",
-    "Emperor Zurg",  # uh oh
-    # proof by induction
-    "Little Green Man 1",
-    "Little Green Man n",
-    "Little Green Man n+1",
-]
-
-
 def generate_abstract_enhancement(
     reference_id: UUID,
 ) -> destiny_sdk.enhancements.Enhancement:
