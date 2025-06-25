@@ -3,7 +3,7 @@
 from enum import StrEnum
 from functools import lru_cache
 
-from pydantic import UUID4, Field, HttpUrl
+from pydantic import UUID4, Field, HttpUrl, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -44,6 +44,17 @@ class Settings(BaseSettings):
     env: Environment = Field(
         default=Environment.STAGING,
         description="The environment the robot is deployed in.",
+    )
+
+    # API keys for abstract retrieval
+    elsevier_scopus_key: SecretStr | None = Field(
+        default=None, description="api key for elsevier scopus api."
+    )
+    elsevier_scopus_app_name: str | None = Field(
+        default=None, description="app name for the elsevier scopus api."
+    )
+    web_of_science_api_key: SecretStr | None = Field(
+        default=None, description="api key for web of science api."
     )
 
 
