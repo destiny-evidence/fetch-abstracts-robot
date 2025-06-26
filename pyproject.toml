@@ -21,6 +21,7 @@ destiny-sdk = {git = "https://github.com/destiny-evidence/destiny-repository.git
 fastapi = {extras = ["standard"], version = "^0.115.6"}
 pydantic-settings = "^2.7.1"
 python = "^3.12"
+loguru = "^0.7.3"
 
 [tool.poetry.group.dev.dependencies]
 detect-secrets = "^1.5.0"
@@ -50,6 +51,7 @@ lint.ignore = [
     "D417", # argument description in docstring (unreliable)
     "FIX002", # implicit trust that TODOs are not trivial, or else they would be fixed
     "ISC001", # simplify implicit str concatenation (ruff-format recommended)
+    "D403", # forcing upper-case - feel free to change @harry
 ]
 lint.per-file-ignores = {"tests*" = [
     "ANN001", # No return type annotation
