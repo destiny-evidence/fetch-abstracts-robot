@@ -11,6 +11,9 @@ from fastapi import BackgroundTasks, Depends, FastAPI, Response, status
 
 from app.auth import abstract_collector_auth
 from app.config import get_settings
+from app.fetch_abstract import AbstractFetcher, prepare_api_config
+from app.utils import get_doi_from_reference
+from data_models.scopus import scopus_api_config
 
 settings = get_settings()
 
@@ -22,6 +25,17 @@ client = destiny_sdk.client.Client(
     client_id=settings.robot_id,
     secret_key=settings.robot_secret,
 )
+
+# configurations for all APIs we can hit to get abstracts
+AVAILABLE_API_CONFIGS = [
+    scopus_api_config  # add more here as more apis get defined/implemented
+]
+global_api_config = prepare_api_config(
+    api_configs=AVAILABLE_API_CONFIGS, settings=settings
+)
+
+# our abstract fetcher util we will use in abstract/enhancement functions in this module
+abstract_fetcher = AbstractFetcher(global_api_config)
 
 
 @app.get("/")
@@ -49,19 +63,14 @@ async def health_check() -> dict[str, str]:
 
 
 def generate_abstract_enhancement(
-    reference_id: UUID,
+    reference: destiny_sdk.references.Reference,
 ) -> destiny_sdk.enhancements.Enhancement:
     """Generate an abstract enhancement."""
-    # TO DO:
-    # - go through approaches for getting abstract
-    # given a DOI
-    # - if retrieval was successful, validate & extract
-    # the required info and plug into the return statement
-    # below, if not, raise an error?
-    the_abstract = "This is a placeholder abstract."
+    doi = get_doi_from_reference(reference=reference)
+    abstract = abstract_fetcher.get_abstract_cycling_apis(doi=doi)
 
     return destiny_sdk.enhancements.Enhancement(
-        reference_id=reference_id,
+        reference_id=reference.id,
         source=TITLE,
         visibility=destiny_sdk.visibility.Visibility.PUBLIC,
         # robot_version=str(robot_version), # NOTE this needs some kind of enhancement in pyproject.toml to work... not sure RN what that may be
@@ -70,14 +79,14 @@ def generate_abstract_enhancement(
         enhancement_type=destiny_sdk.enhancements.EnhancementType.ABSTRACT,
         content=destiny_sdk.enhancements.AbstractContentEnhancement(
             process=destiny_sdk.enhancements.AbstractProcessType.OTHER,  # NOTE -- unsure whether this is the right process type for our abstract?
-            abstract=the_abstract,
+            abstract=abstract,
         ),
     )
 
 
 def create_abstract_enhancement(request: destiny_sdk.robots.RobotRequest) -> None:
     """Create a toy enhancement."""
-    enhancement = generate_abstract_enhancement(request.reference.id)
+    enhancement = generate_abstract_enhancement(request.reference)
 
     client.send_robot_result(
         destiny_sdk.robots.RobotResult(request_id=request.id, enhancement=enhancement)
@@ -87,7 +96,11 @@ def create_abstract_enhancement(request: destiny_sdk.robots.RobotRequest) -> Non
 def create_batch_abstract_enhancement(
     request: destiny_sdk.robots.BatchRobotRequest,
 ) -> None:
-    """Create a batch of abstract enhancements with efficient memory usage."""
+    """
+    Create a batch of abstract enhancements with efficient memory usage.
+
+    NOTE -- not yet implemented!
+    """
     file_content = b""
     with (
         httpx.Client() as httpx_client,
@@ -123,10 +136,10 @@ def create_batch_abstract_enhancement(
     status_code=status.HTTP_202_ACCEPTED,
     dependencies=[Depends(abstract_collector_auth)],
 )
-def request_toy_enhancement(
+def request_abstract_enhancement(
     request: destiny_sdk.robots.RobotRequest, background_tasks: BackgroundTasks
 ) -> Response:
-    """Receive a request to create a toy enhancement."""
+    """Receive a request to create an abstract enhancement."""
     background_tasks.add_task(create_abstract_enhancement, request)
 
     return Response(status_code=status.HTTP_202_ACCEPTED)
@@ -140,7 +153,11 @@ def request_toy_enhancement(
 def request_batch_toy_enhancement(
     request: destiny_sdk.robots.BatchRobotRequest, background_tasks: BackgroundTasks
 ) -> Response:
-    """Receive a request to create a lot of toy enhancements."""
+    """
+    Receive a request to create a lot of toy enhancements.
+
+    NOTE - not yet implemented.
+    """
     background_tasks.add_task(create_batch_abstract_enhancement, request)
 
     return Response(status_code=status.HTTP_202_ACCEPTED)

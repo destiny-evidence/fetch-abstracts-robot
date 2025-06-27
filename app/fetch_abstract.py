@@ -14,14 +14,15 @@ from data_models.generic import (
     APIConfig,
     APIKeyNotPresentError,
     ExternalAPIPriority,
+    external_api_priority,
 )
 
 settings = get_settings()
 
 
 def prepare_api_config(
-    external_api_priority: ExternalAPIPriority,
     api_configs: list[APIConfig],
+    external_api_priority: ExternalAPIPriority = external_api_priority,
     settings: Settings = settings,
 ) -> dict[str, APIConfig]:
     """
