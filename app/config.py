@@ -50,9 +50,6 @@ class Settings(BaseSettings):
     elsevier_scopus_key: SecretStr | None = Field(
         default=None, description="api key for elsevier scopus api."
     )
-    elsevier_scopus_app_name: str | None = Field(
-        default=None, description="app name for the elsevier scopus api."
-    )
     web_of_science_api_key: SecretStr | None = Field(
         default=None, description="api key for web of science api."
     )

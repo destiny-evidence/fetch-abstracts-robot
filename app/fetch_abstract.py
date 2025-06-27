@@ -3,21 +3,57 @@
 from typing import Any
 
 import requests
-from config import get_settings
-from logger import logger
 
+from app.config import Settings, get_settings
+from app.logger import logger
+from app.utils import InvalidDOIError, validate_doi
 from data_models.generic import (
+    AbstractUnpackError,
     AbstractUnpackStrategy,
+    APIConfig,
+    APIKeyNotPresentError,
     ExternalAPIPriority,
-    external_api_priority,
-)
-from data_models.scopus import (
-    SCOPUS_HEADERS,
-    SCOPUS_QUERY_PARAMS,
-    SCOPUS_UNPACK_STRATEGY,
 )
 
 settings = get_settings()
+
+
+def prepare_api_config(
+    external_api_priority: ExternalAPIPriority,
+    api_configs: list[APIConfig],
+    settings: Settings = settings,
+) -> dict[str, APIConfig]:
+    """
+    prepare a dict of APIConfig objects, populated with API keys.
+
+    if API keys are not present for a given API,
+    this will be omited from the overall API config
+
+    NOTE: right now, we can pass a list of APIConfigs.
+    an API config will only be allowed if it's in the list of
+    permitted APIs in generic.ExternalAPI.
+    """
+    master_api_config = {}
+    api_config_map = {config.name.value: config for config in api_configs}
+    logger.debug(f"external_api_priority: {external_api_priority.priorities}")
+    logger.debug(f"supplied api candidates: {', '.join(api_config_map.keys())}")
+
+    for api in external_api_priority.priorities:
+        logger.debug(f"checking if {api.name} in list of available apis...")
+        if api not in api_config_map:
+            continue
+        target_config = api_config_map[api]
+        try:
+            logger.debug(f"trying to find & init api key for {api.name}")
+            target_config.init_api_key(settings=settings)
+            master_api_config[api.name] = target_config
+            logger.info(f"successfully initialised API key for {api.name}.")
+        except APIKeyNotPresentError as e:
+            logger.info(f"no API key for {api.name}. not populating config.")
+            logger.info(f"original error message: {e}.")
+            continue
+
+    return master_api_config
 
 
 class AbstractFetcher:
@@ -25,30 +61,16 @@ class AbstractFetcher:
 
     timeout = 60
 
-    def __init__(
-        self,
-        scopus_api_key: str = settings.elsevier_scopus_key.get_secret_value(),
-        wos_api_key: str = settings.web_of_science_api_key.get_secret_value(),
-        api_priority: ExternalAPIPriority = external_api_priority,
-    ) -> None:
+    def __init__(self, master_api_config: dict[str, APIConfig]) -> None:
         """init our AbstractFetcher instance."""
-        self.scopus_api_key = scopus_api_key
-        self.wos_api_key = wos_api_key
-        self.api_priority = api_priority
+        self.master_api_config = master_api_config
 
-        # NOTE - rewrite this to store the headers and params in a dict based
-        # on priority and whats available.
-        self.scopus_headers = SCOPUS_HEADERS if scopus_api_key else None
-        if self.scopus_headers:
-            self.scopus_headers["X-ELS-APIKey"] = self.scopus_api_key
-
-        logger.info("external api service priority for retrieving abstracts:")
-        logger.info(self.api_priority)
+        logger.info("available external APIs, in descending order of priority:")
+        logger.info(", ".join(master_api_config.keys()))
 
     @classmethod
-    def fetch(cls, url: str, query: str, params: dict, headers: dict) -> dict[Any]:
+    def fetch(cls, url: str, params: dict, headers: dict) -> dict[Any]:
         """fetch a response from one of the APIs (generic)."""
-        params["query"] = query
         response = requests.get(
             url=url, params=params, headers=headers, timeout=cls.timeout
         )
@@ -58,14 +80,51 @@ class AbstractFetcher:
         return response.json()
 
     @classmethod
-    def fetch_one_abstract(
-        cls,
-        doi: str,
-    ):
-        pass
+    def fetch_one_abstract(cls, doi: str, api_config: APIConfig) -> str:
+        """
+        fetch one abstract from a target api given an API config object.
+
+        NOTE: we should probably consider validating whether a DOI is
+        a valid DOI (regex??) -- however, looking at this here -
+        https://stackoverflow.com/questions/27910/finding-a-doi-in-a-document-or-page#48524047,
+        there's only a 99.3% match of using regex to validate...
+
+        for now, it's implemented using `validate_doi`
+        """
+        if not validate_doi(doi):
+            raise InvalidDOIError(f"doi {doi} is not a valid DOI.")
+        api_config.populate_query(query=doi)
+
+        logger.debug(f"fetching doi {doi} from api {api_config.name}")
+
+        try:
+            response = cls.fetch(
+                url=str(api_config.url),
+                params=api_config.query_params,
+                headers=api_config.headers,
+            )
+        except requests.HTTPError as e:
+            logger.error(
+                "encountered HTTPError on attempting to retrieve abstract. "
+                f"original error message: {e}"
+            )
+            raise
+
+        try:
+            return cls.unpack_abstract(
+                response_obj=response, strategy=api_config.unpack_strategy
+            )
+        except AbstractUnpackError as e:
+            logger.error(
+                "encountered an error unpacking the abstract. "
+                f"original error messsage: {e}"
+            )
+            raise
+
+        # return response
 
     @classmethod
-    def fetch_many_abstract(cls, query, params, headers):
+    def fetch_many_abstracts(cls, dois: list[str], api_config):
         pass
 
     @classmethod
@@ -74,21 +133,14 @@ class AbstractFetcher:
     ) -> str:
         """unpack the plain text of the abstract using an unpack strategy."""
         unpack_strategy = strategy.model_dump()["strategy"]
-        abstract = response_obj
-        for level in unpack_strategy:
-            abstract = abstract[level]
+        try:
+            abstract = response_obj
+            for level in unpack_strategy:
+                abstract = abstract[level]
 
-        return abstract
-
-
-"""
-to do:
-- figure out how to define APIConfig for an actual api, like scopus
-    - where does the API key come in? --> probably in __init__ - but maybe it doesn't matter...
-        - maybe we can have a pydantic method to populate this field later? 
-    - where does the query come in? --> probably in the fetch_one_abstract method
-
-- think about how we would go about retrieving several abstracts
-    - what if some of them are successful, but some aren't?
-    - what kind of numbers are useful? number of input DOIs, page size, etc.
-    """
+            return abstract
+        except KeyError as e:
+            raise AbstractUnpackError(
+                "hit key error. check response object and unpack strategy. "
+                f"original error message: {e}"
+            ) from e
