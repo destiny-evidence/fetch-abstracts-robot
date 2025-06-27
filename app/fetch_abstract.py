@@ -93,13 +93,15 @@ class AbstractFetcher:
         """
         if not validate_doi(doi):
             raise InvalidDOIError(f"doi {doi} is not a valid DOI.")
-        api_config.populate_query(query=doi)
+        url = api_config.populate_query(
+            query=doi
+        )  # NOTE - will have to rework if query isn't submitted via url in other API
 
         logger.debug(f"fetching doi {doi} from api {api_config.name}")
 
         try:
             response = cls.fetch(
-                url=str(api_config.url),
+                url=url,
                 params=api_config.query_params,
                 headers=api_config.headers,
             )

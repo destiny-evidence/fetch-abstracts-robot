@@ -115,12 +115,12 @@ class APIConfig(BaseModel):
             )
         self.headers[self.api_key_placement] = api_key.get_secret_value()
 
-    def populate_query(self, query: str) -> None:
+    def populate_query(self, query: str) -> str:
         """populate a query string into the query params dict."""
         # NOTE -- this will require some more refined logic to
         # enable this to work with different api configurations
         # etc - right now this is for a POC for scopus one abstract
         # retrieval only.
 
-        self.url = f"{self.url}/{query}"
+        return f"{self.url}/{query}"
         # self.query_params["query"] = query
