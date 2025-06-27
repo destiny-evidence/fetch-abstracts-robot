@@ -8,6 +8,7 @@ from app.config import Settings, get_settings
 from app.logger import logger
 from app.utils import InvalidDOIError, validate_doi
 from data_models.generic import (
+    AbstractNotFoundError,
     AbstractUnpackError,
     AbstractUnpackStrategy,
     APIConfig,
@@ -67,6 +68,41 @@ class AbstractFetcher:
 
         logger.info("available external APIs, in descending order of priority:")
         logger.info(", ".join(master_api_config.keys()))
+
+    def get_abstract_cycling_apis(self, doi: str, verbose: bool = False) -> str:
+        """
+        retrieve abstract, iterating through available APIs until abstract found or options exhausted.
+
+        Args:
+            doi (str): a valid DOI to for the work for which
+            we're looking for an abstract.
+
+        Raises:
+            InvalidDOIError: if DOI is not valid (see concerns
+                             raised in validate_doi func)
+            AbstractUnpackError: if we fail to extract abstract
+                                 from response obj from API
+            AbstractNotFoundError: if we fail to find an abstract
+                                   despite cycling all APIs.
+
+        Returns:
+            str: plain text abstract.
+
+        """
+        logger.info(f"seeking abstract for doi: {doi}")
+        for api in self.master_api_config:
+            logger.info(f"attempting retrieval using api {api}.")
+            abstract = self.fetch_one_abstract(
+                doi=doi, api_config=self.master_api_config[api]
+            )
+            if abstract:
+                logger.info(f"abstract retrieval through {api} was succesful.")
+                if verbose:
+                    logger.debug(f"abstract text: {abstract}")
+                return abstract
+            logger.info(f"abstract retrieval through {api} was unsuccessful. next...")
+
+        raise AbstractNotFoundError(f"unable to find abstract for {doi}.")
 
     @classmethod
     def fetch(cls, url: str, params: dict, headers: dict) -> dict[Any]:

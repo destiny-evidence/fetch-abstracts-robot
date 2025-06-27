@@ -20,6 +20,12 @@ class AbstractUnpackError(Exception):
     pass
 
 
+class AbstractNotFoundError(Exception):
+    """to raise when we fail to find an abstract."""
+
+    pass
+
+
 class ExternalAPI(StrEnum):
     """
     exhaustive list of permitted external APIs which we can hit to retrieve abstracts.
