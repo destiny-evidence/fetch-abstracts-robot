@@ -95,9 +95,8 @@ class APIConfig(BaseModel):
             values["headers"] is not None
             and values["api_key_placement"] not in values["headers"]
         ):
-            raise ValueError(
-                f"api_key_placement '{values['api_key_placement']}' must be a key in the headers dict."
-            )
+            error_message =  f"api_key_placement '{values['api_key_placement']}' must be a key in the headers dict."
+            raise ValueError(error_message)
         return values
 
     def init_api_key(self, settings: Settings) -> None:
