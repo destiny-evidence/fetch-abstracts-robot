@@ -29,4 +29,5 @@ def get_doi_from_reference(reference: Reference) -> str:
     for _id in reference.identifiers:
         if isinstance(_id, DOIIdentifier):
             return _id.identifier
-    raise MissingDOIError("no DOI found for reference.")
+    missing_doi_message = f"No DOI found for reference {reference}."
+    raise MissingDOIError(missing_doi_message)

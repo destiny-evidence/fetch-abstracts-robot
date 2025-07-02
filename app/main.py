@@ -71,12 +71,11 @@ def generate_abstract_enhancement(
         reference_id=reference.id,
         source=TITLE,
         visibility=destiny_sdk.visibility.Visibility.PUBLIC,
-        # robot_version=str(robot_version), # NOTE this needs some kind of enhancement in pyproject.toml to work... not sure RN what that may be
         robot_version="0.1.0",
         content_version=f"{uuid.uuid4()}",
         enhancement_type=destiny_sdk.enhancements.EnhancementType.ABSTRACT,
         content=destiny_sdk.enhancements.AbstractContentEnhancement(
-            process=destiny_sdk.enhancements.AbstractProcessType.OTHER,  # NOTE -- unsure whether this is the right process type for our abstract?
+            process=destiny_sdk.enhancements.AbstractProcessType.CLOSED_API,
             abstract=abstract,
         ),
     )

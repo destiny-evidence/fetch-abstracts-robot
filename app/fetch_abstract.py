@@ -1,7 +1,5 @@
 """module for fetching abstracts from various APIs."""
 
-from typing import Any
-
 import requests
 
 from app.config import Settings, get_settings
@@ -70,9 +68,11 @@ class AbstractFetcher:
         logger.info("available external APIs, in descending order of priority:")
         logger.info(", ".join(master_api_config.keys()))
 
-    def get_abstract_cycling_apis(self, doi: str, verbose: bool = False) -> str:
+    def get_abstract_cycling_apis(self, doi: str, *, verbose: bool = False) -> str:
         """
-        retrieve abstract, iterating through available APIs until abstract found or options exhausted.
+        Retrieve abstract, iterating through available APIs.
+
+        Iterates until abstract found or options exhausted.
 
         Args:
             doi (str): a valid DOI to for the work for which
@@ -97,16 +97,19 @@ class AbstractFetcher:
                 doi=doi, api_config=self.master_api_config[api]
             )
             if abstract:
-                logger.info(f"abstract retrieval through {api} was succesful.")
+                found_message = f"abstract retrieval through {api} was successful."
+                logger.info(found_message)
                 if verbose:
                     logger.debug(f"abstract text: {abstract}")
                 return abstract
-            logger.info(f"abstract retrieval through {api} was unsuccessful. next...")
+            not_found_message = f"Abstract retrieval through {api} was unsuccessful."
+            logger.info(not_found_message)
 
-        raise AbstractNotFoundError(f"unable to find abstract for {doi}.")
+        not_found_message = f"Unable to find abstract for {doi}."
+        raise AbstractNotFoundError(not_found_message)
 
     @classmethod
-    def fetch(cls, url: str, params: dict, headers: dict) -> dict[Any]:
+    def fetch(cls, url: str, params: dict, headers: dict) -> dict:
         """fetch a response from one of the APIs (generic)."""
         response = requests.get(
             url=url, params=params, headers=headers, timeout=cls.timeout
@@ -119,7 +122,7 @@ class AbstractFetcher:
     @classmethod
     def fetch_one_abstract(cls, doi: str, api_config: APIConfig) -> str:
         """
-        fetch one abstract from a target api given an API config object.
+        Fetch one abstract from a target api given an API config object.
 
         NOTE: we should probably consider validating whether a DOI is
         a valid DOI (regex??) -- however, looking at this here -
@@ -129,7 +132,8 @@ class AbstractFetcher:
         for now, it's implemented using `validate_doi`
         """
         if not validate_doi(doi):
-            raise InvalidDOIError(f"doi {doi} is not a valid DOI.")
+            error_message = f"Invalid DOI: {doi}. Please check the DOI format."
+            raise InvalidDOIError(error_message)
         url = api_config.populate_query(
             query=doi
         )  # NOTE - will have to rework if query isn't submitted via url in other API
@@ -160,26 +164,47 @@ class AbstractFetcher:
             )
             raise
 
-        # return response
-
     @classmethod
-    def fetch_many_abstracts(cls, dois: list[str], api_config):
-        pass
+    def fetch_many_abstracts(cls, dois: list[str], api_config: APIConfig) -> list[str]:  # noqa: ARG003
+        """
+        fetch many abstracts from a target API given an API config object.
+
+        Args:
+            dois (list[str]): a list of valid DOIs to fetch abstracts for.
+            api_config (APIConfig): the APIConfig object for the target API.
+
+        Returns:
+            list[str]: a list of plain text abstracts.
+
+        """
+        # TODO: implement this method # noqa: TD002,TD003
+        return  # type: ignore[return-value]
 
     @classmethod
     def unpack_abstract(
         cls, response_obj: dict, strategy: AbstractUnpackStrategy
     ) -> str:
-        """unpack the plain text of the abstract using an unpack strategy."""
+        """
+        Unpack the plain text of the abstract using an unpack strategy.
+
+        Args:
+            response_obj (dict): JSON response object from the API.
+            strategy (AbstractUnpackStrategy): Unpack strategy to use.
+
+        Raises:
+            AbstractUnpackError: If unpacking the abstract fails.
+
+        Returns:
+            str: The plain text abstract extracted from the response object.
+
+        """
         unpack_strategy = strategy.model_dump()["strategy"]
         try:
             abstract = response_obj
             for level in unpack_strategy:
-                abstract = abstract[level]
-
-            return abstract
-        except KeyError as e:
-            raise AbstractUnpackError(
-                "hit key error. check response object and unpack strategy. "
-                f"original error message: {e}"
-            ) from e
+                abstract_text = abstract[level]
+        except KeyError as abstract_unpack_error:
+            error_message = f"Error unpacking abstract: {abstract_unpack_error}"
+            raise AbstractUnpackError(error_message) from abstract_unpack_error
+        else:
+            return abstract_text

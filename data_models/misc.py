@@ -1,1 +1,1 @@
-"""miscellaneous data models"""
+"""Define miscellaneous data models and validators."""
