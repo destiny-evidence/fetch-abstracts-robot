@@ -109,9 +109,8 @@ class APIConfig(BaseModel):
         """
         api_key = getattr(settings, self.api_key_env_var_name, None)
         if api_key is None:
-            raise APIKeyNotPresentError(
-                f"API key for {self.name} is not present in settings"
-            )
+            error_message = f"API key for {self.name} is not present in settings"
+            raise APIKeyNotPresentError(error_message)
         self.headers[self.api_key_placement] = api_key.get_secret_value()
 
     def populate_query(self, query: str) -> str:
