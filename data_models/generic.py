@@ -89,7 +89,7 @@ class APIConfig(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def api_key_placement_in_headers(cls, values: dict) -> str:
+    def api_key_placement_in_headers(cls, values: dict) -> dict:
         """ensure that api_key_placement is a key in the headers dict."""
         if (
             values["headers"] is not None
