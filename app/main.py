@@ -1,9 +1,7 @@
 """Main module for the Fetch Abstracts Robot."""
 
 import uuid
-from importlib.metadata import version as robot_version
 from typing import Final
-from uuid import UUID
 
 import destiny_sdk
 import httpx

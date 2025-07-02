@@ -9,13 +9,9 @@ from destiny_sdk.references import Reference
 class InvalidDOIError(Exception):
     """custom exception to throw when DOI is invalid."""
 
-    pass
-
 
 class MissingDOIError(Exception):
     """exception for when a reference doesn't contain a DOI."""
-
-    pass
 
 
 def validate_doi(doi_string: str) -> bool:

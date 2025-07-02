@@ -1,7 +1,6 @@
 """generic data models and validators."""
 
 from enum import StrEnum
-from typing import Any
 
 from pydantic import AnyUrl, BaseModel, Field, model_validator
 
@@ -11,19 +10,13 @@ from app.config import Settings
 class APIKeyNotPresentError(Exception):
     """Raised when the required API key is not present in the settings."""
 
-    pass
-
 
 class AbstractUnpackError(Exception):
     """to raise when we fail to unpack an abstract."""
 
-    pass
-
 
 class AbstractNotFoundError(Exception):
     """to raise when we fail to find an abstract."""
-
-    pass
 
 
 class ExternalAPI(StrEnum):
@@ -111,8 +104,9 @@ class APIConfig(BaseModel):
         """
         populate proper request headers with API key if present.
 
-        raises:
+        Raises:
             APIKeyNotPresentError
+
         """
         api_key = getattr(settings, self.api_key_env_var_name, None)
         if api_key is None:
