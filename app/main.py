@@ -82,7 +82,11 @@ def generate_abstract_enhancement(
 
 
 def create_abstract_enhancement(request: destiny_sdk.robots.RobotRequest) -> None:
-    """Create a toy enhancement."""
+    """
+    create an abstract enhancement.
+
+    this wraps around `generate_abstract_enhancement` and queues it.
+    """
     enhancement = generate_abstract_enhancement(request.reference)
 
     client.send_robot_result(
