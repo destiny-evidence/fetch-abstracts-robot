@@ -9,9 +9,9 @@ from fastapi import BackgroundTasks, Depends, FastAPI, Response, status
 
 from app.auth import abstract_collector_auth
 from app.config import get_settings
+from app.data_models.scopus import scopus_api_config
 from app.fetch_abstract import AbstractFetcher, prepare_api_config
-from app.utils import get_doi_from_reference
-from data_models.scopus import scopus_api_config
+from app.utils import get_doi_from_reference, get_version_number_from_pyproject
 
 settings = get_settings()
 
@@ -71,7 +71,7 @@ def generate_abstract_enhancement(
         reference_id=reference.id,
         source=TITLE,
         visibility=destiny_sdk.visibility.Visibility.PUBLIC,
-        robot_version="0.1.0",
+        robot_version=get_version_number_from_pyproject(),
         content_version=f"{uuid.uuid4()}",
         enhancement_type=destiny_sdk.enhancements.EnhancementType.ABSTRACT,
         content=destiny_sdk.enhancements.AbstractContentEnhancement(
@@ -82,7 +82,11 @@ def generate_abstract_enhancement(
 
 
 def create_abstract_enhancement(request: destiny_sdk.robots.RobotRequest) -> None:
-    """Create a toy enhancement."""
+    """
+    create an abstract enhancement.
+
+    this wraps around `generate_abstract_enhancement` and queues it.
+    """
     enhancement = generate_abstract_enhancement(request.reference)
 
     client.send_robot_result(

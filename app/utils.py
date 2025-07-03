@@ -1,7 +1,6 @@
 """misc/utility functions for our abstract fetcher robot."""
 
-import re
-
+import toml
 from destiny_sdk.identifiers import DOIIdentifier
 from destiny_sdk.references import Reference
 
@@ -20,14 +19,42 @@ def validate_doi(doi_string: str) -> bool:
 
     returns `True` if valid, `False` otherwise.
     """
-    pattern = re.compile(r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$", re.IGNORECASE)
-    return bool(pattern.match(doi_string))
+    return isinstance(DOIIdentifier, doi_string)
 
 
 def get_doi_from_reference(reference: Reference) -> str:
     """extract doi from a reference obj."""
     for _id in reference.identifiers:
-        if isinstance(_id, DOIIdentifier):
+        if validate_doi(_id, DOIIdentifier):
             return _id.identifier
-    missing_doi_message = f"No DOI found for reference {reference}."
-    raise MissingDOIError(missing_doi_message)
+    error_message = f"No DOI found for reference {reference}"
+    raise MissingDOIError(error_message)
+
+
+def get_version_number_from_pyproject(
+    pyproject_toml_file: str = "pyproject.toml",
+    section: str = "tool.poetry",
+    key: str = "version",
+) -> str:
+    """
+    retrieve the version number from a pyproject.toml file.
+
+    Args:
+        pyproject_toml_file (str): Path to the pyproject.toml file.
+        section (str): Section in the TOML file (dot-separated).
+        key (str): Key to retrieve (default: "version").
+
+    Returns:
+        str: The version string.
+
+    raises:
+        KeyError: If the section or key is not found.
+        FileNotFoundError: If the file does not exist.
+
+    """
+    data = toml.load(pyproject_toml_file)
+    # Traverse the section path (e.g., "tool.poetry")
+    section_dict = data
+    for part in section.split("."):
+        section_dict = section_dict[part]
+    return section_dict[key]

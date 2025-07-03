@@ -2,10 +2,8 @@
 
 import requests
 
-from app.config import Settings, get_settings
-from app.logger import logger
-from app.utils import InvalidDOIError, validate_doi
-from data_models.generic import (
+from app.config import Settings
+from app.data_models.generic import (
     AbstractNotFoundError,
     AbstractUnpackError,
     AbstractUnpackStrategy,
@@ -14,14 +12,14 @@ from data_models.generic import (
     ExternalAPIPriority,
     external_api_priority,
 )
-
-settings = get_settings()
+from app.logger import logger
+from app.utils import InvalidDOIError, validate_doi
 
 
 def prepare_api_config(
     api_configs: list[APIConfig],
+    settings: Settings,
     external_api_priority: ExternalAPIPriority = external_api_priority,
-    settings: Settings = settings,
 ) -> dict[str, APIConfig]:
     """
     prepare a dict of APIConfig objects, populated with API keys.
@@ -59,20 +57,20 @@ def prepare_api_config(
 class AbstractFetcher:
     """a class that handles the fetching of abstracts from target APIs."""
 
-    timeout = 60
-
-    def __init__(self, master_api_config: dict[str, APIConfig]) -> None:
+    def __init__(
+        self, master_api_config: dict[str, APIConfig], timeout: int = 60
+    ) -> None:
         """init our AbstractFetcher instance."""
         self.master_api_config = master_api_config
+        self.timeout = timeout
 
         logger.info("available external APIs, in descending order of priority:")
         logger.info(", ".join(master_api_config.keys()))
 
     def get_abstract_cycling_apis(self, doi: str, *, verbose: bool = False) -> str:
         """
-        Retrieve abstract, iterating through available APIs.
-
-        Iterates until abstract found or options exhausted.
+        retrieve abstract, iterating through available APIs until
+        abstract found or options exhausted.
 
         Args:
             doi (str): a valid DOI to for the work for which
@@ -105,22 +103,20 @@ class AbstractFetcher:
             not_found_message = f"Abstract retrieval through {api} was unsuccessful."
             logger.info(not_found_message)
 
-        not_found_message = f"Unable to find abstract for {doi}."
-        raise AbstractNotFoundError(not_found_message)
+        error_msg = f"unable to find abstract for {doi}."
+        raise AbstractNotFoundError(error_msg)
 
-    @classmethod
-    def fetch(cls, url: str, params: dict, headers: dict) -> dict:
+    def fetch(self, url: str, params: dict, headers: dict) -> dict:
         """fetch a response from one of the APIs (generic)."""
         response = requests.get(
-            url=url, params=params, headers=headers, timeout=cls.timeout
+            url=url, params=params, headers=headers, timeout=self.timeout
         )
 
         response.raise_for_status()
 
         return response.json()
 
-    @classmethod
-    def fetch_one_abstract(cls, doi: str, api_config: APIConfig) -> str:
+    def fetch_one_abstract(self, doi: str, api_config: APIConfig) -> str:
         """
         Fetch one abstract from a target api given an API config object.
 
@@ -132,8 +128,8 @@ class AbstractFetcher:
         for now, it's implemented using `validate_doi`
         """
         if not validate_doi(doi):
-            error_message = f"Invalid DOI: {doi}. Please check the DOI format."
-            raise InvalidDOIError(error_message)
+            error_msg = f"doi {doi} is not a valid DOI."
+            raise InvalidDOIError(error_msg)
         url = api_config.populate_query(
             query=doi
         )  # NOTE - will have to rework if query isn't submitted via url in other API
@@ -141,7 +137,7 @@ class AbstractFetcher:
         logger.debug(f"fetching doi {doi} from api {api_config.name}")
 
         try:
-            response = cls.fetch(
+            response = self.fetch(
                 url=url,
                 params=api_config.query_params,
                 headers=api_config.headers,
@@ -154,7 +150,7 @@ class AbstractFetcher:
             raise
 
         try:
-            return cls.unpack_abstract(
+            return self.unpack_abstract(
                 response_obj=response, strategy=api_config.unpack_strategy
             )
         except AbstractUnpackError as e:
@@ -165,24 +161,11 @@ class AbstractFetcher:
             raise
 
     @classmethod
-    def fetch_many_abstracts(cls, dois: list[str], api_config: APIConfig) -> list[str]:  # noqa: ARG003
-        """
-        fetch many abstracts from a target API given an API config object.
+    def fetch_many_abstracts(cls, dois: list[str], api_config):
+        pass
 
-        Args:
-            dois (list[str]): a list of valid DOIs to fetch abstracts for.
-            api_config (APIConfig): the APIConfig object for the target API.
-
-        Returns:
-            list[str]: a list of plain text abstracts.
-
-        """
-        # TODO: implement this method # noqa: TD002,TD003
-        return  # type: ignore[return-value]
-
-    @classmethod
     def unpack_abstract(
-        cls, response_obj: dict, strategy: AbstractUnpackStrategy
+        self, response_obj: dict, strategy: AbstractUnpackStrategy
     ) -> str:
         """
         Unpack the plain text of the abstract using an unpack strategy.
@@ -202,9 +185,12 @@ class AbstractFetcher:
         try:
             abstract = response_obj
             for level in unpack_strategy:
-                abstract_text = abstract[level]
-        except KeyError as abstract_unpack_error:
-            error_message = f"Error unpacking abstract: {abstract_unpack_error}"
-            raise AbstractUnpackError(error_message) from abstract_unpack_error
-        else:
-            return abstract_text
+                abstract = abstract[level]
+
+            return abstract
+
+        except KeyError as e:
+            error_message = "hit key error. check response "
+            f"object and unpack strategy. original error message: {e}"
+
+            raise AbstractUnpackError(error_message) from e
