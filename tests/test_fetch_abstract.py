@@ -1,4 +1,4 @@
-"""tests for the core fetch_abstract module in app/fetch_abstract.py"""
+"""tests for the core fetch_abstract module in app/fetch_abstract.py."""
 
 from unittest.mock import MagicMock, patch
 
@@ -11,9 +11,7 @@ from app.data_models.generic import (
     AbstractUnpackError,
     AbstractUnpackStrategy,
     APIConfig,
-    APIKeyNotPresentError,
     ExternalAPI,
-    ExternalAPIPriority,
     external_api_priority,
 )
 from app.fetch_abstract import AbstractFetcher, prepare_api_config
