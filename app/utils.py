@@ -20,13 +20,13 @@ def validate_doi(doi_string: str) -> bool:
 
     returns `True` if valid, `False` otherwise.
     """
-    pattern = re.compile(r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$", re.IGNORECASE)
-    return bool(pattern.match(doi_string))
+    return isinstance(DOIIdentifier, doi_string)
 
 
 def get_doi_from_reference(reference: Reference) -> str:
     """extract doi from a reference obj."""
     for _id in reference.identifiers:
-        if isinstance(_id, DOIIdentifier):
+        if validate_doi(_id, DOIIdentifier):
             return _id.identifier
-    raise MissingDOIError("no DOI found for reference.")
+    error_message = f"No DOI found for reference {reference}"
+    raise MissingDOIError(error_message)
