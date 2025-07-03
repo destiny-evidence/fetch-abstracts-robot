@@ -121,8 +121,4 @@ class APIConfig(BaseModel):
         # etc - right now this is for a POC for scopus one abstract
         # retrieval only.
 
-        # self.query_params["query"] = query
-        # @harryjmoss i think we need to be careful not to assing
-        # this here, otherwise we may have to completely re-initialise
-        # our api_config if we want to get several abstracts.
         return f"{self.url}{query}"
