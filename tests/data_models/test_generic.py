@@ -3,7 +3,6 @@
 import pytest
 from pydantic import AnyUrl, ValidationError
 
-from app.config import get_settings
 from app.data_models import generic
 
 
@@ -51,8 +50,8 @@ def test_api_config_validator_success():
     api_config = generic.APIConfig(
         name=generic.ExternalAPI.SCOPUS,
         url="https://api.example.com",
-        api_key_env_var_name="scopus_api_key",
-        api_key_placement="X-API-Key",
+        api_key_env_var_name="scopus_api_key",  # pragma: allowlist secret
+        api_key_placement="X-API-Key",  # pragma: allowlist secret
         query_params={},
         headers={"X-API-Key": ""},
         unpack_strategy=generic.AbstractUnpackStrategy(
@@ -74,54 +73,52 @@ def test_api_config_validator_failure():
         generic.APIConfig(
             name=generic.ExternalAPI.SCOPUS,
             url="https://api.example.com",
-            api_key_env_var_name="scopus_api_key",
-            api_key_placement="X-API-Key",
+            api_key_env_var_name="scopus_api_key",  # pragma: allowlist secret
+            api_key_placement="X-API-Key",  # pragma: allowlist secret
             query_params={},
             headers=None,  # missing key
             unpack_strategy="abstract",  # invalid unpack strategy
         )
 
 
-def test_api_config_init_api_key_success():
+def test_api_config_init_api_key_success(test_settings):
     config = generic.APIConfig(
         name=generic.ExternalAPI.SCOPUS,
         url="https://api.example.com",
-        api_key_env_var_name="elsevier_scopus_key",
-        api_key_placement="X-API-Key",
+        api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
+        api_key_placement="X-API-Key",  # pragma: allowlist secret
         query_params={},
         headers={"X-API-Key": ""},
         unpack_strategy=generic.AbstractUnpackStrategy(
             source=generic.ExternalAPI.SCOPUS, strategy=["data", "abstract"]
         ),
     )
-    settings = get_settings()
-    config.init_api_key(settings)
+    config.init_api_key(test_settings)
     assert config.headers["X-API-Key"] == "dummy_scopus_key"
 
 
-def test_api_config_init_api_key_missing():
+def test_api_config_init_api_key_missing(test_settings):
     config = generic.APIConfig(
         name=generic.ExternalAPI.SCOPUS,
         url="https://api.example.com",
-        api_key_env_var_name="missing_api_key",
-        api_key_placement="X-API-Key",
+        api_key_env_var_name="missing_api_key",  # pragma: allowlist secret
+        api_key_placement="X-API-Key",  # pragma: allowlist secret
         query_params={},
         headers={"X-API-Key": ""},
         unpack_strategy=generic.AbstractUnpackStrategy(
             source=generic.ExternalAPI.SCOPUS, strategy=["data", "abstract"]
         ),
     )
-    settings = get_settings()
     with pytest.raises(generic.APIKeyNotPresentError):
-        config.init_api_key(settings)
+        config.init_api_key(test_settings)
 
 
 def test_api_config_populate_query():
     api_config = generic.APIConfig(
         name=generic.ExternalAPI.SCOPUS,
         url="https://api.example.com",
-        api_key_env_var_name="scopus_api_key",
-        api_key_placement="X-API-Key",
+        api_key_env_var_name="scopus_api_key",  # pragma: allowlist secret
+        api_key_placement="X-API-Key",  # pragma: allowlist secret
         query_params={},
         headers={"X-API-Key": ""},
         unpack_strategy=generic.AbstractUnpackStrategy(

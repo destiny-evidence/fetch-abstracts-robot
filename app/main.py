@@ -7,13 +7,14 @@ import destiny_sdk
 import httpx
 from fastapi import BackgroundTasks, Depends, FastAPI, Response, status
 
-from app.auth import abstract_collector_auth
+from app.auth import auth_strategy_robot
 from app.config import get_settings
 from app.data_models.scopus import scopus_api_config
 from app.fetch_abstract import AbstractFetcher, prepare_api_config
 from app.utils import get_doi_from_reference, get_version_number_from_pyproject
 
 settings = get_settings()
+abstract_collector_auth = auth_strategy_robot(settings=settings)
 
 TITLE: Final[str] = "Fetch Abstracts Robot (FAR)"
 app = FastAPI(title=TITLE)

@@ -161,8 +161,18 @@ class AbstractFetcher:
             raise
 
     @classmethod
-    def fetch_many_abstracts(cls, dois: list[str], api_config):
-        pass
+    def fetch_many_abstracts(cls, dois: list[str], api_config: APIConfig) -> None:
+        """
+        Fetch many abstracts from a target API given a list of DOIs.
+
+        Currently not implemented.
+
+        Args:
+            dois (list[str]): List of DOIs to fetch abstracts for.
+            api_config (APIConfig): API configuration object containing
+                                the API details and unpack strategy.
+
+        """
 
     def unpack_abstract(
         self, response_obj: dict, strategy: AbstractUnpackStrategy
@@ -185,12 +195,11 @@ class AbstractFetcher:
         try:
             abstract = response_obj
             for level in unpack_strategy:
-                abstract = abstract[level]
-
-            return abstract
+                abstract_string = abstract[level]
 
         except KeyError as e:
             error_message = "hit key error. check response "
             f"object and unpack strategy. original error message: {e}"
 
             raise AbstractUnpackError(error_message) from e
+        return abstract_string

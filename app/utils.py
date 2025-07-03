@@ -20,19 +20,21 @@ def validate_doi(doi_string: str) -> bool:
 
     returns `True` if valid, `False` otherwise.
     """
+    success = False
     if not isinstance(doi_string, str):
-        return False
+        return success
     try:
         DOIIdentifier(identifier=doi_string, identifier_type=ExternalIdentifierType.DOI)
-        return True
-    except ValidationError as e:
-        return False
+        success = True
+    except ValidationError:
+        return success
+    return success
 
 
 def get_doi_from_reference(reference: Reference) -> str:
     """extract doi from a reference obj."""
     for _id in reference.identifiers:
-        if validate_doi(_id, DOIIdentifier):
+        if isinstance(validate_doi(_id), DOIIdentifier):
             return _id.identifier
     error_message = f"No DOI found for reference {reference}"
     raise MissingDOIError(error_message)
