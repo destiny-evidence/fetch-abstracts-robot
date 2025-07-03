@@ -89,15 +89,15 @@ class APIConfig(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def api_key_placement_in_headers(cls, values: dict) -> str:
+    def api_key_placement_in_headers(cls, values: dict) -> dict:
         """ensure that api_key_placement is a key in the headers dict."""
         if (
             values["headers"] is not None
             and values["api_key_placement"] not in values["headers"]
         ):
-            raise ValueError(
-                f"api_key_placement '{values['api_key_placement']}' must be a key in the headers dict."
-            )
+            error_msg = f"api_key_placement '{values['api_key_placement']}'"
+            "must be in the values dict"
+            raise ValueError(error_msg)
         return values
 
     def init_api_key(self, settings: Settings) -> None:
@@ -110,9 +110,8 @@ class APIConfig(BaseModel):
         """
         api_key = getattr(settings, self.api_key_env_var_name, None)
         if api_key is None:
-            raise APIKeyNotPresentError(
-                f"API key for {self.name} is not present in settings"
-            )
+            error_msg = f"API key for {self.name} is not present in settings."
+            raise APIKeyNotPresentError(error_msg)
         self.headers[self.api_key_placement] = api_key.get_secret_value()
 
     def populate_query(self, query: str) -> str:
@@ -123,4 +122,3 @@ class APIConfig(BaseModel):
         # retrieval only.
 
         return f"{self.url}/{query}"
-        # self.query_params["query"] = query

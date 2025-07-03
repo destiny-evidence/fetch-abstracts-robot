@@ -9,9 +9,9 @@ from fastapi import BackgroundTasks, Depends, FastAPI, Response, status
 
 from app.auth import abstract_collector_auth
 from app.config import get_settings
+from app.data_models.scopus import scopus_api_config
 from app.fetch_abstract import AbstractFetcher, prepare_api_config
 from app.utils import get_doi_from_reference
-from data_models.scopus import scopus_api_config
 
 settings = get_settings()
 
