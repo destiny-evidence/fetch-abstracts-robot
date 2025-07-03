@@ -135,7 +135,6 @@ def test_fetch_one_abstract_success(scopus_api_config, test_settings):
     )
     doi = "10.1000/xyz123"
     with (
-        patch("app.fetch_abstract.validate_doi", return_value=True),
         patch.object(fetcher, "fetch", return_value={"data": {"abstract": "abc"}}),
         patch.object(fetcher, "unpack_abstract", return_value="abc"),
     ):
@@ -148,7 +147,7 @@ def test_fetch_one_abstract_invalid_doi(scopus_api_config, test_settings):
         master_api_config=prepare_api_config([scopus_api_config], test_settings)
     )
     with (
-        patch("app.fetch_abstract.validate_doi", return_value=False),
+        patch("app.utils.validate_doi", return_value=False),
         pytest.raises(InvalidDOIError),
     ):
         fetcher.fetch_one_abstract("bad-doi", scopus_api_config)
@@ -159,7 +158,6 @@ def test_fetch_one_abstract_http_error(scopus_api_config, test_settings):
         master_api_config=prepare_api_config([scopus_api_config], test_settings)
     )
     with (
-        patch("app.fetch_abstract.validate_doi", return_value=True),
         patch.object(fetcher, "fetch", side_effect=requests.HTTPError("fail")),
         pytest.raises(requests.HTTPError),
     ):
@@ -171,7 +169,6 @@ def test_fetch_one_abstract_unpack_error(scopus_api_config, test_settings):
         master_api_config=prepare_api_config([scopus_api_config], test_settings)
     )
     with (
-        patch("app.fetch_abstract.validate_doi", return_value=True),
         patch.object(fetcher, "fetch", return_value={"data": {}}),
         patch.object(
             fetcher, "unpack_abstract", side_effect=AbstractUnpackError("fail")
