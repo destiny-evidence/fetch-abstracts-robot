@@ -77,11 +77,11 @@ class APIConfig(BaseModel):
     require_api_key: bool = Field(
         description="indicates whether an API key is required to" "reach this API."
     )
-    api_key_env_var_name: str = Field(
+    api_key_env_var_name: str | None = Field(
         description="the name of the environment variable/settings field "
         "which represents an api key for this api."
     )
-    api_key_placement: str = Field(
+    api_key_placement: str | None = Field(
         description="the dict key in `headers` where we should insert our API key."
     )
     query_params: dict = Field(
