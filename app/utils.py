@@ -1,8 +1,9 @@
 """misc/utility functions for our abstract fetcher robot."""
 
 import toml
-from destiny_sdk.identifiers import DOIIdentifier
+from destiny_sdk.identifiers import DOIIdentifier, ExternalIdentifierType
 from destiny_sdk.references import Reference
+from pydantic import ValidationError
 
 
 class InvalidDOIError(Exception):
@@ -19,7 +20,13 @@ def validate_doi(doi_string: str) -> bool:
 
     returns `True` if valid, `False` otherwise.
     """
-    return isinstance(DOIIdentifier, doi_string)
+    if not isinstance(doi_string, str):
+        return False
+    try:
+        DOIIdentifier(identifier=doi_string, identifier_type=ExternalIdentifierType.DOI)
+        return True
+    except ValidationError as e:
+        return False
 
 
 def get_doi_from_reference(reference: Reference) -> str:
