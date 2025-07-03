@@ -11,7 +11,7 @@ from app.auth import abstract_collector_auth
 from app.config import get_settings
 from app.data_models.scopus import scopus_api_config
 from app.fetch_abstract import AbstractFetcher, prepare_api_config
-from app.utils import get_doi_from_reference
+from app.utils import get_doi_from_reference, get_version_number_from_pyproject
 
 settings = get_settings()
 
@@ -71,12 +71,11 @@ def generate_abstract_enhancement(
         reference_id=reference.id,
         source=TITLE,
         visibility=destiny_sdk.visibility.Visibility.PUBLIC,
-        # robot_version=str(robot_version), # NOTE this needs some kind of enhancement in pyproject.toml to work... not sure RN what that may be
-        robot_version="0.1.0",
+        robot_version=get_version_number_from_pyproject(),
         content_version=f"{uuid.uuid4()}",
         enhancement_type=destiny_sdk.enhancements.EnhancementType.ABSTRACT,
         content=destiny_sdk.enhancements.AbstractContentEnhancement(
-            process=destiny_sdk.enhancements.AbstractProcessType.OTHER,  # NOTE -- unsure whether this is the right process type for our abstract?
+            process=destiny_sdk.enhancements.AbstractProcessType.CLOSED_API,
             abstract=abstract,
         ),
     )
