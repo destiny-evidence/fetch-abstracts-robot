@@ -20,11 +20,13 @@ def set_test_environment_variables(
     monkeypatch.setenv("DESTINY_REPOSITORY_URL", "http://localhost:8001/enhancement/")
     monkeypatch.setenv("ROBOT_ID", "e0aba318-eee9-4b4c-b503-7f72547063d8")
     monkeypatch.setenv("ROBOT_SECRET", "dummy_secret")
+    monkeypatch.setenv("ELSEVIER_SCOPUS_KEY", "dummy_scopus_key")
     yield
     monkeypatch.delenv("ENV")
     monkeypatch.delenv("DESTINY_REPOSITORY_URL")
     monkeypatch.delenv("ROBOT_ID")
     monkeypatch.delenv("ROBOT_SECRET")
+    monkeypatch.delenv("ELSEVIER_SCOPUS_KEY", "dummy_scopus_key")
 
 
 @pytest.fixture
