@@ -6,7 +6,7 @@ CROSSREF_URL = "https://api.crossref.org/works/"
 CROSSREF_QUERY_PARAMS = {}
 CROSSREF_HEADERS = {"Accept": "application/json"}
 CROSSREF_UNPACK_STRATEGY = AbstractUnpackStrategy(
-    source="crossref", strategy=["message", "abstract"]
+    source="crossref", clean_abstract_string=True, strategy=["message", "abstract"]
 )
 
 crossref_api_config = APIConfig(

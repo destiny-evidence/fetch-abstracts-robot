@@ -1,5 +1,7 @@
 """module for fetching abstracts from various APIs."""
 
+import re
+
 import requests
 
 from app.config import Settings
@@ -160,15 +162,33 @@ class AbstractFetcher:
             )
             raise
 
-    @classmethod
     def fetch_many_abstracts(cls, dois: list[str], api_config):
         pass
 
+    @staticmethod
+    def clean_abstract_string(abstract_string: str) -> str:
+        """clean a given abstract string."""
+        # we can add more stuff here later (e.g. validation)
+        # but for now we just want to remove `jats` tags.
+        # e.g. we could define an enum in generic.py with all
+        # available cleaning methods -- or maybe here??? and
+        # then associate them with an unpack strategy as required.
+        logger.debug("removing jats tags from abstract string...")
+        cleaned = re.sub(
+            r"^<jats:p>(.*?)</jats:p>$", r"\1", abstract_string, flags=re.DOTALL
+        )
+        return cleaned.strip()
+
     def unpack_abstract(
-        self, response_obj: dict, strategy: AbstractUnpackStrategy
+        self,
+        response_obj: dict,
+        strategy: AbstractUnpackStrategy,
     ) -> str:
         """
-        Unpack the plain text of the abstract using an unpack strategy.
+        unpack the plain text of the abstract using an unpack strategy.
+
+        if our `AbstractUnpackStrategy` has field `clean_abstract_string`
+        set to `True`, we will run the `clean_abstract_string` method.
 
         Args:
             response_obj (dict): JSON response object from the API.
@@ -182,11 +202,15 @@ class AbstractFetcher:
 
         """
         unpack_strategy = strategy.model_dump()["strategy"]
+        clean = strategy.model_dump()["clean_abstract_string"]
         try:
             abstract = response_obj
             for level in unpack_strategy:
                 abstract = abstract[level]
 
+            if clean:
+                logger.debug("`clean_abstract_string` is True, cleaning abstract.")
+                abstract = self.clean_abstract_string(abstract)
             return abstract
 
         except KeyError as e:

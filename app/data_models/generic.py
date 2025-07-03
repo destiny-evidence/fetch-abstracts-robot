@@ -60,6 +60,13 @@ class AbstractUnpackStrategy(BaseModel):
     """
 
     source: ExternalAPI
+    clean_abstract_string: bool = Field(
+        default=False,
+        description="""a bool indicating whether
+        we want to run the `clean_abstract_string` method
+        on the string retrieved.
+        """,
+    )
     strategy: list[str] = Field(
         description="""a list of keys to sequentially
         pass to the json response object to retrieve
@@ -127,7 +134,6 @@ class APIConfig(BaseModel):
         # etc - right now this is for a POC for scopus one abstract
         # retrieval only.
 
-        # self.query_params["query"] = query
         # @harryjmoss i think we need to be careful not to assing
         # this here, otherwise we may have to completely re-initialise
         # our api_config if we want to get several abstracts.
