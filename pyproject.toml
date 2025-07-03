@@ -49,6 +49,7 @@ lint.ignore = [
     "COM812", # trailing commas (ruff-format recommended)
     "D203", # no-blank-line-before-class
     "D212", # multi-line-summary-first-line
+    "D205", # annoying docstring warning...
     "D403", # forcing upper-case - feel free to change @harry
     "D407", # removed dashes lines under sections
     "D417", # argument description in docstring (unreliable)
