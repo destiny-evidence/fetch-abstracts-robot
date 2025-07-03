@@ -1,9 +1,8 @@
 """pyndatic models, validation and other scopus business."""
 
-from data_models.generic import AbstractUnpackStrategy, APIConfig
+from app.data_models.generic import AbstractUnpackStrategy, APIConfig
 
 SCOPUS_URL = "https://api.elsevier.com/content/abstract/doi"
-# SCOPUS_QUERY_PARAMS = {"query": "", "cursor": "*"}
 SCOPUS_QUERY_PARAMS = {"view": "META_ABS"}
 
 

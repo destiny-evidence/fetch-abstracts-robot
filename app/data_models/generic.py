@@ -1,4 +1,4 @@
-"""generic data models and validators."""
+"""Define generic data models and validators."""
 
 from enum import StrEnum
 
@@ -121,4 +121,4 @@ class APIConfig(BaseModel):
         # etc - right now this is for a POC for scopus one abstract
         # retrieval only.
 
-        return f"{self.url}/{query}"
+        return f"{self.url}{query}"

@@ -67,7 +67,7 @@ class AbstractFetcher:
         logger.info("available external APIs, in descending order of priority:")
         logger.info(", ".join(master_api_config.keys()))
 
-    def get_abstract_cycling_apis(self, doi: str, verbose: bool = False) -> str:
+    def get_abstract_cycling_apis(self, doi: str, *, verbose: bool = False) -> str:
         """
         retrieve abstract, iterating through available APIs until
         abstract found or options exhausted.
@@ -95,11 +95,13 @@ class AbstractFetcher:
                 doi=doi, api_config=self.master_api_config[api]
             )
             if abstract:
-                logger.info(f"abstract retrieval through {api} was succesful.")
+                found_message = f"abstract retrieval through {api} was successful."
+                logger.info(found_message)
                 if verbose:
                     logger.debug(f"abstract text: {abstract}")
                 return abstract
-            logger.info(f"abstract retrieval through {api} was unsuccessful. next...")
+            not_found_message = f"Abstract retrieval through {api} was unsuccessful."
+            logger.info(not_found_message)
 
         error_msg = f"unable to find abstract for {doi}."
         raise AbstractNotFoundError(error_msg)
@@ -116,18 +118,22 @@ class AbstractFetcher:
 
     def fetch_one_abstract(self, doi: str, api_config: APIConfig) -> str:
         """
-        fetch one abstract from a target api given an API config object.
+        Fetch one abstract from a target api given an API config object.
 
-        NOTE: we should probably consider validating whether a DOI is
-        a valid DOI (regex??) -- however, looking at this here -
-        https://stackoverflow.com/questions/27910/finding-a-doi-in-a-document-or-page#48524047,
-        there's only a 99.3% match of using regex to validate...
+        Args:
+            doi (str): Pre-validated DOI of the work for which to fetch the abstract.
+            api_config (APIConfig): API configuration object containing
+                                    the API details and unpack strategy.
 
-        for now, it's implemented using `validate_doi`
+        Returns:
+            str: The plain text abstract extracted from the response object.
+
         """
-        if not validate_doi(doi):
-            error_msg = f"doi {doi} is not a valid DOI."
-            raise InvalidDOIError(error_msg)
+        doi_validity = validate_doi(doi)
+        if not doi_validity:
+            error_message = f"invalid DOI: {doi}. please check the DOI and try again."
+            logger.error(error_message)
+            raise InvalidDOIError(error_message)
         url = api_config.populate_query(
             query=doi
         )  # NOTE - will have to rework if query isn't submitted via url in other API
@@ -159,23 +165,47 @@ class AbstractFetcher:
             raise
 
     @classmethod
-    def fetch_many_abstracts(cls, dois: list[str], api_config):
-        pass
+    def fetch_many_abstracts(cls, dois: list[str], api_config: APIConfig) -> None:
+        """
+        Fetch many abstracts from a target API given a list of DOIs.
+
+        Currently not implemented.
+
+        Args:
+            dois (list[str]): List of DOIs to fetch abstracts for.
+            api_config (APIConfig): API configuration object containing
+                                the API details and unpack strategy.
+
+        """
 
     def unpack_abstract(
         self, response_obj: dict, strategy: AbstractUnpackStrategy
     ) -> str:
-        """unpack the plain text of the abstract using an unpack strategy."""
+        """
+        Unpack the plain text of the abstract using an unpack strategy.
+
+        Args:
+            response_obj (dict): JSON response object from the API.
+            strategy (AbstractUnpackStrategy): Unpack strategy to use.
+
+        Raises:
+            AbstractUnpackError: If unpacking the abstract fails.
+
+        Returns:
+            str: The plain text abstract extracted from the response object.
+
+        """
         unpack_strategy = strategy.model_dump()["strategy"]
         try:
-            abstract = response_obj
             for level in unpack_strategy:
-                abstract = abstract[level]
-
-            return abstract
-
+                abstract_object = response_obj[level]
+                response_obj = abstract_object
         except KeyError as e:
             error_message = "hit key error. check response "
             f"object and unpack strategy. original error message: {e}"
 
             raise AbstractUnpackError(error_message) from e
+        if not isinstance(abstract_object, str):
+            error_message = "Expected abstract to be a string."
+            raise AbstractUnpackError(error_message)
+        return abstract_object
