@@ -1,7 +1,5 @@
 """module for fetching abstracts from various APIs."""
 
-from typing import Any
-
 import requests
 
 from app.config import Settings
