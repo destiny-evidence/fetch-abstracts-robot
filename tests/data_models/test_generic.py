@@ -6,6 +6,21 @@ from pydantic import AnyUrl, ValidationError
 from app.config import get_settings
 from app.data_models import generic
 
+# @pytest.fixture
+# def scopus_config():
+#     api_config = generic.APIConfig(
+#         name=generic.ExternalAPI.SCOPUS,
+#         url="https://api.example.com",
+#         require_api_key=True,
+#         api_key_env_var_name="scopus_api_key",
+#         api_key_placement="X-API-Key",
+#         query_params={},
+#         headers={"X-API-Key": ""},
+#         unpack_strategy=generic.AbstractUnpackStrategy(
+#             source=generic.ExternalAPI.SCOPUS, strategy=["data", "abstract"]
+#         ),
+#     )
+
 
 def test_custom_exceptions():
     error_msg = "API key missing"
@@ -22,21 +37,25 @@ def test_custom_exceptions():
 def test_external_api_enum():
     assert generic.ExternalAPI.SCOPUS == "scopus"
     assert generic.ExternalAPI.WEB_OF_SCIENCE == "web_of_science"
+    assert generic.ExternalAPI.CROSSREF == "crossref"
     assert set(generic.ExternalAPI) == {
         generic.ExternalAPI.SCOPUS,
         generic.ExternalAPI.WEB_OF_SCIENCE,
+        generic.ExternalAPI.CROSSREF,
     }
 
 
 def test_external_api_priority_model():
     model = generic.ExternalAPIPriority(
         priorities={
-            generic.ExternalAPI.SCOPUS: 1,
-            generic.ExternalAPI.WEB_OF_SCIENCE: 2,
+            generic.ExternalAPI.CROSSREF: 1,
+            generic.ExternalAPI.SCOPUS: 2,
+            generic.ExternalAPI.WEB_OF_SCIENCE: 3,
         }
     )
-    assert model.priorities[generic.ExternalAPI.SCOPUS] == 1
-    assert model.priorities[generic.ExternalAPI.WEB_OF_SCIENCE] == 2
+    assert model.priorities[generic.ExternalAPI.CROSSREF] == 1
+    assert model.priorities[generic.ExternalAPI.SCOPUS] == 2
+    assert model.priorities[generic.ExternalAPI.WEB_OF_SCIENCE] == 3
 
 
 def test_abstract_unpack_strategy_():
@@ -48,17 +67,18 @@ def test_abstract_unpack_strategy_():
 
 
 def test_api_config_validator_success():
-    api_config = generic.APIConfig(
-        name=generic.ExternalAPI.SCOPUS,
-        url="https://api.example.com",
-        api_key_env_var_name="scopus_api_key",
-        api_key_placement="X-API-Key",
-        query_params={},
-        headers={"X-API-Key": ""},
-        unpack_strategy=generic.AbstractUnpackStrategy(
-            source=generic.ExternalAPI.SCOPUS, strategy=["data", "abstract"]
-        ),
-    )
+    # api_config = generic.APIConfig(
+    #     name=generic.ExternalAPI.SCOPUS,
+    #     url="https://api.example.com",
+    #     require_api_key=True,
+    #     api_key_env_var_name="scopus_api_key",
+    #     api_key_placement="X-API-Key",
+    #     query_params={},
+    #     headers={"X-API-Key": ""},
+    #     unpack_strategy=generic.AbstractUnpackStrategy(
+    #         source=generic.ExternalAPI.SCOPUS, strategy=["data", "abstract"]
+    #     ),
+    # )
     assert api_config.headers == {"X-API-Key": ""}
     assert api_config.name == generic.ExternalAPI.SCOPUS
     assert api_config.url == AnyUrl("https://api.example.com")
@@ -129,4 +149,5 @@ def test_api_config_populate_query():
         ),
     )
     url = api_config.populate_query("test_query")
+    assert url == f"{api_config.url}{"test_query"}"
     assert url == f"{api_config.url}{"test_query"}"

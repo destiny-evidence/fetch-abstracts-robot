@@ -3,6 +3,8 @@ from collections.abc import Generator
 import pytest
 from fastapi.testclient import TestClient
 
+from app.data_models.generic import AbstractUnpackStrategy, APIConfig, ExternalAPI
+
 
 def get_app() -> TestClient:
     """Get the FastAPI application instance."""
@@ -34,3 +36,35 @@ def test_client(set_test_environment_variables) -> Generator[TestClient, None, N
     client = get_app()
     yield client
     client.close()
+
+
+@pytest.fixture
+def scopus_api_config():
+    return APIConfig(
+        name=ExternalAPI.SCOPUS,
+        url="https://api.example.com/",
+        require_api_key=True,
+        api_key_env_var_name="elsevier_scopus_key",
+        api_key_placement="X-API-Key",
+        query_params={},
+        headers={"X-API-Key": ""},
+        unpack_strategy=AbstractUnpackStrategy(
+            source=ExternalAPI.SCOPUS, strategy=["data", "abstract"]
+        ),
+    )
+
+
+@pytest.fixture
+def wos_api_config():
+    return APIConfig(
+        name=ExternalAPI.WEB_OF_SCIENCE,
+        url="https://api.example.com/",
+        require_api_key=True,
+        api_key_env_var_name="wos_key",
+        api_key_placement="wos_key",
+        query_params={},
+        headers={"wos_key": ""},
+        unpack_strategy=AbstractUnpackStrategy(
+            source=ExternalAPI.WEB_OF_SCIENCE, strategy=["text", "meta", "abstract"]
+        ),
+    )

@@ -23,6 +23,7 @@ def scopus_api_config():
     return APIConfig(
         name=ExternalAPI.SCOPUS,
         url="https://api.example.com/",
+        require_api_key=True,
         api_key_env_var_name="elsevier_scopus_key",
         api_key_placement="X-API-Key",
         query_params={},
@@ -38,6 +39,7 @@ def wos_api_config():
     return APIConfig(
         name=ExternalAPI.WEB_OF_SCIENCE,
         url="https://api.example.com/",
+        require_api_key=True,
         api_key_env_var_name="wos_key",
         api_key_placement="wos_key",
         query_params={},
