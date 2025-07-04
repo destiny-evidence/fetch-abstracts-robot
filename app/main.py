@@ -152,11 +152,11 @@ def request_abstract_enhancement(
     status_code=status.HTTP_202_ACCEPTED,
     dependencies=[Depends(abstract_collector_auth)],
 )
-def request_batch_toy_enhancement(
+def request_batch_abstract_enhancement(
     request: destiny_sdk.robots.BatchRobotRequest, background_tasks: BackgroundTasks
 ) -> Response:
     """
-    Receive a request to create a lot of toy enhancements.
+    Receive a request to create a lot of abstract enhancements.
 
     NOTE - not yet implemented.
     """
