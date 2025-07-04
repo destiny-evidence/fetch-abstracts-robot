@@ -1,16 +1,23 @@
 from collections.abc import Generator
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.config import Settings
 
 
-def get_app() -> TestClient:
-    """Get the FastAPI application instance."""
+def get_app() -> FastAPI:
+    """
+    Return the FastAPI application instance for testing.
+
+    Returns:
+        FastAPI: The FastAPI application instance.
+
+    """
     from app.main import app
 
-    return TestClient(app)
+    return app
 
 
 @pytest.fixture(autouse=True)
@@ -33,15 +40,11 @@ def set_test_environment_variables(
 
 @pytest.fixture
 def test_client(set_test_environment_variables) -> Generator[TestClient, None, None]:
-    client = get_app()
+    client = TestClient(get_app())
     yield client
     client.close()
 
 
 @pytest.fixture
 def test_settings(set_test_environment_variables) -> Settings:
-    class TestSettings(Settings):
-        class Config:
-            env_file = None  # Disable loading .env file during tests
-
-    return TestSettings()
+    return Settings()
