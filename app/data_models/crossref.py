@@ -4,7 +4,6 @@ from app.data_models.generic import AbstractUnpackStrategy, APIConfig
 
 CROSSREF_URL = "https://api.crossref.org/works/"
 CROSSREF_QUERY_PARAMS = {}
-CROSSREF_HEADERS = {"Accept": "application/json"}
 CROSSREF_UNPACK_STRATEGY = AbstractUnpackStrategy(
     source="crossref", clean_abstract_string=True, strategy=["message", "abstract"]
 )
@@ -16,6 +15,5 @@ crossref_api_config = APIConfig(
     api_key_env_var_name=None,
     api_key_placement=None,
     query_params=CROSSREF_QUERY_PARAMS,
-    headers=CROSSREF_HEADERS,
     unpack_strategy=CROSSREF_UNPACK_STRATEGY,
 )

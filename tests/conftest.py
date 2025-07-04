@@ -39,7 +39,7 @@ def test_client(set_test_environment_variables) -> Generator[TestClient, None, N
 
 
 @pytest.fixture
-def scopus_api_config():
+def scopus_api_config_valid():
     return APIConfig(
         name=ExternalAPI.SCOPUS,
         url="https://api.example.com/",
@@ -55,7 +55,7 @@ def scopus_api_config():
 
 
 @pytest.fixture
-def wos_api_config():
+def wos_api_config_invalid():
     return APIConfig(
         name=ExternalAPI.WEB_OF_SCIENCE,
         url="https://api.example.com/",
@@ -66,5 +66,21 @@ def wos_api_config():
         headers={"wos_key": ""},
         unpack_strategy=AbstractUnpackStrategy(
             source=ExternalAPI.WEB_OF_SCIENCE, strategy=["text", "meta", "abstract"]
+        ),
+    )
+
+
+@pytest.fixture
+def crossref_api_config_valid():
+    return APIConfig(
+        name=ExternalAPI.CROSSREF,
+        url="https://api.example.com/",
+        require_api_key=False,
+        api_key_env_var_name=None,
+        api_key_placement=None,
+        unpack_strategy=AbstractUnpackStrategy(
+            source=ExternalAPI.CROSSREF,
+            clean_abstract_string=True,
+            strategy=["text", "meta", "abstract"],
         ),
     )

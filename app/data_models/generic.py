@@ -92,9 +92,13 @@ class APIConfig(BaseModel):
         description="the dict key in `headers` where we should insert our API key."
     )
     query_params: dict = Field(
-        description="the query params to pass with the api call."
+        default={},
+        description="the query params to pass with the api call.",
     )
-    headers: dict = Field(description="the headers to pass with the request.")
+    headers: dict = Field(
+        default={"Accept": "application/json"},
+        description="the headers to pass with the request.",
+    )
     unpack_strategy: AbstractUnpackStrategy = Field(
         description="the unpack strategy to employ to get a plain-text abstract"
     )

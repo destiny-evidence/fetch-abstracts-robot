@@ -108,11 +108,20 @@ class AbstractFetcher:
         error_msg = f"unable to find abstract for {doi}."
         raise AbstractNotFoundError(error_msg)
 
-    def fetch(self, url: str, params: dict, headers: dict) -> dict:
+    def fetch(
+        self, url: str, params: dict, headers: dict, *, verbose: bool = False
+    ) -> dict:
         """fetch a response from one of the APIs (generic)."""
         response = requests.get(
             url=url, params=params, headers=headers, timeout=self.timeout
         )
+        if verbose:
+            response_status_code = f"status code: {response.status_code}"
+            response_headers = f"headers: {response.headers}"
+            response_cookies = f"cookies: {response.cookies}"
+            logger.debug(response_status_code)
+            logger.debug(response_headers)
+            logger.debug(response_cookies)
 
         response.raise_for_status()
 
@@ -143,6 +152,7 @@ class AbstractFetcher:
                 url=url,
                 params=api_config.query_params,
                 headers=api_config.headers,
+                verbose=True,
             )
         except requests.HTTPError as e:
             logger.error(
