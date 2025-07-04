@@ -30,6 +30,7 @@ class ExternalAPI(StrEnum):
 
     SCOPUS = "scopus"
     WEB_OF_SCIENCE = "web_of_science"
+    CROSSREF = "crossref"
 
 
 class ExternalAPIPriority(BaseModel):
@@ -42,8 +43,9 @@ class ExternalAPIPriority(BaseModel):
 
 external_api_priority = ExternalAPIPriority(
     priorities={
-        ExternalAPI.SCOPUS: 1,
-        ExternalAPI.WEB_OF_SCIENCE: 2,
+        ExternalAPI.CROSSREF: 1,
+        ExternalAPI.SCOPUS: 2,
+        ExternalAPI.WEB_OF_SCIENCE: 3,
     }
 )
 
@@ -58,6 +60,13 @@ class AbstractUnpackStrategy(BaseModel):
     """
 
     source: ExternalAPI
+    clean_abstract_string: bool = Field(
+        default=False,
+        description="""a bool indicating whether
+        we want to run the `clean_abstract_string` method
+        on the string retrieved.
+        """,
+    )
     strategy: list[str] = Field(
         description="""a list of keys to sequentially
         pass to the json response object to retrieve
@@ -72,17 +81,24 @@ class APIConfig(BaseModel):
         description="the name (we've given) to this external API service"
     )
     url: AnyUrl = Field(description="the url/endpoint for the given API")
-    api_key_env_var_name: str = Field(
+    require_api_key: bool = Field(
+        description="indicates whether an API key is required to" "reach this API."
+    )
+    api_key_env_var_name: str | None = Field(
         description="the name of the environment variable/settings field "
         "which represents an api key for this api."
     )
-    api_key_placement: str = Field(
+    api_key_placement: str | None = Field(
         description="the dict key in `headers` where we should insert our API key."
     )
     query_params: dict = Field(
-        description="the query params to pass with the api call."
+        default={},
+        description="the query params to pass with the api call.",
     )
-    headers: dict = Field(description="the headers to pass with the request.")
+    headers: dict = Field(
+        default={"Accept": "application/json"},
+        description="the headers to pass with the request.",
+    )
     unpack_strategy: AbstractUnpackStrategy = Field(
         description="the unpack strategy to employ to get a plain-text abstract"
     )
@@ -91,7 +107,7 @@ class APIConfig(BaseModel):
     @classmethod
     def api_key_placement_in_headers(cls, values: dict) -> dict:
         """ensure that api_key_placement is a key in the headers dict."""
-        if (
+        if values["require_api_key"] and (
             values["headers"] is not None
             and values["api_key_placement"] not in values["headers"]
         ):
@@ -108,11 +124,16 @@ class APIConfig(BaseModel):
             APIKeyNotPresentError
 
         """
-        api_key = getattr(settings, self.api_key_env_var_name, None)
-        if api_key is None:
-            error_msg = f"API key for {self.name} is not present in settings."
-            raise APIKeyNotPresentError(error_msg)
-        self.headers[self.api_key_placement] = api_key.get_secret_value()
+        if self.require_api_key:
+            api_key = (
+                getattr(settings, self.api_key_env_var_name, None)
+                if self.api_key_env_var_name
+                else None
+            )
+            if api_key is None:
+                error_msg = f"API key for {self.name} is not present in settings."
+                raise APIKeyNotPresentError(error_msg)
+            self.headers[self.api_key_placement] = api_key.get_secret_value()
 
     def populate_query(self, query: str) -> str:
         """populate a query string into the query params dict."""

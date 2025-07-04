@@ -1,6 +1,6 @@
 """tests for app/config.py."""
 
-from app.auth import Settings
+from app.config import Settings
 
 
 def test_get_settings(

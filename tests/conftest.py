@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.config import Settings
+from app.data_models.generic import AbstractUnpackStrategy, APIConfig, ExternalAPI
 
 
 def get_app() -> FastAPI:
@@ -43,6 +44,54 @@ def test_client(set_test_environment_variables) -> Generator[TestClient, None, N
     client = TestClient(get_app())
     yield client
     client.close()
+
+
+@pytest.fixture
+def scopus_api_config_valid():
+    return APIConfig(
+        name=ExternalAPI.SCOPUS,
+        url="https://api.example.com/",
+        require_api_key=True,
+        api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
+        api_key_placement="X-API-Key",  # pragma: allowlist secret
+        query_params={},
+        headers={"X-API-Key": ""},
+        unpack_strategy=AbstractUnpackStrategy(
+            source=ExternalAPI.SCOPUS, strategy=["data", "abstract"]
+        ),
+    )
+
+
+@pytest.fixture
+def wos_api_config_invalid():
+    return APIConfig(
+        name=ExternalAPI.WEB_OF_SCIENCE,
+        url="https://api.example.com/",
+        require_api_key=True,
+        api_key_env_var_name="wos_key",  # pragma: allowlist secret
+        api_key_placement="wos_key",  # pragma: allowlist secret
+        query_params={},
+        headers={"wos_key": ""},
+        unpack_strategy=AbstractUnpackStrategy(
+            source=ExternalAPI.WEB_OF_SCIENCE, strategy=["text", "meta", "abstract"]
+        ),
+    )
+
+
+@pytest.fixture
+def crossref_api_config_valid():
+    return APIConfig(
+        name=ExternalAPI.CROSSREF,
+        url="https://api.example.com/",
+        require_api_key=False,
+        api_key_env_var_name=None,
+        api_key_placement=None,
+        unpack_strategy=AbstractUnpackStrategy(
+            source=ExternalAPI.CROSSREF,
+            clean_abstract_string=True,
+            strategy=["text", "meta", "abstract"],
+        ),
+    )
 
 
 @pytest.fixture

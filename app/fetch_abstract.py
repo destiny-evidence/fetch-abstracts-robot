@@ -1,5 +1,7 @@
 """module for fetching abstracts from various APIs."""
 
+import re
+
 import requests
 
 from app.config import Settings
@@ -106,11 +108,20 @@ class AbstractFetcher:
         error_msg = f"unable to find abstract for {doi}."
         raise AbstractNotFoundError(error_msg)
 
-    def fetch(self, url: str, params: dict, headers: dict) -> dict:
+    def fetch(
+        self, url: str, params: dict, headers: dict, *, verbose: bool = False
+    ) -> dict:
         """fetch a response from one of the APIs (generic)."""
         response = requests.get(
             url=url, params=params, headers=headers, timeout=self.timeout
         )
+        if verbose:
+            response_status_code = f"status code: {response.status_code}"
+            response_headers = f"headers: {response.headers}"
+            response_cookies = f"cookies: {response.cookies}"
+            logger.debug(response_status_code)
+            logger.debug(response_headers)
+            logger.debug(response_cookies)
 
         response.raise_for_status()
 
@@ -145,6 +156,7 @@ class AbstractFetcher:
                 url=url,
                 params=api_config.query_params,
                 headers=api_config.headers,
+                verbose=True,
             )
         except requests.HTTPError as e:
             logger.error(
@@ -164,8 +176,7 @@ class AbstractFetcher:
             )
             raise
 
-    @classmethod
-    def fetch_many_abstracts(cls, dois: list[str], api_config: APIConfig) -> None:
+    def fetch_many_abstracts(self, dois: list[str], api_config: APIConfig) -> None:
         """
         Fetch many abstracts from a target API given a list of DOIs.
 
@@ -178,11 +189,30 @@ class AbstractFetcher:
 
         """
 
+    @staticmethod
+    def clean_abstract_string(abstract_string: str) -> str:
+        """clean a given abstract string."""
+        # we can add more stuff here later (e.g. validation)
+        # but for now we just want to remove `jats` tags.
+        # e.g. we could define an enum in generic.py with all
+        # available cleaning methods -- or maybe here??? and
+        # then associate them with an unpack strategy as required.
+        logger.debug("removing jats tags from abstract string...")
+        cleaned = re.sub(
+            r"^<jats:p>(.*?)</jats:p>$", r"\1", abstract_string, flags=re.DOTALL
+        )
+        return cleaned.strip()
+
     def unpack_abstract(
-        self, response_obj: dict, strategy: AbstractUnpackStrategy
+        self,
+        response_obj: dict,
+        strategy: AbstractUnpackStrategy,
     ) -> str:
         """
-        Unpack the plain text of the abstract using an unpack strategy.
+        unpack the plain text of the abstract using an unpack strategy.
+
+        if our `AbstractUnpackStrategy` has field `clean_abstract_string`
+        set to `True`, we will run the `clean_abstract_string` method.
 
         Args:
             response_obj (dict): JSON response object from the API.
@@ -196,10 +226,16 @@ class AbstractFetcher:
 
         """
         unpack_strategy = strategy.model_dump()["strategy"]
+        clean = strategy.model_dump()["clean_abstract_string"]
         try:
             for level in unpack_strategy:
                 abstract_object = response_obj[level]
                 response_obj = abstract_object
+
+            if clean:
+                logger.debug("`clean_abstract_string` is True, cleaning abstract.")
+                abstract_object = self.clean_abstract_string(abstract_object)
+
         except KeyError as e:
             error_message = "hit key error. check response "
             f"object and unpack strategy. original error message: {e}"

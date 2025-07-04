@@ -16,6 +16,7 @@ SCOPUS_UNPACK_STRATEGY = AbstractUnpackStrategy(
 scopus_api_config = APIConfig(
     name="scopus",
     url=SCOPUS_URL,
+    require_api_key=True,
     api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
     api_key_placement="X-ELS-APIKey",  # pragma: allowlist secret
     query_params=SCOPUS_QUERY_PARAMS,
