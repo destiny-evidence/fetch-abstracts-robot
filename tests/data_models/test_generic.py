@@ -154,4 +154,4 @@ def test_api_config_populate_query(request, api_config_fixture):
     query = "test_query"
     url = api_config.populate_query(query)
     # This assumes populate_query appends the query string to the base URL
-    assert url
+    assert url == f"{api_config.url}{"test_query"}"
