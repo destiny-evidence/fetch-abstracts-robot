@@ -3,7 +3,7 @@
 from app.data_models.generic import AbstractUnpackStrategy, APIConfig
 
 CROSSREF_URL = "https://api.crossref.org/works/"
-CROSSREF_QUERY_PARAMS = {}
+CROSSREF_QUERY_PARAMS = {}  # type: dict
 CROSSREF_UNPACK_STRATEGY = AbstractUnpackStrategy(
     source="crossref", clean_abstract_string=True, strategy=["message", "abstract"]
 )
