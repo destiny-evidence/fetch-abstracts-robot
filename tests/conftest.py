@@ -23,7 +23,6 @@ def set_test_environment_variables(
     monkeypatch.setenv("ROBOT_ID", "e0aba318-eee9-4b4c-b503-7f72547063d8")
     monkeypatch.setenv("ROBOT_SECRET", "dummy_secret")
     monkeypatch.setenv("ELSEVIER_SCOPUS_KEY", "dummy_scopus_key")
-    monkeypatch.setenv("WEB_OF_SCIENCE_API_KEY", "dummy_web_of_science_key")
     yield
     monkeypatch.delenv("ENV")
     monkeypatch.delenv("DESTINY_REPOSITORY_URL")
