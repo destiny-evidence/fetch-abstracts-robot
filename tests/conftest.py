@@ -29,7 +29,6 @@ def set_test_environment_variables(
     monkeypatch.delenv("ROBOT_ID")
     monkeypatch.delenv("ROBOT_SECRET")
     monkeypatch.delenv("ELSEVIER_SCOPUS_KEY")
-    monkeypatch.delenv("WEB_OF_SCIENCE_API_KEY")
 
 
 @pytest.fixture
