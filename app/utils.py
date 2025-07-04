@@ -3,6 +3,7 @@
 import toml
 from destiny_sdk.identifiers import DOIIdentifier, ExternalIdentifierType
 from destiny_sdk.references import Reference
+from loguru import logger
 from pydantic import ValidationError
 
 
@@ -20,19 +21,32 @@ def validate_doi(doi_string: str) -> bool:
 
     returns `True` if valid, `False` otherwise.
     """
+    valid_doi = False
     if not isinstance(doi_string, str):
-        return False
+        return valid_doi
     try:
         DOIIdentifier(identifier=doi_string, identifier_type=ExternalIdentifierType.DOI)
-        return True
-    except ValidationError as e:
-        return False
+        valid_doi = True
+    except ValidationError:
+        error_message = "Invalid DOI: {doi_string}. Error: {invalid_doi_error}"
+        logger.error(error_message)
+        return valid_doi
+    return valid_doi
 
 
 def get_doi_from_reference(reference: Reference) -> str:
-    """extract doi from a reference obj."""
+    """
+    Extract DOI from a Reference object.
+
+    Args:
+        reference (Reference): The reference object containing identifiers.
+
+    Returns:
+        str: The DOI string if found.
+
+    """
     for _id in reference.identifiers:
-        if validate_doi(_id, DOIIdentifier):
+        if _id.identifier_type == ExternalIdentifierType.DOI:
             return _id.identifier
     error_message = f"No DOI found for reference {reference}"
     raise MissingDOIError(error_message)

@@ -125,7 +125,11 @@ class APIConfig(BaseModel):
 
         """
         if self.require_api_key:
-            api_key = getattr(settings, self.api_key_env_var_name, None)
+            api_key = (
+                getattr(settings, self.api_key_env_var_name, None)
+                if self.api_key_env_var_name
+                else None
+            )
             if api_key is None:
                 error_msg = f"API key for {self.name} is not present in settings."
                 raise APIKeyNotPresentError(error_msg)
@@ -138,7 +142,4 @@ class APIConfig(BaseModel):
         # etc - right now this is for a POC for scopus one abstract
         # retrieval only.
 
-        # @harryjmoss i think we need to be careful not to assing
-        # this here, otherwise we may have to completely re-initialise
-        # our api_config if we want to get several abstracts.
         return f"{self.url}{query}"

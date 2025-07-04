@@ -3,6 +3,7 @@ from collections.abc import Generator
 import pytest
 from fastapi.testclient import TestClient
 
+from app.config import Settings
 from app.data_models.generic import AbstractUnpackStrategy, APIConfig, ExternalAPI
 
 
@@ -28,7 +29,7 @@ def set_test_environment_variables(
     monkeypatch.delenv("DESTINY_REPOSITORY_URL")
     monkeypatch.delenv("ROBOT_ID")
     monkeypatch.delenv("ROBOT_SECRET")
-    monkeypatch.delenv("ELSEVIER_SCOPUS_KEY", "dummy_scopus_key")
+    monkeypatch.delenv("ELSEVIER_SCOPUS_KEY")
 
 
 @pytest.fixture
@@ -44,8 +45,8 @@ def scopus_api_config_valid():
         name=ExternalAPI.SCOPUS,
         url="https://api.example.com/",
         require_api_key=True,
-        api_key_env_var_name="elsevier_scopus_key",
-        api_key_placement="X-API-Key",
+        api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
+        api_key_placement="X-API-Key",  # pragma: allowlist secret
         query_params={},
         headers={"X-API-Key": ""},
         unpack_strategy=AbstractUnpackStrategy(
@@ -60,8 +61,8 @@ def wos_api_config_invalid():
         name=ExternalAPI.WEB_OF_SCIENCE,
         url="https://api.example.com/",
         require_api_key=True,
-        api_key_env_var_name="wos_key",
-        api_key_placement="wos_key",
+        api_key_env_var_name="wos_key",  # pragma: allowlist secret
+        api_key_placement="wos_key",  # pragma: allowlist secret
         query_params={},
         headers={"wos_key": ""},
         unpack_strategy=AbstractUnpackStrategy(
@@ -84,3 +85,11 @@ def crossref_api_config_valid():
             strategy=["text", "meta", "abstract"],
         ),
     )
+
+
+def test_settings(set_test_environment_variables) -> Settings:
+    class TestSettings(Settings):
+        class Config:
+            env_file = None  # Disable loading .env file during tests
+
+    return TestSettings()

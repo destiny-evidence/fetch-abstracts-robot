@@ -9,7 +9,7 @@ plugins = ["pydantic.mypy"]
 [tool.poetry]
 authors = [
     "Harry Moss <h.moss@ucl.ac.uk>",
-    "Nik Loynes <n.loynes@ucl.ac.uk>"
+    "Nik Loynes <n.loynes@ucl.ac.uk>",
 ]
 description = "Robot for adding abstract enhancements to items in the destiny repo from alternate sources."
 name = "fetch-abstracts-robot"
@@ -35,6 +35,7 @@ ruff = "^0.8.6"
 
 [tool.poetry.group.test.dependencies]
 pytest-cov = "^6.2.1"
+pytest-mock = "^3.14.1"
 
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--import-mode=importlib", "--verbose"]
@@ -49,8 +50,8 @@ target-version = "py312"
 lint.ignore = [
     "COM812", # trailing commas (ruff-format recommended)
     "D203", # no-blank-line-before-class
+    "D205", # missing-blank-line-after-summary
     "D212", # multi-line-summary-first-line
-    "D205", # annoying docstring warning...
     "D403", # forcing upper-case - feel free to change @harry
     "D407", # removed dashes lines under sections
     "D417", # argument description in docstring (unreliable)
@@ -64,6 +65,7 @@ lint.per-file-ignores = {"tests*" = [
     "D100", # Missing docstring in public module
     "D103", # Missing docstring in public function
     "INP001", # File is part of an implicit namespace package.
+    "PLR0913", # Too many arguments in function definition
     "PLR2004", # Magic value used in comparison
     "S101", # Use of `assert` detected,
 ]}

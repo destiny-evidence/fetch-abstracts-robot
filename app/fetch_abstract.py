@@ -131,16 +131,20 @@ class AbstractFetcher:
         """
         Fetch one abstract from a target api given an API config object.
 
-        NOTE: we should probably consider validating whether a DOI is
-        a valid DOI (regex??) -- however, looking at this here -
-        https://stackoverflow.com/questions/27910/finding-a-doi-in-a-document-or-page#48524047,
-        there's only a 99.3% match of using regex to validate...
+        Args:
+            doi (str): Pre-validated DOI of the work for which to fetch the abstract.
+            api_config (APIConfig): API configuration object containing
+                                    the API details and unpack strategy.
 
-        for now, it's implemented using `validate_doi`
+        Returns:
+            str: The plain text abstract extracted from the response object.
+
         """
-        if not validate_doi(doi):
-            error_msg = f"doi {doi} is not a valid DOI."
-            raise InvalidDOIError(error_msg)
+        doi_validity = validate_doi(doi)
+        if not doi_validity:
+            error_message = f"invalid DOI: {doi}. please check the DOI and try again."
+            logger.error(error_message)
+            raise InvalidDOIError(error_message)
         url = api_config.populate_query(
             query=doi
         )  # NOTE - will have to rework if query isn't submitted via url in other API
@@ -172,8 +176,18 @@ class AbstractFetcher:
             )
             raise
 
-    def fetch_many_abstracts(cls, dois: list[str], api_config):
-        pass
+    def fetch_many_abstracts(self, dois: list[str], api_config: APIConfig) -> None:
+        """
+        Fetch many abstracts from a target API given a list of DOIs.
+
+        Currently not implemented.
+
+        Args:
+            dois (list[str]): List of DOIs to fetch abstracts for.
+            api_config (APIConfig): API configuration object containing
+                                the API details and unpack strategy.
+
+        """
 
     @staticmethod
     def clean_abstract_string(abstract_string: str) -> str:
@@ -214,17 +228,20 @@ class AbstractFetcher:
         unpack_strategy = strategy.model_dump()["strategy"]
         clean = strategy.model_dump()["clean_abstract_string"]
         try:
-            abstract = response_obj
             for level in unpack_strategy:
-                abstract = abstract[level]
+                abstract_object = response_obj[level]
+                response_obj = abstract_object
 
             if clean:
                 logger.debug("`clean_abstract_string` is True, cleaning abstract.")
-                abstract = self.clean_abstract_string(abstract)
-            return abstract
+                abstract_object = self.clean_abstract_string(abstract_object)
 
         except KeyError as e:
             error_message = "hit key error. check response "
             f"object and unpack strategy. original error message: {e}"
 
             raise AbstractUnpackError(error_message) from e
+        if not isinstance(abstract_object, str):
+            error_message = "Expected abstract to be a string."
+            raise AbstractUnpackError(error_message)
+        return abstract_object

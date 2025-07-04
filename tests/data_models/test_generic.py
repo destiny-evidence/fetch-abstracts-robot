@@ -1,7 +1,7 @@
 """tests for generic data models in app/data_models/generic.py."""
 
 import pytest
-from pydantic import AnyUrl, ValidationError
+from pydantic import ValidationError
 
 from app.config import get_settings
 from app.data_models import generic
@@ -52,7 +52,15 @@ def test_abstract_unpack_strategy_():
 
 
 @pytest.mark.parametrize(
-    "api_config_fixture,expected_headers,expected_name,expected_url,expected_query_params,expected_unpack_source,expected_unpack_strategy",
+    (
+        "api_config_fixture",
+        "expected_headers",
+        "expected_name",
+        "expected_url",
+        "expected_query_params",
+        "expected_unpack_source",
+        "expected_unpack_strategy",
+    ),
     [
         (
             "scopus_api_config_valid",
@@ -63,17 +71,6 @@ def test_abstract_unpack_strategy_():
             generic.ExternalAPI.SCOPUS,
             ["data", "abstract"],
         ),
-        # commenting out WOS as it's currently
-        # invalid due to not having an api key
-        # (
-        #     "wos_api_config_valid",
-        #     {"wos_key": ""},
-        #     generic.ExternalAPI.WEB_OF_SCIENCE,
-        #     "https://api.example.com/",
-        #     {},
-        #     generic.ExternalAPI.WEB_OF_SCIENCE,
-        #     ["text", "meta", "abstract"],
-        # ),
         (
             "crossref_api_config_valid",
             {"Accept": "application/json"},
@@ -118,11 +115,9 @@ def test_api_config_validator_failure(scopus_api_config_valid, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "api_config_fixture,expected_key,expected_value",
+    ("api_config_fixture", "expected_key", "expected_value"),
     [
-        # SCOPUS: requires API key, key present
         ("scopus_api_config_valid", "X-API-Key", "dummy_scopus_key"),
-        # CROSSREF: does not require API key
         ("crossref_api_config_valid", None, None),
     ],
 )
