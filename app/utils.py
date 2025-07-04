@@ -21,17 +21,17 @@ def validate_doi(doi_string: str) -> bool:
 
     returns `True` if valid, `False` otherwise.
     """
-    success = False
+    valid_doi = False
     if not isinstance(doi_string, str):
-        return success
+        return valid_doi
     try:
         DOIIdentifier(identifier=doi_string, identifier_type=ExternalIdentifierType.DOI)
-        success = True
+        valid_doi = True
     except ValidationError:
         error_message = "Invalid DOI: {doi_string}. Error: {invalid_doi_error}"
         logger.error(error_message)
-        return success
-    return success
+        return valid_doi
+    return valid_doi
 
 
 def get_doi_from_reference(reference: Reference) -> str:
