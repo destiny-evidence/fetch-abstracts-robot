@@ -87,6 +87,7 @@ def crossref_api_config_valid():
     )
 
 
+@pytest.fixture
 def test_settings(set_test_environment_variables) -> Settings:
     class TestSettings(Settings):
         class Config:
