@@ -31,6 +31,18 @@ class ExternalAPI(StrEnum):
     SCOPUS = "scopus"
     WEB_OF_SCIENCE = "web_of_science"
     CROSSREF = "crossref"
+    SCOPUS_BATCH = "scopus_batch"
+
+
+class QueryType(StrEnum):
+    """
+    exhaustive list of permitted query types,
+    e.g. `single` or `batch`.
+
+    """
+
+    SINGLE = "single"
+    BATCH = "batch"
 
 
 class ExternalAPIPriority(BaseModel):
@@ -43,9 +55,10 @@ class ExternalAPIPriority(BaseModel):
 
 external_api_priority = ExternalAPIPriority(
     priorities={
-        ExternalAPI.CROSSREF: 1,
-        ExternalAPI.SCOPUS: 2,
-        ExternalAPI.WEB_OF_SCIENCE: 3,
+        ExternalAPI.SCOPUS_BATCH: 1,
+        ExternalAPI.CROSSREF: 2,
+        ExternalAPI.SCOPUS: 3,
+        ExternalAPI.WEB_OF_SCIENCE: 4,
     }
 )
 
@@ -91,6 +104,9 @@ class APIConfig(BaseModel):
     api_key_placement: str | None = Field(
         description="the dict key in `headers` where we should insert our API key."
     )
+    query_type: QueryType = Field(
+        default=QueryType.SINGLE, description="the type of query; e.g. single or batch."
+    )
     query_params: dict = Field(
         default={},
         description="the query params to pass with the api call.",
@@ -135,11 +151,46 @@ class APIConfig(BaseModel):
                 raise APIKeyNotPresentError(error_msg)
             self.headers[self.api_key_placement] = api_key.get_secret_value()
 
-    def populate_query(self, query: str) -> str:
-        """populate a query string into the query params dict."""
-        # NOTE -- this will require some more refined logic to
-        # enable this to work with different api configurations
-        # etc - right now this is for a POC for scopus one abstract
-        # retrieval only.
+    def populate_query(self, query: str | list[str], max_array_length: int = 15) -> str:
+        """
+        populate a query string into the query params dict.
 
-        return f"{self.url}{query}"
+        Args:
+            query (str | list[str]): the body of the query - currently a doi or
+                                     list of dois.
+            query_type (QueryType): a QueryType, this defined what the method does._
+            max_array_length (int, optional): max number of identifiers to
+                                              build the query from. Defaults to 15.
+
+        Raises:
+            TypeError
+            ValueError
+
+        Returns:
+            str: the formated query body, e.g. URL or to be passed into params...
+
+        """
+        if self.query_type == QueryType.SINGLE:
+            if not isinstance(query, str):
+                error_msg = "query_type `single` requires a `str` type query."
+                raise TypeError(error_msg)
+            return f"{self.url}{query}"
+        # we can add more configurations here...
+        if self.query_type == QueryType.BATCH:
+            if not isinstance(query, list):
+                error_msg = "query_type `batch` requires a `list` type query."
+                raise TypeError(error_msg)
+            # NOTE - below is a conservative limit to ensure URL length
+            # is the conventional limit of 2000 characters. we're assuming
+            # a mean DOI length of 120 chars.
+            if len(query) > max_array_length:
+                error_msg = (
+                    "array of items to query for is too long. max"
+                    f"n(items): {max_array_length}"
+                )
+                raise ValueError(error_msg)
+            return " OR ".join([f"DOI({x})" for x in query])
+
+        error_msg = "unable to format query. ensure correct specification "
+        "of query and query type."
+        raise ValueError

@@ -176,11 +176,11 @@ class AbstractFetcher:
             )
             raise
 
-    def fetch_many_abstracts(self, dois: list[str], api_config: APIConfig) -> None:
+    def fetch_many_abstracts(
+        self, dois: list[str], api_config: APIConfig, doi_batch_size: int = 15
+    ) -> dict:
         """
         Fetch many abstracts from a target API given a list of DOIs.
-
-        Currently not implemented.
 
         Args:
             dois (list[str]): List of DOIs to fetch abstracts for.
@@ -188,6 +188,46 @@ class AbstractFetcher:
                                 the API details and unpack strategy.
 
         """
+        dois = [x for x in dois if validate_doi(x)]
+        # we are still batching into sub-requests,
+        # as we don't want to make our URL longer than 2000 chars.
+        logger.debug(f"n incoming dois: {len(dois)}")
+        chunked_dois = [
+            dois[i : i + doi_batch_size] for i in range(0, len(dois), doi_batch_size)
+        ]
+        logger.debug(
+            (
+                f"chunked into sub-lists of {len(chunked_dois)} ",
+                f"of {doi_batch_size} each.",
+            )
+        )
+        out = []
+        for i, chunk in enumerate(chunked_dois):
+            logger.debug(
+                f"sending get request for chunk {i} out of {len(chunked_dois)}"
+            )
+            query_string = api_config.populate_query(query=chunk)
+            query_params = api_config.query_params
+            query_params["query"] = query_string
+
+            try:
+                out.append(
+                    self.fetch(
+                        url=api_config.url,
+                        params=query_params,
+                        headers=api_config.headers,
+                        verbose=True,
+                    )
+                )
+
+            except requests.HTTPError as e:
+                logger.error(
+                    "encountered HTTPError on attempting to retrieve abstract. "
+                    f"original error message: {e}"
+                )
+                raise
+
+        return out
 
     @staticmethod
     def clean_abstract_string(abstract_string: str) -> str:
