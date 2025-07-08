@@ -9,7 +9,8 @@ from fastapi import BackgroundTasks, Depends, FastAPI, Response, status
 
 from app.auth import auth_strategy_robot
 from app.config import get_settings
-from app.data_models.scopus import scopus_api_config
+from app.data_models.crossref import crossref_api_config
+from app.data_models.scopus import scopus_api_config, scopus_batch_api_config
 from app.fetch_abstract import AbstractFetcher, prepare_api_config
 from app.utils import get_doi_from_reference, get_version_number_from_pyproject
 
@@ -27,7 +28,9 @@ client = destiny_sdk.client.Client(
 
 # configurations for all APIs we can hit to get abstracts
 AVAILABLE_API_CONFIGS = [
-    scopus_api_config  # add more here as more apis get defined/implemented
+    scopus_api_config,
+    scopus_batch_api_config,
+    crossref_api_config,
 ]
 global_api_config = prepare_api_config(
     api_configs=AVAILABLE_API_CONFIGS, settings=settings

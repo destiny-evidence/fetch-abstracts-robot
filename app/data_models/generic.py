@@ -1,6 +1,7 @@
 """Define generic data models and validators."""
 
 from enum import StrEnum
+from urllib import parse
 
 from pydantic import AnyUrl, BaseModel, Field, model_validator
 
@@ -46,20 +47,28 @@ class QueryType(StrEnum):
 
 
 class ExternalAPIPriority(BaseModel):
-    """sequence definition of APIs to call for any given abstract."""
+    """priority definition of APIs to call for any given abstract."""
 
+    name: str = Field(description="name of the api priority")
     priorities: dict[ExternalAPI, int] = Field(
         ..., description="mapping of `ExternalAPIs` to their priority rank."
     )
 
 
-external_api_priority = ExternalAPIPriority(
+external_api_priority_single = ExternalAPIPriority(
+    name="single",
+    priorities={
+        ExternalAPI.CROSSREF: 1,
+        ExternalAPI.SCOPUS: 2,
+        ExternalAPI.WEB_OF_SCIENCE: 3,
+    },
+)
+
+external_api_priority_batch = ExternalAPIPriority(
+    name="batch",
     priorities={
         ExternalAPI.SCOPUS_BATCH: 1,
-        ExternalAPI.CROSSREF: 2,
-        ExternalAPI.SCOPUS: 3,
-        ExternalAPI.WEB_OF_SCIENCE: 4,
-    }
+    },
 )
 
 
@@ -175,6 +184,7 @@ class APIConfig(BaseModel):
                 error_msg = "query_type `single` requires a `str` type query."
                 raise TypeError(error_msg)
             return f"{self.url}{query}"
+
         # we can add more configurations here...
         if self.query_type == QueryType.BATCH:
             if not isinstance(query, list):
@@ -191,6 +201,8 @@ class APIConfig(BaseModel):
                 raise ValueError(error_msg)
             return " OR ".join([f"DOI({x})" for x in query])
 
-        error_msg = "unable to format query. ensure correct specification "
-        "of query and query type."
-        raise ValueError
+        error_msg = (
+            "unable to format query. ensure correct specification ",
+            "of query and query type.",
+        )
+        raise ValueError(error_msg)

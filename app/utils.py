@@ -25,7 +25,9 @@ def validate_doi(doi_string: str) -> bool:
     if not isinstance(doi_string, str):
         return valid_doi
     try:
-        DOIIdentifier(identifier=doi_string, identifier_type=ExternalIdentifierType.DOI)
+        DOIIdentifier(
+            identifier=doi_string, identifier_type=ExternalIdentifierType.DOI
+        ).remove_doi_url()
         valid_doi = True
     except ValidationError:
         error_message = "Invalid DOI: {doi_string}. Error: {invalid_doi_error}"

@@ -1,8 +1,10 @@
 """module for fetching abstracts from various APIs."""
 
 import re
+from typing import Generator
 
 import requests
+from destiny_sdk.identifiers import DOIIdentifier
 
 from app.config import Settings
 from app.data_models.generic import (
@@ -12,7 +14,8 @@ from app.data_models.generic import (
     APIConfig,
     APIKeyNotPresentError,
     ExternalAPIPriority,
-    external_api_priority,
+    external_api_priority_batch,
+    external_api_priority_single,
 )
 from app.logger import logger
 from app.utils import InvalidDOIError, validate_doi
@@ -21,7 +24,8 @@ from app.utils import InvalidDOIError, validate_doi
 def prepare_api_config(
     api_configs: list[APIConfig],
     settings: Settings,
-    external_api_priority: ExternalAPIPriority = external_api_priority,
+    external_api_priority_single: ExternalAPIPriority = external_api_priority_single,
+    external_api_priority_batch: ExternalAPIPriority = external_api_priority_batch,
 ) -> dict[str, APIConfig]:
     """
     prepare a dict of APIConfig objects, populated with API keys.
@@ -35,23 +39,33 @@ def prepare_api_config(
     """
     master_api_config = {}
     api_config_map = {config.name.value: config for config in api_configs}
-    logger.debug(f"external_api_priority: {external_api_priority.priorities}")
+    logger.debug(
+        f"external_api_priority_single: {external_api_priority_single.priorities}"
+    )
+    logger.debug(
+        f"external_api_priority_batch: {external_api_priority_batch.priorities}"
+    )
     logger.debug(f"supplied api candidates: {', '.join(api_config_map.keys())}")
 
-    for api in external_api_priority.priorities:
-        logger.debug(f"checking if {api.name} in list of available apis...")
-        if api not in api_config_map:
-            continue
-        target_config = api_config_map[api]
-        try:
-            logger.debug(f"trying to find & init api key for {api.name}")
-            target_config.init_api_key(settings=settings)
-            master_api_config[api.name] = target_config
-            logger.info(f"successfully initialised API key for {api.name}.")
-        except APIKeyNotPresentError as e:
-            logger.info(f"no API key for {api.name}. not populating config.")
-            logger.info(f"original error message: {e}.")
-            continue
+    for external_api_priority in [
+        external_api_priority_single,
+        external_api_priority_batch,
+    ]:
+        master_api_config[external_api_priority.name] = {}
+        for api in external_api_priority.priorities:
+            logger.debug(f"checking if {api.name} in list of available apis...")
+            if api not in api_config_map:
+                continue
+            target_config = api_config_map[api]
+            try:
+                logger.debug(f"trying to find & init api key for {api.name}")
+                target_config.init_api_key(settings=settings)
+                master_api_config[external_api_priority.name][api.name] = target_config
+                logger.info(f"successfully initialised API key for {api.name}.")
+            except APIKeyNotPresentError as e:
+                logger.info(f"no API key for {api.name}. not populating config.")
+                logger.info(f"original error message: {e}.")
+                continue
 
     return master_api_config
 
@@ -66,12 +80,18 @@ class AbstractFetcher:
         self.master_api_config = master_api_config
         self.timeout = timeout
 
-        logger.info("available external APIs, in descending order of priority:")
-        logger.info(", ".join(master_api_config.keys()))
+        logger.info(
+            "available external APIs - SINGLE - in descending order of priority:"
+        )
+        logger.info(", ".join(master_api_config["single"].keys()))
+        logger.info(
+            "available external APIs - BATCH - in descending order of priority:"
+        )
+        logger.info(", ".join(master_api_config["batch"].keys()))
 
-    def get_abstract_cycling_apis(self, doi: str, *, verbose: bool = False) -> str:
+    def get_one_abstract_cycling_apis(self, doi: str, *, verbose: bool = False) -> str:
         """
-        retrieve abstract, iterating through available APIs until
+        retrieve one abstract, iterating through available APIs until
         abstract found or options exhausted.
 
         Args:
@@ -91,10 +111,12 @@ class AbstractFetcher:
 
         """
         logger.info(f"seeking abstract for doi: {doi}")
-        for api in self.master_api_config:
+        for api in self.master_api_config[
+            "single"
+        ]:  # NOTE - @harryjmoss this is probably not a clean way of doing this... maybe we want to refine our master_api_config definition a little more now that it has single and batch elements.
             logger.info(f"attempting retrieval using api {api}.")
             abstract = self.fetch_one_abstract(
-                doi=doi, api_config=self.master_api_config[api]
+                doi=doi, api_config=self.master_api_config["single"][api]
             )
             if abstract:
                 found_message = f"abstract retrieval through {api} was successful."
@@ -116,9 +138,17 @@ class AbstractFetcher:
             url=url, params=params, headers=headers, timeout=self.timeout
         )
         if verbose:
+            request_actual_headers = f"request headers: {response.request.headers}"
+            request_url = f"request {response.request.url}"
+            request_body = f"request {response.request.body}"
             response_status_code = f"status code: {response.status_code}"
             response_headers = f"headers: {response.headers}"
             response_cookies = f"cookies: {response.cookies}"
+
+            logger.debug(request_actual_headers)
+            logger.debug(request_url)
+            logger.debug(request_body)
+
             logger.debug(response_status_code)
             logger.debug(response_headers)
             logger.debug(response_cookies)
@@ -146,7 +176,7 @@ class AbstractFetcher:
             logger.error(error_message)
             raise InvalidDOIError(error_message)
         url = api_config.populate_query(
-            query=doi
+            query=DOIIdentifier(identifier=doi).identifier
         )  # NOTE - will have to rework if query isn't submitted via url in other API
 
         logger.debug(f"fetching doi {doi} from api {api_config.name}")
@@ -177,8 +207,12 @@ class AbstractFetcher:
             raise
 
     def fetch_many_abstracts(
-        self, dois: list[str], api_config: APIConfig, doi_batch_size: int = 15
-    ) -> dict:
+        self,
+        dois: list[str],
+        api_config: APIConfig,
+        doi_batch_size: int = 15,
+        # ) -> Generator[dict]:
+    ):
         """
         Fetch many abstracts from a target API given a list of DOIs.
 
@@ -188,7 +222,9 @@ class AbstractFetcher:
                                 the API details and unpack strategy.
 
         """
-        dois = [x for x in dois if validate_doi(x)]
+        dois = [
+            DOIIdentifier(identifier=x).identifier for x in dois
+        ]  # removing doi.org
         # we are still batching into sub-requests,
         # as we don't want to make our URL longer than 2000 chars.
         logger.debug(f"n incoming dois: {len(dois)}")
@@ -201,7 +237,6 @@ class AbstractFetcher:
                 f"of {doi_batch_size} each.",
             )
         )
-        out = []
         for i, chunk in enumerate(chunked_dois):
             logger.debug(
                 f"sending get request for chunk {i} out of {len(chunked_dois)}"
@@ -209,15 +244,12 @@ class AbstractFetcher:
             query_string = api_config.populate_query(query=chunk)
             query_params = api_config.query_params
             query_params["query"] = query_string
-
             try:
-                out.append(
-                    self.fetch(
-                        url=api_config.url,
-                        params=query_params,
-                        headers=api_config.headers,
-                        verbose=True,
-                    )
+                yield self.fetch(
+                    url=api_config.url,
+                    params=query_params,
+                    headers=api_config.headers,
+                    verbose=True,
                 )
 
             except requests.HTTPError as e:
@@ -226,8 +258,6 @@ class AbstractFetcher:
                     f"original error message: {e}"
                 )
                 raise
-
-        return out
 
     @staticmethod
     def clean_abstract_string(abstract_string: str) -> str:
