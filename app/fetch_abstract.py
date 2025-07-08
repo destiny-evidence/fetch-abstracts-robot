@@ -196,9 +196,12 @@ class AbstractFetcher:
             raise
 
         try:
-            return self.unpack_abstract(
-                response_obj=response, strategy=api_config.unpack_strategy
-            )
+            return {
+                "doi": doi,
+                "abstract": self.unpack_abstract(
+                    response_obj=response, strategy=api_config.unpack_strategy
+                ),
+            }
         except AbstractUnpackError as e:
             logger.error(
                 "encountered an error unpacking the abstract. "
@@ -211,8 +214,9 @@ class AbstractFetcher:
         dois: list[str],
         api_config: APIConfig,
         doi_batch_size: int = 15,
-        # ) -> Generator[dict]:
-    ):
+        *,
+        chunk: bool = False,
+    ) -> Generator[dict, None, None]:
         """
         Fetch many abstracts from a target API given a list of DOIs.
 
@@ -225,23 +229,23 @@ class AbstractFetcher:
         dois = [
             DOIIdentifier(identifier=x).identifier for x in dois
         ]  # removing doi.org
-        # we are still batching into sub-requests,
-        # as we don't want to make our URL longer than 2000 chars.
+
         logger.debug(f"n incoming dois: {len(dois)}")
-        chunked_dois = [
-            dois[i : i + doi_batch_size] for i in range(0, len(dois), doi_batch_size)
-        ]
-        logger.debug(
-            (
-                f"chunked into sub-lists of {len(chunked_dois)} ",
-                f"of {doi_batch_size} each.",
-            )
-        )
-        for i, chunk in enumerate(chunked_dois):
+        if chunk:
+            # batching as we don't want to make our URL longer than 2000 chars.
+            dois = [
+                dois[i : i + doi_batch_size]
+                for i in range(0, len(dois), doi_batch_size)
+            ]
             logger.debug(
-                f"sending get request for chunk {i} out of {len(chunked_dois)}"
+                (
+                    f"chunked into sub-lists of {len(dois)} ",
+                    f"of {doi_batch_size} each.",
+                )
             )
-            query_string = api_config.populate_query(query=chunk)
+        for i, _chunk in enumerate(dois):
+            logger.debug(f"sending get request for chunk {i} out of {len(dois)}")
+            query_string = api_config.populate_query(query=_chunk)
             query_params = api_config.query_params
             query_params["query"] = query_string
             try:
@@ -257,7 +261,7 @@ class AbstractFetcher:
                     "encountered HTTPError on attempting to retrieve abstract. "
                     f"original error message: {e}"
                 )
-                raise
+                continue  # NOTE - changed this out from raise; if we get a 404 for a certain chunk??
 
     @staticmethod
     def clean_abstract_string(abstract_string: str) -> str:
