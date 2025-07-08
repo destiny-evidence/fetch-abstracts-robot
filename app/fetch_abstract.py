@@ -89,7 +89,7 @@ class AbstractFetcher:
         )
         logger.info(", ".join(master_api_config["batch"].keys()))
 
-    def get_one_abstract_cycling_apis(self, doi: str, *, verbose: bool = False) -> str:
+    def get_one_abstract_cycling_apis(self, doi: str, *, verbose: bool = False) -> dict:
         """
         retrieve one abstract, iterating through available APIs until
         abstract found or options exhausted.
@@ -129,6 +129,38 @@ class AbstractFetcher:
 
         error_msg = f"unable to find abstract for {doi}."
         raise AbstractNotFoundError(error_msg)
+
+    def get_many_abstracts_cycling_apis(
+        self, dois: list[str], *, verbose: bool = False
+    ) -> list[dict]:
+        """
+        Get many abstracts from a list of DOIs, cycling APIs in order of priority.
+
+        Args:
+            dois (list[str]): list of DOI strings.
+            verbose (bool, optional): whether to provide very verbose logging for debug.
+                                      Defaults to False.
+
+        Returns:
+            list[dict]: a list of dicts of abstracts and DOIs.
+
+        """
+        retrieved_abstracts = []
+        for api in self.master_api_config["batch"]:
+            chunk = True
+            api_config = self.master_api_config["batch"][api]
+            if api_config.query_type == "batched_single":
+                chunk = False
+            for response in self.fetch_many_abstracts(
+                dois=dois, api_config=api_config, chunk=chunk, verbose=verbose
+            ):
+                for abstract in response:
+                    retrieved_abstracts.append(abstract)
+                    dois.pop(abstract["doi"])
+                    logger.info(
+                        f'retrieved abstract for doi {abstract["doi"]}. '
+                        "removing from master list."
+                    )
 
     def fetch(
         self, url: str, params: dict, headers: dict, *, verbose: bool = False
@@ -198,7 +230,7 @@ class AbstractFetcher:
         try:
             return {
                 "doi": doi,
-                "abstract": self.unpack_abstract(
+                "abstract": self.unpack_one_abstract(
                     response_obj=response, strategy=api_config.unpack_strategy
                 ),
             }
@@ -216,6 +248,7 @@ class AbstractFetcher:
         doi_batch_size: int = 15,
         *,
         chunk: bool = False,
+        **kwargs,
     ) -> Generator[dict, None, None]:
         """
         Fetch many abstracts from a target API given a list of DOIs.
@@ -223,7 +256,7 @@ class AbstractFetcher:
         Args:
             dois (list[str]): List of DOIs to fetch abstracts for.
             api_config (APIConfig): API configuration object containing
-                                the API details and unpack strategy.
+                                    the API details and unpack strategy.
 
         """
         dois = [
@@ -231,6 +264,7 @@ class AbstractFetcher:
         ]  # removing doi.org
 
         logger.debug(f"n incoming dois: {len(dois)}")
+        logger.debug(f"query type: {api_config.query_type.value}")
         if chunk:
             # batching as we don't want to make our URL longer than 2000 chars.
             dois = [
@@ -246,19 +280,21 @@ class AbstractFetcher:
         for i, _chunk in enumerate(dois):
             logger.debug(f"sending get request for chunk {i} out of {len(dois)}")
             query_string = api_config.populate_query(query=_chunk)
-            query_params = api_config.query_params
+            query_params = api_config.query_params.copy()
             query_params["query"] = query_string
             try:
-                yield self.fetch(
+                response = self.fetch(
                     url=api_config.url,
                     params=query_params,
                     headers=api_config.headers,
                     verbose=True,
                 )
+                abstracts = 
 
             except requests.HTTPError as e:
                 logger.error(
                     "encountered HTTPError on attempting to retrieve abstract. "
+                    f"requested doi(s): {_chunk} "
                     f"original error message: {e}"
                 )
                 continue  # NOTE - changed this out from raise; if we get a 404 for a certain chunk??
@@ -277,7 +313,7 @@ class AbstractFetcher:
         )
         return cleaned.strip()
 
-    def unpack_abstract(
+    def unpack_one_abstract(
         self,
         response_obj: dict,
         strategy: AbstractUnpackStrategy,
@@ -319,3 +355,6 @@ class AbstractFetcher:
             error_message = "Expected abstract to be a string."
             raise AbstractUnpackError(error_message)
         return abstract_object
+
+    def unpack_many_abstracts(self):
+        pass

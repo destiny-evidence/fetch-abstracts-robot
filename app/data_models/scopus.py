@@ -14,6 +14,11 @@ SCOPUS_UNPACK_STRATEGY = AbstractUnpackStrategy(
     source="scopus",
     strategy=["abstracts-retrieval-response", "coredata", "dc:description"],
 )
+SCOPUS_BATCH_UNPACK_STRATEGY = AbstractUnpackStrategy(
+    source="scopus_batch",
+    doi_strategy=["search_results", "entry", "prism:doi"],
+    strategy=["search_results", "entry", "dc:description"],
+)
 
 scopus_api_config = APIConfig(
     name="scopus",

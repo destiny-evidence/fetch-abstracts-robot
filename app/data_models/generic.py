@@ -44,6 +44,7 @@ class QueryType(StrEnum):
 
     SINGLE = "single"
     BATCH = "batch"
+    BATCHED_SINGLE = "batched_single"
 
 
 class ExternalAPIPriority(BaseModel):
@@ -88,6 +89,9 @@ class AbstractUnpackStrategy(BaseModel):
         we want to run the `clean_abstract_string` method
         on the string retrieved.
         """,
+    )
+    doi_strategy: list[str] | None = Field(
+        description="strategy for unpacking DOI from response. optional.", default=None
     )
     strategy: list[str] = Field(
         description="""a list of keys to sequentially
