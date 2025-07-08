@@ -69,7 +69,10 @@ def generate_abstract_enhancement(
 ) -> destiny_sdk.enhancements.Enhancement:
     """Generate an abstract enhancement."""
     doi = get_doi_from_reference(reference=reference)
-    abstract = abstract_fetcher.get_abstract_cycling_apis(doi=doi)
+    abstract_object = abstract_fetcher.get_one_abstract_cycling_apis(doi=doi)
+    abstract = abstract_object[
+        "abstract"
+    ]  # @ NOTE - @harryjmoss maybe we implement its own pydantic model for this?
 
     return destiny_sdk.enhancements.Enhancement(
         reference_id=reference.id,
