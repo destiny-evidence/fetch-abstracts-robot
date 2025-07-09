@@ -1,7 +1,6 @@
 """Define generic data models and validators."""
 
 from enum import StrEnum
-from urllib import parse
 
 from pydantic import AnyUrl, BaseModel, Field, model_validator
 
@@ -164,6 +163,51 @@ class APIConfig(BaseModel):
                 raise APIKeyNotPresentError(error_msg)
             self.headers[self.api_key_placement] = api_key.get_secret_value()
 
+    @staticmethod
+    def build_query_single(doi: str, url: str) -> str:
+        """
+        Build a query string for QueryType.Single.
+
+        Args:
+            doi (str): a doi string
+            url (str): the URL to append to.
+
+        Returns:
+            str: url+query
+
+        """
+        if url[-1] != "/":
+            url += "/"
+        return f"{url}{doi}"
+
+    @staticmethod
+    def build_query_batch(query: list[str], max_array_length: int = 15) -> str:
+        """
+        Build a query string for QueryType.Batch.
+
+        Args:
+            query (list): list of dois
+            max_array_length (int, optional): n DOIs to concat into query string.
+                                              Defaults to 15.
+
+        Raises:
+            ValueError: if
+
+        Returns:
+            str: query string
+
+        """
+        # NOTE - below is a conservative limit to ensure URL length
+        # is the conventional limit of 2000 characters. we're assuming
+        # a mean DOI length of 120 chars.
+        if len(query) > max_array_length:
+            error_msg = (
+                "array of items to query for is too long. max"
+                f"n(items): {max_array_length}"
+            )
+            raise ValueError(error_msg)
+        return " OR ".join([f"DOI({x})" for x in query])
+
     def populate_query(self, query: str | list[str], max_array_length: int = 15) -> str:
         """
         populate a query string into the query params dict.
@@ -187,23 +231,16 @@ class APIConfig(BaseModel):
             if not isinstance(query, str):
                 error_msg = "query_type `single` requires a `str` type query."
                 raise TypeError(error_msg)
-            return f"{self.url}{query}"
+            return self.build_query_single(doi=query, url=self.url)
 
         # we can add more configurations here...
         if self.query_type == QueryType.BATCH:
             if not isinstance(query, list):
                 error_msg = "query_type `batch` requires a `list` type query."
                 raise TypeError(error_msg)
-            # NOTE - below is a conservative limit to ensure URL length
-            # is the conventional limit of 2000 characters. we're assuming
-            # a mean DOI length of 120 chars.
-            if len(query) > max_array_length:
-                error_msg = (
-                    "array of items to query for is too long. max"
-                    f"n(items): {max_array_length}"
-                )
-                raise ValueError(error_msg)
-            return " OR ".join([f"DOI({x})" for x in query])
+            return self.build_query_batch(
+                query=query, max_array_length=max_array_length
+            )
 
         error_msg = (
             "unable to format query. ensure correct specification ",
