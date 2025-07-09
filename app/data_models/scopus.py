@@ -16,8 +16,8 @@ SCOPUS_UNPACK_STRATEGY = AbstractUnpackStrategy(
 )
 SCOPUS_BATCH_UNPACK_STRATEGY = AbstractUnpackStrategy(
     source="scopus_batch",
-    doi_strategy=["search_results", "entry", "prism:doi"],
-    strategy=["search_results", "entry", "dc:description"],
+    doi_strategy=["search-results", "entry", "prism:doi"],
+    strategy=["search-results", "entry", "dc:description"],
 )
 
 scopus_api_config = APIConfig(
@@ -40,5 +40,5 @@ scopus_batch_api_config = APIConfig(
     query_type="batch",
     query_params=SCOPUS_BATCH_QUERY_PARAMS,
     headers=SCOPUS_HEADERS,
-    unpack_strategy=SCOPUS_UNPACK_STRATEGY,
+    unpack_strategy=SCOPUS_BATCH_UNPACK_STRATEGY,
 )

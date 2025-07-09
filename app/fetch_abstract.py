@@ -289,7 +289,9 @@ class AbstractFetcher:
                     headers=api_config.headers,
                     verbose=True,
                 )
-                abstracts = 
+                yield self.unpack_many_abstracts(  # @harryjmoss not sure if this will work yet?
+                    response, strategy=api_config.unpack_strategy
+                )
 
             except requests.HTTPError as e:
                 logger.error(
@@ -356,5 +358,93 @@ class AbstractFetcher:
             raise AbstractUnpackError(error_message)
         return abstract_object
 
-    def unpack_many_abstracts(self):
-        pass
+    @staticmethod
+    def _traverse(obj: list | dict, path: str) -> list | dict | str:
+        """Traverse a nested dict using a list of keys."""
+        logger.debug(f"traversing object with path: {path}")
+        for i, key in enumerate(path):
+            logger.debug(f"level {i}: current object type: {type(obj)}, key: {key}")
+            if isinstance(obj, dict):
+                obj = obj.get(key)
+                # logger.debug(f"level {i}: traversed dict, value: {obj}")
+            else:
+                logger.warning(
+                    f"level {i}: expected dict, got {type(obj)}. returning None."
+                )
+                return None
+            if obj is None:
+                logger.warning(f";evel {i}: key '{key}' not found. returning None.")
+                return None
+        # logger.debug(f"traversal result: {obj}")
+        return obj
+
+    def unpack_many_abstracts(
+        self, response_obj: dict | list, strategy: AbstractUnpackStrategy
+    ) -> list[dict]:
+        """Unpack many abstracts using strategy and doi_strategy."""
+        logger.debug("Starting unpack_many_abstracts...")
+        out = []
+        strat = strategy.model_dump()
+        abstract_path = strat["strategy"]
+        doi_path = strat["doi_strategy"]
+        clean = strat.get("clean_abstract_string", False)
+
+        logger.debug(f"Abstract path: {abstract_path}")
+        logger.debug(f"DOI path: {doi_path}")
+        logger.debug(f"Clean abstract string: {clean}")
+
+        # @harryjmoss not sure if this is the best
+        # approach. should we instead encode this into the UnpackStrategy?
+        shared_prefix = []
+        for i, (a, d) in enumerate(zip(abstract_path, doi_path, strict=True)):
+            logger.debug(f"Comparing abstract_path[{i}]='{a}' and doi_path[{i}]='{d}'")
+            if a == d:
+                shared_prefix.append(a)
+            else:
+                logger.debug(f"Shared prefix ends at index {i}")
+                break
+        logger.debug(f"Shared prefix: {shared_prefix}")
+
+        # @harryjmoss same thing as above -- maybe here we should
+        # stick this into the data model?
+        abstract_suffix = abstract_path[len(shared_prefix) :]
+        doi_suffix = doi_path[len(shared_prefix) :]
+        logger.debug(f"abstract suffix: {abstract_suffix}")
+        logger.debug(f"DOI suffix: {doi_suffix}")
+
+        # support both list of batches and single batch
+        batches = response_obj if isinstance(response_obj, list) else [response_obj]
+        logger.debug(f"number of batches to process: {len(batches)}")
+
+        for batch_idx, batch in enumerate(batches):
+            logger.debug(f"processing batch {batch_idx}")
+            entries = self._traverse(batch, shared_prefix)
+
+            if not isinstance(entries, list):
+                logger.warning(
+                    f"batch {batch_idx}: entries is not a list. skipping batch."
+                )
+                continue
+
+            logger.debug(f"batch {batch_idx}: found {len(entries)} entries.")
+            for entry_idx, entry in enumerate(entries):
+                logger.debug(f"processing entry {entry_idx} in batch {batch_idx}")
+                doi = self._traverse(entry, doi_suffix)
+                abstract = self._traverse(entry, abstract_suffix)
+                logger.debug(f"entry {entry_idx}: DOI: {doi}, iabstract: {abstract}")
+
+                if doi and abstract:
+                    if clean:
+                        logger.debug(f"entry {entry_idx}: cleaning abstract string.")
+                        abstract = self.clean_abstract_string(abstract)
+                    out.append({"doi": doi, "abstract": abstract})
+                    logger.info(f"xtracted abstract for DOI: {doi}")
+
+                else:
+                    logger.warning(
+                        f"entry {entry_idx}: missing DOI or abstract. DOI: {doi}, "
+                        "abstract: {abstract}"
+                    )
+
+        logger.debug(f"total n abstracts unpacked: {len(out)}")
+        return out
