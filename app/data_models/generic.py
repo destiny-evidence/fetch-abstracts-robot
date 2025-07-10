@@ -1,6 +1,8 @@
 """Define generic data models and validators."""
 
 from enum import StrEnum
+from functools import wraps
+from typing import Callable
 
 from pydantic import AnyUrl, BaseModel, Field, model_validator
 
@@ -67,7 +69,8 @@ external_api_priority_single = ExternalAPIPriority(
 external_api_priority_batch = ExternalAPIPriority(
     name="batch",
     priorities={
-        ExternalAPI.SCOPUS_BATCH: 1,
+        ExternalAPI.CROSSREF: 1,
+        ExternalAPI.SCOPUS_BATCH: 2,
     },
 )
 
@@ -90,12 +93,12 @@ class AbstractUnpackStrategy(BaseModel):
         """,
     )
     doi_strategy: list[str] | None = Field(
-        description="strategy for unpacking DOI from response. optional.", default=None
+        default=None, description="strategy for unpacking DOI from response. optional."
     )
-    strategy: list[str] = Field(
+    strategy: list[str] | list[list] = Field(
         description="""a list of keys to sequentially
         pass to the json response object to retrieve
-        plain-text abstract"""
+        plain-text abstract."""
     )
 
 
@@ -242,8 +245,57 @@ class APIConfig(BaseModel):
                 query=query, max_array_length=max_array_length
             )
 
+        if self.query_type == QueryType.BATCHED_SINGLE:
+            if isinstance(query, str):
+                return query
+
+        if self.query_type == QueryType.BATCHED_SINGLE:
+            pass
+
         error_msg = (
             "unable to format query. ensure correct specification ",
             "of query and query type.",
         )
         raise ValueError(error_msg)
+
+    # def _batchify(foo):
+    #     def batchify_():
+    #         pass
+
+
+# def batchify(api_config: APIConfig) -> APIConfig:
+#     """
+#     Batchify an APIConfig with Query.Type=='single'.
+
+#     This batchified config can then be added
+#     to master API config for batched, as well as
+#     the API priority for batched, and it will run as
+
+#     """
+
+#     @wraps(api_config)
+#     def wrapper(api_config, dois, *args, **kwargs):
+#         if isinstance(dois, str):
+#             # Single DOI, just call as normal
+#             return fetch_func(api_config, dois, *args, **kwargs)
+#         results = {}
+#         for doi in dois:
+#             try:
+#                 results[doi] = fetch_func(api_config, doi, *args, **kwargs)
+#             except Exception as e:
+#                 results[doi] = {"error": str(e)}
+#         return results
+
+#     return wrapper
+
+
+# '''
+# decorator
+# - modify an APIConfig for single to be batch
+# - allow me to add this modified config to a priority list for batch,
+# and
+# '''
+
+
+# @batchify
+# crossref_batch_api_config = crossref_api_config

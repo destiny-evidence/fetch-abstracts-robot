@@ -1,7 +1,7 @@
 """module for fetching abstracts from various APIs."""
 
 import re
-from typing import Generator
+from collections.abc import Generator
 
 import requests
 from destiny_sdk.identifiers import DOIIdentifier
@@ -171,8 +171,8 @@ class AbstractFetcher:
         )
         if verbose:
             request_actual_headers = f"request headers: {response.request.headers}"
-            request_url = f"request {response.request.url}"
-            request_body = f"request {response.request.body}"
+            request_url = f"request url: {response.request.url}"
+            request_body = f"request body: {response.request.body}"
             response_status_code = f"status code: {response.status_code}"
             response_headers = f"headers: {response.headers}"
             response_cookies = f"cookies: {response.cookies}"
@@ -187,6 +187,7 @@ class AbstractFetcher:
 
         response.raise_for_status()
 
+        logger.debug(f"response json: {response.json()}")
         return response.json()
 
     def fetch_one_abstract(self, doi: str, api_config: APIConfig) -> str:
@@ -248,8 +249,8 @@ class AbstractFetcher:
         doi_batch_size: int = 15,
         *,
         chunk: bool = False,
-        **kwargs,
-    ) -> Generator[dict, None, None]:
+        **kwargs: dict,
+    ) -> Generator[list, None, None]:
         """
         Fetch many abstracts from a target API given a list of DOIs.
 
@@ -281,18 +282,18 @@ class AbstractFetcher:
             logger.debug(f"sending get request for chunk {i} out of {len(dois)}")
             query_string = api_config.populate_query(query=_chunk)
             query_params = api_config.query_params.copy()
-            query_params["query"] = query_string
+            if api_config.query_type != "batched_single":
+                query_params["query"] = query_string
+            url = api_config.url.encoded_string() + query_string
             try:
                 response = self.fetch(
-                    url=api_config.url,
+                    # url=api_config.url,
+                    url=url,
                     params=query_params,
                     headers=api_config.headers,
                     verbose=True,
+                    **kwargs,
                 )
-                yield self.unpack_many_abstracts(  # @harryjmoss not sure if this will work yet?
-                    response, strategy=api_config.unpack_strategy
-                )
-
             except requests.HTTPError as e:
                 logger.error(
                     "encountered HTTPError on attempting to retrieve abstract. "
@@ -300,6 +301,34 @@ class AbstractFetcher:
                     f"original error message: {e}"
                 )
                 continue  # NOTE - changed this out from raise; if we get a 404 for a certain chunk??
+
+            if api_config.query_type == "batched_single":
+                logger.debug("yield for batched_single")
+                try:
+                    logger.debug(
+                        self.unpack_one_abstract(
+                            response_obj=response,
+                            strategy=api_config.unpack_strategy,
+                        )
+                    )
+                    yield [
+                        {
+                            "doi": _chunk,
+                            "abstract": self.unpack_one_abstract(
+                                response_obj=response,
+                                strategy=api_config.unpack_strategy,
+                            ),
+                        }
+                    ]
+                except AbstractUnpackError as e:
+                    logger.error(e)
+                    continue
+
+            elif api_config.query_type == "batch":
+                logger.debug("yield for batch")
+                yield self.unpack_many_abstracts(  # @harryjmoss not sure if this will work yet?
+                    response, strategy=api_config.unpack_strategy
+                )
 
     @staticmethod
     def clean_abstract_string(abstract_string: str) -> str:
@@ -337,6 +366,7 @@ class AbstractFetcher:
             str: The plain text abstract extracted from the response object.
 
         """
+        logger.debug("in abstract unpack")
         unpack_strategy = strategy.model_dump()["strategy"]
         clean = strategy.model_dump()["clean_abstract_string"]
         try:
@@ -349,8 +379,10 @@ class AbstractFetcher:
                 abstract_object = self.clean_abstract_string(abstract_object)
 
         except KeyError as e:
-            error_message = "hit key error. check response "
-            f"object and unpack strategy. original error message: {e}"
+            error_message = (
+                "hit key error. check response ",
+                f"object and unpack strategy. original error message: {e}",
+            )
 
             raise AbstractUnpackError(error_message) from e
         if not isinstance(abstract_object, str):

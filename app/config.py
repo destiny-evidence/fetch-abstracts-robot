@@ -3,7 +3,7 @@
 from enum import StrEnum
 from functools import lru_cache
 
-from pydantic import UUID4, Field, HttpUrl, SecretStr
+from pydantic import UUID4, EmailStr, Field, HttpUrl, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -42,6 +42,11 @@ class Settings(BaseSettings):
         description="Client id needed for communicating with destiny repository.",
     )
     destiny_repository_url: HttpUrl
+
+    mailto: EmailStr | None = Field(
+        default="test@test.com",
+        description="mailto param to add to crossref req headers",
+    )
 
     env: Environment = Field(
         default=Environment.STAGING,
