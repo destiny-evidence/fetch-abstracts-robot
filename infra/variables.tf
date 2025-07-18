@@ -30,3 +30,8 @@ variable "environment" {
   description = "Environment for the Fetch Abstracts Robot, should be either development, staging or production."
   default     = "development"
 }
+
+variable "subscription_id" {
+  description = "The Azure subscription ID to use for the deployment."
+  type        = string
+}

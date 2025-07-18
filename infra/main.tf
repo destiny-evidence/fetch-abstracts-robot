@@ -8,6 +8,13 @@ data "azurerm_container_registry" "destiny_shared_infra" {
 resource "azurerm_resource_group" "robot_resource_group" {
   name     = "rg-${var.robot_name}-${var.environment}"
   location = "swedencentral"
+  tags = {
+    "Budget Code" = "destiny-evidence"
+    "Created by" = "Harry Moss"
+    "Owner" = "cceaoss@ucl.ac.uk"
+    "Environment" = "warm"
+    "Region" = "Sweden Central"
+  }
 }
 
 # Create a user assigned identity for our robot. This is the identity used when authenticating.
@@ -20,7 +27,7 @@ resource "azurerm_user_assigned_identity" "fetch_abstracts_robot" {
 # This creates a container app to run the fetch abstracts robot in
 module "container_app_fetch_abstracts_robot" {
   source                          = "app.terraform.io/destiny-evidence/container-app/azure"
-  version                         = "0.0.1"
+  version                         = "1.6.2"
   app_name                        = var.robot_name
   environment                     = var.environment
   container_registry_id           = data.azurerm_container_registry.destiny_shared_infra.id
