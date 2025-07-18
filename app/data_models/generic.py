@@ -33,6 +33,7 @@ class ExternalAPI(StrEnum):
     SCOPUS = "scopus"
     WEB_OF_SCIENCE = "web_of_science"
     CROSSREF = "crossref"
+    CROSSREF_BATCH = "crossref_batch"
     SCOPUS_BATCH = "scopus_batch"
 
 
@@ -69,7 +70,7 @@ external_api_priority_single = ExternalAPIPriority(
 external_api_priority_batch = ExternalAPIPriority(
     name="batch",
     priorities={
-        ExternalAPI.CROSSREF: 1,
+        ExternalAPI.CROSSREF_BATCH: 1,
         ExternalAPI.SCOPUS_BATCH: 2,
     },
 )
@@ -184,12 +185,12 @@ class APIConfig(BaseModel):
         return f"{url}{doi}"
 
     @staticmethod
-    def build_query_batch(query: list[str], max_array_length: int = 15) -> str:
+    def build_query_batch(payload: list[str], max_array_length: int = 15) -> str:
         """
         Build a query string for QueryType.Batch.
 
         Args:
-            query (list): list of dois
+            payload (list): list of dois
             max_array_length (int, optional): n DOIs to concat into query string.
                                               Defaults to 15.
 
@@ -203,22 +204,23 @@ class APIConfig(BaseModel):
         # NOTE - below is a conservative limit to ensure URL length
         # is the conventional limit of 2000 characters. we're assuming
         # a mean DOI length of 120 chars.
-        if len(query) > max_array_length:
+        if len(payload) > max_array_length:
             error_msg = (
                 "array of items to query for is too long. max"
                 f"n(items): {max_array_length}"
             )
             raise ValueError(error_msg)
-        return " OR ".join([f"DOI({x})" for x in query])
+        return " OR ".join([f"DOI({x})" for x in payload])
 
-    def populate_query(self, query: str | list[str], max_array_length: int = 15) -> str:
+    def populate_query(
+        self, query: str | list[str], max_array_length: int = 15
+    ) -> tuple[str, str, str]:
         """
         populate a query string into the query params dict.
 
         Args:
             query (str | list[str]): the body of the query - currently a doi or
                                      list of dois.
-            query_type (QueryType): a QueryType, this defined what the method does._
             max_array_length (int, optional): max number of identifiers to
                                               build the query from. Defaults to 15.
 
@@ -227,30 +229,37 @@ class APIConfig(BaseModel):
             ValueError
 
         Returns:
-            str: the formated query body, e.g. URL or to be passed into params...
+            tuple[str, str, str] of all required input quantities
+            (url, params, headers)
+            to the http request for retrieving
+            an abstract given target query and APIConfig.
 
         """
         if self.query_type == QueryType.SINGLE:
             if not isinstance(query, str):
                 error_msg = "query_type `single` requires a `str` type query."
                 raise TypeError(error_msg)
-            return self.build_query_single(doi=query, url=self.url)
+            url = self.build_query_single(doi=query, url=self.url.encoded_string())
+            return url, self.query_params, self.headers
 
         # we can add more configurations here...
         if self.query_type == QueryType.BATCH:
             if not isinstance(query, list):
                 error_msg = "query_type `batch` requires a `list` type query."
                 raise TypeError(error_msg)
-            return self.build_query_batch(
+            query_field = self.build_query_batch(
                 query=query, max_array_length=max_array_length
             )
+            params = self.query_params.copy()
+            params["query"] = query_field
+            return self.url, params, self.headers
 
         if self.query_type == QueryType.BATCHED_SINGLE:
-            if isinstance(query, str):
-                return query
-
-        if self.query_type == QueryType.BATCHED_SINGLE:
-            pass
+            if not isinstance(query, str):
+                error_msg = "query_type `single` requires a `str` type query."
+                raise TypeError(error_msg)
+            url = self.build_query_single(doi=query, url=self.url.encoded_string())
+            return url, self.query_params, self.headers
 
         error_msg = (
             "unable to format query. ensure correct specification ",
