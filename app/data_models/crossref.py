@@ -31,7 +31,7 @@ crossref_api_config = APIConfig(
 )
 
 crossref_batch_api_config = APIConfig(
-    name="crossref",
+    name="crossref_batch",
     url=CROSSREF_URL,
     require_api_key=False,
     api_key_env_var_name=None,
