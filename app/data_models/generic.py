@@ -248,7 +248,7 @@ class APIConfig(BaseModel):
                 error_msg = "query_type `batch` requires a `list` type query."
                 raise TypeError(error_msg)
             query_field = self.build_query_batch(
-                query=query, max_array_length=max_array_length
+                payload=query, max_array_length=max_array_length
             )
             params = self.query_params.copy()
             params["query"] = query_field

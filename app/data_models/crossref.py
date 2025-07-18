@@ -15,7 +15,6 @@ CROSSREF_UNPACK_STRATEGY = AbstractUnpackStrategy(
     source="crossref",
     clean_abstract_string=True,
     strategy=["message", "abstract"],
-    # strategy=[["message", "abstract"], ["message", "items", 0, "abstract"]],
 )
 
 

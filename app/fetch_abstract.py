@@ -149,8 +149,9 @@ class AbstractFetcher:
         """
         retrieved_abstracts = []
         for api in self.master_api_config["batch"]:
+            api_count = 0
             chunk = True
-            api_config = self.master_api_config["batch"][api]
+            api_config: APIConfig = self.master_api_config["batch"][api]
             if api_config.query_type == "batched_single":
                 chunk = False
             for response in self.fetch_many_abstracts(
@@ -158,11 +159,21 @@ class AbstractFetcher:
             ):
                 for abstract in response:
                     retrieved_abstracts.append(abstract)
-                    dois.pop(abstract["doi"])
+                    # logger.debug(f"retrieved abstracts obj: {retrieved_abstracts}")
+                    # logger.debug(f'abstract[doi] obj: {abstract["doi"]}')
+                    # logger.debug(f"dois obj: {dois}")
+                    dois.remove(abstract["doi"])
                     logger.info(
                         f'retrieved abstract for doi {abstract["doi"]}. '
                         "removing from master list."
                     )
+                    api_count += 1
+
+            logger.info(f"found {api_count} abstracts for api {api}.")
+            logger.info(f"found {len(retrieved_abstracts)} total.")
+            logger.info(f"remaining dois to collect: {len(dois)}")
+
+        return retrieved_abstracts
 
     def fetch(
         self, url: str, params: dict, headers: dict, *, verbose: bool = False
@@ -251,6 +262,7 @@ class AbstractFetcher:
         doi_batch_size: int = 15,
         *,
         chunk: bool = False,
+        verbose: bool = False,
         **kwargs: dict,
     ) -> Generator[list, None, None]:
         """
@@ -288,7 +300,7 @@ class AbstractFetcher:
                     url=url,
                     params=params,
                     headers=headers,
-                    verbose=True,
+                    verbose=verbose,
                     **kwargs,
                 )
             except requests.HTTPError as e:
