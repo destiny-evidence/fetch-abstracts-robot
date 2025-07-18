@@ -4,6 +4,7 @@ import re
 from collections.abc import Generator
 
 import requests
+from defusedxml.ElementTree import ParseError, fromstring  # <-- secure import
 from destiny_sdk.identifiers import DOIIdentifier
 
 from app.config import Settings
@@ -51,6 +52,7 @@ def prepare_api_config(
         external_api_priority_single,
         external_api_priority_batch,
     ]:
+        logger.debug(f"building api config for {external_api_priority}")
         master_api_config[external_api_priority.name] = {}
         for api in external_api_priority.priorities:
             logger.debug(f"checking if {api.name} in list of available apis...")
@@ -280,17 +282,12 @@ class AbstractFetcher:
             )
         for i, _chunk in enumerate(dois):
             logger.debug(f"sending get request for chunk {i} out of {len(dois)}")
-            query_string = api_config.populate_query(query=_chunk)
-            query_params = api_config.query_params.copy()
-            if api_config.query_type != "batched_single":
-                query_params["query"] = query_string
-            url = api_config.url.encoded_string() + query_string
+            url, params, headers = api_config.populate_query(query=_chunk)
             try:
                 response = self.fetch(
-                    # url=api_config.url,
                     url=url,
-                    params=query_params,
-                    headers=api_config.headers,
+                    params=params,
+                    headers=headers,
                     verbose=True,
                     **kwargs,
                 )
@@ -332,17 +329,42 @@ class AbstractFetcher:
 
     @staticmethod
     def clean_abstract_string(abstract_string: str) -> str:
-        """clean a given abstract string."""
-        # we can add more stuff here later (e.g. validation)
-        # but for now we just want to remove `jats` tags.
-        # e.g. we could define an enum in generic.py with all
-        # available cleaning methods -- or maybe here??? and
-        # then associate them with an unpack strategy as required.
-        logger.debug("removing jats tags from abstract string...")
-        cleaned = re.sub(
-            r"^<jats:p>(.*?)</jats:p>$", r"\1", abstract_string, flags=re.DOTALL
-        )
-        return cleaned.strip()
+        """
+        remove all XML/JATS/HTML tags from the abstract string.
+
+        rather than the builtin `xml` module, we leverage `defusedxml`
+        which should hopefully protect us from malicious xml infecting our
+        server.
+
+        args:
+            abstract_string, str, the string of the abstract
+
+        returns:
+            the cleaned abstract string (currently still contains latex
+            and newline)
+
+        """
+        logger.debug("removing xml/jats tags from abstract string...")
+        try:
+            # wrap in a root tag in case the input is a fragment
+            wrapped = f"<root>{abstract_string}</root>"
+            root = fromstring(wrapped)
+
+            def _get_text(element: str) -> str:
+                """recursively join text and tail content."""
+                text = element.text or ""
+                for child in element:
+                    text += _get_text(child)
+                    text += child.tail or ""
+                return text
+
+            cleaned = _get_text(root)
+            return cleaned.strip()
+
+        except ParseError:
+            # fallback: strip tags with regex
+            cleaned = re.sub(r"<[^>]+>", "", abstract_string)
+            return cleaned.strip()
 
     def unpack_one_abstract(
         self,
