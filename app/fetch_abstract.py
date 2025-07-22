@@ -29,7 +29,7 @@ def prepare_api_config(
     external_api_priority_batch: ExternalAPIPriority = external_api_priority_batch,
 ) -> dict[str, APIConfig]:
     """
-    prepare a dict of APIConfig objects, populated with API keys.
+    Prepare a dict of APIConfig objects, populated with API keys.
 
     if API keys are not present for a given API,
     this will be omited from the overall API config
@@ -37,8 +37,18 @@ def prepare_api_config(
     NOTE: right now, we can pass a list of APIConfigs.
     an API config will only be allowed if it's in the list of
     permitted APIs in generic.ExternalAPI.
+
+    Args:
+        api_configs (list[APIConfig]): list of APIConfig objects to prepare.
+        settings (Settings): application settings containing API keys.
+        external_api_priority_single (ExternalAPIPriority): priority for single queries.
+        external_api_priority_batch (ExternalAPIPriority): priority for batch queries.
+
+    Returns:
+        dict[str, APIConfig]: a dictionary mapping API names to their configurations.
+
     """
-    master_api_config = {}
+    master_api_config = {}  # type: dict
     api_config_map = {config.name.value: config for config in api_configs}
     logger.debug(
         f"external_api_priority_single: {external_api_priority_single.priorities}"
@@ -79,17 +89,17 @@ class AbstractFetcher:
         self, master_api_config: dict[str, APIConfig], timeout: int = 60
     ) -> None:
         """init our AbstractFetcher instance."""
-        self.master_api_config = master_api_config
+        self.master_api_config = master_api_config  # type: dict
         self.timeout = timeout
 
         logger.info(
             "available external APIs - SINGLE - in descending order of priority:"
         )
-        logger.info(", ".join(master_api_config["single"].keys()))
+        logger.debug(", ".join(master_api_config["single"].keys()))
         logger.info(
             "available external APIs - BATCH - in descending order of priority:"
         )
-        logger.info(", ".join(master_api_config["batch"].keys()))
+        logger.debug(", ".join(master_api_config["batch"].keys()))
 
     def get_one_abstract_cycling_apis(self, doi: str, *, verbose: bool = False) -> dict:
         """
@@ -115,7 +125,9 @@ class AbstractFetcher:
         logger.info(f"seeking abstract for doi: {doi}")
         for api in self.master_api_config[
             "single"
-        ]:  # NOTE - @harryjmoss this is probably not a clean way of doing this... maybe we want to refine our master_api_config definition a little more now that it has single and batch elements.
+        ]:  # NOTE - @harryjmoss this is probably not a clean way of doing this...
+            # maybe we want to refine our master_api_config definition a little more
+            # now that it has single and batch elements.
             logger.info(f"attempting retrieval using api {api}.")
             abstract = self.fetch_one_abstract(
                 doi=doi, api_config=self.master_api_config["single"][api]
@@ -159,9 +171,6 @@ class AbstractFetcher:
             ):
                 for abstract in response:
                     retrieved_abstracts.append(abstract)
-                    # logger.debug(f"retrieved abstracts obj: {retrieved_abstracts}")
-                    # logger.debug(f'abstract[doi] obj: {abstract["doi"]}')
-                    # logger.debug(f"dois obj: {dois}")
                     dois.remove(abstract["doi"])
                     logger.info(
                         f'retrieved abstract for doi {abstract["doi"]}. '
@@ -221,9 +230,9 @@ class AbstractFetcher:
             error_message = f"invalid DOI: {doi}. please check the DOI and try again."
             logger.error(error_message)
             raise InvalidDOIError(error_message)
-        url = api_config.populate_query(
-            query=DOIIdentifier(identifier=doi).identifier
-        )  # NOTE - will have to rework if query isn't submitted via url in other API
+        url = api_config.populate_query(query=DOIIdentifier(identifier=doi).identifier)[
+            "url"
+        ]
 
         logger.debug(f"fetching doi {doi} from api {api_config.name}")
 
@@ -294,7 +303,7 @@ class AbstractFetcher:
             )
         for i, _chunk in enumerate(dois):
             logger.debug(f"sending get request for chunk {i} out of {len(dois)}")
-            url, params, headers = api_config.populate_query(query=_chunk)
+            url, params, headers = api_config.populate_query(query=_chunk).values()
             try:
                 response = self.fetch(
                     url=url,
@@ -309,7 +318,8 @@ class AbstractFetcher:
                     f"requested doi(s): {_chunk} "
                     f"original error message: {e}"
                 )
-                continue  # NOTE - changed this out from raise; if we get a 404 for a certain chunk??
+                continue  # NOTE - changed this out from raise
+                # if we get a 404 for a certain chunk??
 
             if api_config.query_type == "batched_single":
                 logger.debug("yield for batched_single")
@@ -335,9 +345,9 @@ class AbstractFetcher:
 
             elif api_config.query_type == "batch":
                 logger.debug("yield for batch")
-                yield self.unpack_many_abstracts(  # @harryjmoss not sure if this will work yet?
+                yield self.unpack_many_abstracts(
                     response, strategy=api_config.unpack_strategy
-                )
+                )  # @harryjmoss not sure if this will work yet?
 
     @staticmethod
     def clean_abstract_string(abstract_string: str) -> str:
@@ -348,7 +358,7 @@ class AbstractFetcher:
         which should hopefully protect us from malicious xml infecting our
         server.
 
-        args:
+        Args:
             abstract_string, str, the string of the abstract
 
         returns:
@@ -425,23 +435,24 @@ class AbstractFetcher:
         return abstract_object
 
     @staticmethod
-    def _traverse(obj: list | dict, path: str) -> list | dict | str:
+    def _traverse(nested_abstract_dict: list | dict, path: str) -> list | dict | str:
         """Traverse a nested dict using a list of keys."""
         logger.debug(f"traversing object with path: {path}")
         for i, key in enumerate(path):
-            logger.debug(f"level {i}: current object type: {type(obj)}, key: {key}")
-            if isinstance(obj, dict):
-                obj = obj.get(key)
-                # logger.debug(f"level {i}: traversed dict, value: {obj}")
+            logger.debug(
+                f"level {i}: current object type: {type(nested_abstract_dict)}, key: {key}"
+            )
+            if isinstance(nested_abstract_dict, dict):
+                obj = nested_abstract_dict.get(key)
             else:
                 logger.warning(
                     f"level {i}: expected dict, got {type(obj)}. returning None."
                 )
                 return None
             if obj is None:
-                logger.warning(f";evel {i}: key '{key}' not found. returning None.")
+                logger.warning(f"level {i}: key '{key}' not found. returning None.")
                 return None
-        # logger.debug(f"traversal result: {obj}")
+            nested_abstract_dict = obj
         return obj
 
     def unpack_many_abstracts(

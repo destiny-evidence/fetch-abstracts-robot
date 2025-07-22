@@ -4,50 +4,57 @@ import pytest
 from pydantic import ValidationError
 
 from app.config import get_settings
-from app.data_models import generic
+from app.data_models.generic import (
+    AbstractNotFoundError,
+    AbstractUnpackError,
+    AbstractUnpackStrategy,
+    APIConfig,
+    APIKeyNotPresentError,
+    ExternalAPI,
+    ExternalAPIPriority,
+)
 
 
 def test_custom_exceptions():
     error_msg = "API key missing"
-    with pytest.raises(generic.APIKeyNotPresentError):
-        raise generic.APIKeyNotPresentError(error_msg)
+    with pytest.raises(APIKeyNotPresentError):
+        raise APIKeyNotPresentError(error_msg)
     error_msg = "Unpack failed"
-    with pytest.raises(generic.AbstractUnpackError):
-        raise generic.AbstractUnpackError(error_msg)
+    with pytest.raises(AbstractUnpackError):
+        raise AbstractUnpackError(error_msg)
     error_msg = "Not found"
-    with pytest.raises(generic.AbstractNotFoundError):
-        raise generic.AbstractNotFoundError(error_msg)
+    with pytest.raises(AbstractNotFoundError):
+        raise AbstractNotFoundError(error_msg)
 
 
 def test_external_api_enum():
-    assert generic.ExternalAPI.SCOPUS == "scopus"
-    assert generic.ExternalAPI.WEB_OF_SCIENCE == "web_of_science"
-    assert generic.ExternalAPI.CROSSREF == "crossref"
-    assert set(generic.ExternalAPI) == {
-        generic.ExternalAPI.SCOPUS,
-        generic.ExternalAPI.WEB_OF_SCIENCE,
-        generic.ExternalAPI.CROSSREF,
+    assert ExternalAPI.SCOPUS == "scopus"
+    assert ExternalAPI.CROSSREF == "crossref"
+    assert set(ExternalAPI) == {
+        ExternalAPI.SCOPUS,
+        ExternalAPI.CROSSREF,
+        ExternalAPI.CROSSREF_BATCH,
+        ExternalAPI.SCOPUS_BATCH,
     }
 
 
 def test_external_api_priority_model():
-    model = generic.ExternalAPIPriority(
+    model = ExternalAPIPriority(
+        name="test_priority",
         priorities={
-            generic.ExternalAPI.CROSSREF: 1,
-            generic.ExternalAPI.SCOPUS: 2,
-            generic.ExternalAPI.WEB_OF_SCIENCE: 3,
-        }
+            ExternalAPI.CROSSREF: 1,
+            ExternalAPI.SCOPUS: 2,
+        },
     )
-    assert model.priorities[generic.ExternalAPI.CROSSREF] == 1
-    assert model.priorities[generic.ExternalAPI.SCOPUS] == 2
-    assert model.priorities[generic.ExternalAPI.WEB_OF_SCIENCE] == 3
+    assert model.priorities[ExternalAPI.CROSSREF] == 1
+    assert model.priorities[ExternalAPI.SCOPUS] == 2
 
 
 def test_abstract_unpack_strategy_():
-    my_strategy = generic.AbstractUnpackStrategy(
-        source=generic.ExternalAPI.SCOPUS, strategy=["abstracts", "abstractText"]
+    my_strategy = AbstractUnpackStrategy(
+        source=ExternalAPI.SCOPUS, strategy=["abstracts", "abstractText"]
     )
-    assert my_strategy.source == generic.ExternalAPI.SCOPUS
+    assert my_strategy.source == ExternalAPI.SCOPUS
     assert my_strategy.strategy == ["abstracts", "abstractText"]
 
 
@@ -65,19 +72,19 @@ def test_abstract_unpack_strategy_():
         (
             "scopus_api_config_valid",
             {"X-API-Key": ""},
-            generic.ExternalAPI.SCOPUS,
+            ExternalAPI.SCOPUS,
             "https://api.example.com/",
             {},
-            generic.ExternalAPI.SCOPUS,
+            ExternalAPI.SCOPUS,
             ["data", "abstract"],
         ),
         (
             "crossref_api_config_valid",
             {"Accept": "application/json"},
-            generic.ExternalAPI.CROSSREF,
+            ExternalAPI.CROSSREF,
             "https://api.example.com/",
             {},
-            generic.ExternalAPI.CROSSREF,
+            ExternalAPI.CROSSREF,
             ["text", "meta", "abstract"],
         ),
     ],
@@ -111,7 +118,7 @@ def test_api_config_validator_failure(scopus_api_config_valid, monkeypatch):
         broken = scopus_api_config_valid.model_copy()
         setattr(broken, field, bad_value)
         with pytest.raises(ValidationError):
-            generic.APIConfig.model_validate(broken.__dict__)
+            APIConfig.model_validate(broken.__dict__)
 
 
 @pytest.mark.parametrize(
@@ -135,10 +142,10 @@ def test_api_config_init_api_key_success(
         assert "Accept" in api_config.headers or api_config.headers == {}
 
 
-def test_api_config_init_api_key_missing(wos_api_config_invalid):
+def test_api_config_init_api_key_missing(invalid_api_config):
     settings = get_settings()
-    with pytest.raises(generic.APIKeyNotPresentError):
-        wos_api_config_invalid.init_api_key(settings)
+    with pytest.raises(APIKeyNotPresentError):
+        invalid_api_config.init_api_key(settings)
 
 
 @pytest.mark.parametrize(
@@ -146,12 +153,11 @@ def test_api_config_init_api_key_missing(wos_api_config_invalid):
     [
         "scopus_api_config_valid",
         "crossref_api_config_valid",
-        # Add "wos_api_config_valid" if/when available and valid
     ],
 )
 def test_api_config_populate_query(request, api_config_fixture):
     api_config = request.getfixturevalue(api_config_fixture)
     query = "test_query"
-    url = api_config.populate_query(query)
+    url = api_config.populate_query(query)["url"]
     # This assumes populate_query appends the query string to the base URL
     assert url == f"{api_config.url}{"test_query"}"

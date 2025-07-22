@@ -57,9 +57,6 @@ class Settings(BaseSettings):
     elsevier_scopus_key: SecretStr | None = Field(
         default=None, description="api key for elsevier scopus api."
     )
-    web_of_science_api_key: SecretStr | None = Field(
-        default=None, description="api key for web of science api."
-    )
 
 
 @lru_cache(maxsize=1)
