@@ -5,7 +5,12 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.config import Settings
-from app.data_models.generic import AbstractUnpackStrategy, APIConfig, ExternalAPI
+from app.data_models.generic import (
+    AbstractUnpackStrategy,
+    APIConfig,
+    ExternalAPI,
+    QueryType,
+)
 
 pytest_plugins = [
     "tests.fixtures.generic",
@@ -108,6 +113,7 @@ def crossref_api_config_valid_batch():
         require_api_key=False,
         api_key_env_var_name=None,
         api_key_placement=None,
+        query_type=QueryType.BATCHED_SINGLE,
         unpack_strategy=AbstractUnpackStrategy(
             source=ExternalAPI.CROSSREF_BATCH,
             clean_abstract_string=True,

@@ -2,9 +2,10 @@
 
 import re
 from collections.abc import Generator
+from xml.etree.ElementTree import Element
 
 import requests
-from defusedxml.ElementTree import ParseError, fromstring  # <-- secure import
+from defusedxml.ElementTree import ParseError, fromstring
 from destiny_sdk.identifiers import DOIIdentifier
 
 from app.config import Settings
@@ -85,9 +86,7 @@ def prepare_api_config(
 class AbstractFetcher:
     """a class that handles the fetching of abstracts from target APIs."""
 
-    def __init__(
-        self, master_api_config: dict[str, APIConfig], timeout: int = 60
-    ) -> None:
+    def __init__(self, master_api_config: dict, timeout: int = 60) -> None:
         """init our AbstractFetcher instance."""
         self.master_api_config = master_api_config  # type: dict
         self.timeout = timeout
@@ -119,7 +118,8 @@ class AbstractFetcher:
                                    despite cycling all APIs.
 
         Returns:
-            str: plain text abstract.
+            dict: Dictionary containing the DOI and the abstract text,
+                Contains keys "doi" and "abstract".
 
         """
         logger.info(f"seeking abstract for doi: {doi}")
@@ -129,15 +129,15 @@ class AbstractFetcher:
             # maybe we want to refine our master_api_config definition a little more
             # now that it has single and batch elements.
             logger.info(f"attempting retrieval using api {api}.")
-            abstract = self.fetch_one_abstract(
+            doi_abstract_dict = self.fetch_one_abstract(
                 doi=doi, api_config=self.master_api_config["single"][api]
             )
-            if abstract:
+            if doi_abstract_dict:
                 found_message = f"abstract retrieval through {api} was successful."
                 logger.info(found_message)
                 if verbose:
-                    logger.debug(f"abstract text: {abstract}")
-                return abstract
+                    logger.debug(f"abstract text: {doi_abstract_dict['abstract']}")
+                return doi_abstract_dict
             not_found_message = f"Abstract retrieval through {api} was unsuccessful."
             logger.info(not_found_message)
 
@@ -166,9 +166,17 @@ class AbstractFetcher:
             api_config: APIConfig = self.master_api_config["batch"][api]
             if api_config.query_type == "batched_single":
                 chunk = False
-            for response in self.fetch_many_abstracts(
+
+            retrieved_responses = self.fetch_many_abstracts(
                 dois=dois, api_config=api_config, chunk=chunk, verbose=verbose
-            ):
+            )
+            if not retrieved_responses:
+                error_message = f"""No abstracts found in {api} with\
+                query type {api_config.query_type.value}.
+                """
+                logger.error(error_message)
+                raise AbstractNotFoundError(error_message)
+            for response in retrieved_responses:
                 for abstract in response:
                     retrieved_abstracts.append(abstract)
                     dois.remove(abstract["doi"])
@@ -194,7 +202,7 @@ class AbstractFetcher:
         if verbose:
             request_actual_headers = f"request headers: {response.request.headers}"
             request_url = f"request url: {response.request.url}"
-            request_body = f"request body: {response.request.body}"
+            request_body = f"request body: {response.request.body!s}"
             response_status_code = f"status code: {response.status_code}"
             response_headers = f"headers: {response.headers}"
             response_cookies = f"cookies: {response.cookies}"
@@ -212,7 +220,7 @@ class AbstractFetcher:
         logger.debug(f"response json: {response.json()}")
         return response.json()
 
-    def fetch_one_abstract(self, doi: str, api_config: APIConfig) -> str:
+    def fetch_one_abstract(self, doi: str, api_config: APIConfig) -> dict | None:
         """
         Fetch one abstract from a target api given an API config object.
 
@@ -222,7 +230,8 @@ class AbstractFetcher:
                                     the API details and unpack strategy.
 
         Returns:
-            str: The plain text abstract extracted from the response object.
+            Optional(dict): A dictionary containing the DOI and the abstract,
+                or None if not found.
 
         """
         doi_validity = validate_doi(doi)
@@ -257,12 +266,12 @@ class AbstractFetcher:
                     response_obj=response, strategy=api_config.unpack_strategy
                 ),
             }
-        except AbstractUnpackError as e:
-            logger.error(
-                "encountered an error unpacking the abstract. "
-                f"original error messsage: {e}"
-            )
-            raise
+        except AbstractUnpackError as abstract_unpack_error:
+            error_message = f"""Error unpacking abstract for {doi=}\
+            with API {api_config.name}."""
+            error_message += f"\nOriginal error: {abstract_unpack_error}"
+            logger.error(error_message)
+            return None
 
     def fetch_many_abstracts(
         self,
@@ -291,10 +300,11 @@ class AbstractFetcher:
         logger.debug(f"query type: {api_config.query_type.value}")
         if chunk:
             # batching as we don't want to make our URL longer than 2000 chars.
-            dois = [
+            chunked_dois = [
                 dois[i : i + doi_batch_size]
                 for i in range(0, len(dois), doi_batch_size)
             ]
+            dois = chunked_dois  # type: ignore[no-redef, assignment]
             logger.debug(
                 (
                     f"chunked into sub-lists of {len(dois)} ",
@@ -372,7 +382,7 @@ class AbstractFetcher:
             wrapped = f"<root>{abstract_string}</root>"
             root = fromstring(wrapped)
 
-            def _get_text(element: str) -> str:
+            def _get_text(element: Element) -> str:
                 """recursively join text and tail content."""
                 text = element.text or ""
                 for child in element:
@@ -424,23 +434,35 @@ class AbstractFetcher:
 
         except KeyError as e:
             error_message = (
-                "hit key error. check response ",
-                f"object and unpack strategy. original error message: {e}",
+                "Key not found in response object with current unpack strategy.",
+                f"Original error message: {e}",
             )
 
             raise AbstractUnpackError(error_message) from e
         if not isinstance(abstract_object, str):
-            error_message = "Expected abstract to be a string."
-            raise AbstractUnpackError(error_message)
+            abstract_not_string_error_message = "Expected abstract to be a string."
+            raise AbstractUnpackError(abstract_not_string_error_message)
         return abstract_object
 
     @staticmethod
-    def _traverse(nested_abstract_dict: list | dict, path: str) -> list | dict | str:
-        """Traverse a nested dict using a list of keys."""
+    def _traverse(nested_abstract_dict: dict, path: list[str]) -> list | str | None:
+        """
+        Traverse a nested dictionary using a list of keys.
+
+        Args:
+            nested_abstract_dict (dict): The nested dictionary to traverse.
+            path (list[str]): A list of keys representing the path to traverse.
+
+        Returns:
+            list | str | None: A list found in the response with corresponding key, or a
+            string if found in the case of individual DOIs and abstracts.
+            Returns None if not found.
+
+        """
         logger.debug(f"traversing object with path: {path}")
         for i, key in enumerate(path):
             logger.debug(
-                f"level {i}: current object type: {type(nested_abstract_dict)}, key: {key}"
+                f"level {i}: object type: {type(nested_abstract_dict)}, key: {key}"
             )
             if isinstance(nested_abstract_dict, dict):
                 obj = nested_abstract_dict.get(key)
@@ -513,7 +535,7 @@ class AbstractFetcher:
                 if doi and abstract:
                     if clean:
                         logger.debug(f"entry {entry_idx}: cleaning abstract string.")
-                        abstract = self.clean_abstract_string(abstract)
+                        abstract = self.clean_abstract_string(str(abstract))
                     out.append({"doi": doi, "abstract": abstract})
                     logger.info(f"xtracted abstract for DOI: {doi}")
 

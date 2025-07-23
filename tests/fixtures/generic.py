@@ -50,8 +50,8 @@ def invalid_api_config() -> APIConfig:
         name=ExternalAPI.SCOPUS,
         url="http://fake-api.com",
         require_api_key=True,
-        api_key_env_var_name="FAKE_API_KEY", # pragma: allowlist secret
-        api_key_placement="api_key_placement", # pragma: allowlist secret
+        api_key_env_var_name="FAKE_API_KEY",  # pragma: allowlist secret
+        api_key_placement="api_key_placement",  # pragma: allowlist secret
         query_type=QueryType.SINGLE,
         query_params={"param1": "value1"},
         headers={"Authorization": "Bearer fake_token", "api_key_placement": ""},

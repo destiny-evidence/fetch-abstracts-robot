@@ -70,7 +70,7 @@ def test_abstract_unpack_strategy_():
     ),
     [
         (
-            "scopus_api_config_valid",
+            "scopus_api_config_valid_single",
             {"X-API-Key": ""},
             ExternalAPI.SCOPUS,
             "https://api.example.com/",
@@ -79,12 +79,30 @@ def test_abstract_unpack_strategy_():
             ["data", "abstract"],
         ),
         (
-            "crossref_api_config_valid",
+            "crossref_api_config_valid_single",
             {"Accept": "application/json"},
             ExternalAPI.CROSSREF,
             "https://api.example.com/",
             {},
             ExternalAPI.CROSSREF,
+            ["data", "abstract"],
+        ),
+        (
+            "scopus_api_config_valid_batch",
+            {"X-API-Key": ""},
+            ExternalAPI.SCOPUS_BATCH,
+            "https://api.example.com/",
+            {},
+            ExternalAPI.SCOPUS_BATCH,
+            ["search-results", "entry", "dc:description"],
+        ),
+        (
+            "crossref_api_config_valid_batch",
+            {"Accept": "application/json"},
+            ExternalAPI.CROSSREF_BATCH,
+            "https://api.example.com/",
+            {},
+            ExternalAPI.CROSSREF_BATCH,
             ["text", "meta", "abstract"],
         ),
     ],
@@ -108,14 +126,14 @@ def test_api_config_validator_success(
     assert api_config.unpack_strategy.strategy == expected_unpack_strategy
 
 
-def test_api_config_validator_failure(scopus_api_config_valid, monkeypatch):
+def test_api_config_validator_failure(scopus_api_config_valid_single, monkeypatch):
     bad_fields = [
         ("headers", None),
         ("unpack_strategy", "not_a_strategy"),
         ("name", "not_an_enum"),
     ]
     for field, bad_value in bad_fields:
-        broken = scopus_api_config_valid.model_copy()
+        broken = scopus_api_config_valid_single.model_copy()
         setattr(broken, field, bad_value)
         with pytest.raises(ValidationError):
             APIConfig.model_validate(broken.__dict__)
@@ -124,8 +142,8 @@ def test_api_config_validator_failure(scopus_api_config_valid, monkeypatch):
 @pytest.mark.parametrize(
     ("api_config_fixture", "expected_key", "expected_value"),
     [
-        ("scopus_api_config_valid", "X-API-Key", "dummy_scopus_key"),
-        ("crossref_api_config_valid", None, None),
+        ("scopus_api_config_valid_single", "X-API-Key", "dummy_scopus_key"),
+        ("crossref_api_config_valid_single", None, None),
     ],
 )
 def test_api_config_init_api_key_success(
@@ -151,8 +169,10 @@ def test_api_config_init_api_key_missing(invalid_api_config):
 @pytest.mark.parametrize(
     "api_config_fixture",
     [
-        "scopus_api_config_valid",
-        "crossref_api_config_valid",
+        "scopus_api_config_valid_single",
+        "scopus_api_config_valid_batch",
+        "crossref_api_config_valid_single",
+        "crossref_api_config_valid_batch",
     ],
 )
 def test_api_config_populate_query(request, api_config_fixture):

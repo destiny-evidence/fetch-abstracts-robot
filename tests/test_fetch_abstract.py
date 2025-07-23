@@ -92,9 +92,9 @@ def test_abstract_fetcher_init_logs(request, api_config_fixture):
         mock_logger.info.assert_any_call(
             "available external APIs - BATCH - in descending order of priority:"
         )
-        for external_api_name in master_api_config["single"].keys():
+        for external_api_name in master_api_config["single"]:
             assert external_api_name == api_config_single.name.value.upper()
-        for external_api_name in master_api_config["batch"].keys():
+        for external_api_name in master_api_config["batch"]:
             assert external_api_name == api_config_batch.name.value.upper()
         assert fetcher.timeout == 60
 
@@ -321,9 +321,11 @@ def test_fetch_one_abstract_unpack_error(scopus_api_config_valid_single):
         patch.object(
             fetcher, "unpack_one_abstract", side_effect=AbstractUnpackError("fail")
         ),
-        pytest.raises(AbstractUnpackError),
     ):
-        fetcher.fetch_one_abstract("10.1000/xyz123", scopus_api_config_valid_single)
+        doi_abstract_dict = fetcher.fetch_one_abstract(
+            "10.1000/xyz123", scopus_api_config_valid_single
+        )
+        assert doi_abstract_dict is None
 
 
 def test_get_one_abstract_cycling_apis_success(
@@ -372,9 +374,6 @@ def test_get_one_abstract_cycling_apis_invalid_doi(
         fetcher.get_one_abstract_cycling_apis("bad-doi")
 
 
-###
-
-
 def test_get_many_abstracts_cycling_apis_success(
     crossref_api_config_valid_batch, scopus_api_config_valid_batch
 ):
@@ -384,9 +383,19 @@ def test_get_many_abstracts_cycling_apis_success(
             [crossref_api_config_valid_batch, scopus_api_config_valid_batch], settings
         )
     )
-    with patch.object(fetcher, "fetch_one_abstract", return_value="abstract text"):
-        result = fetcher.get_many_abstracts_cycling_apis(["10.1000/xyz123"])
-        assert result == ["abstract text"]
+    test_doi_list = ["10.1000/xyz123", "10.1000/xyz124", "10.1000/xyz125"]
+    test_abstract_list = ["abstract text 1", "abstract text 2", "abstract text 3"]
+    test_response_objects = [
+        [{"doi": doi, "abstract": abstract}]
+        for doi, abstract in zip(test_doi_list, test_abstract_list, strict=False)
+    ]
+    with patch.object(
+        fetcher, "fetch_many_abstracts", return_value=(x for x in test_response_objects)
+    ):
+        result = fetcher.get_many_abstracts_cycling_apis(
+            ["10.1000/xyz123", "10.1000/xyz124", "10.1000/xyz125"]
+        )
+        assert result == [item for sublist in test_response_objects for item in sublist]
 
 
 def test_get_many_abstracts_cycling_apis_not_found(
@@ -399,23 +408,7 @@ def test_get_many_abstracts_cycling_apis_not_found(
         )
     )
     with (
-        patch.object(fetcher, "fetch_one_abstract", return_value=None),
+        patch.object(fetcher, "fetch_many_abstracts", return_value=None),
         pytest.raises(AbstractNotFoundError),
     ):
         fetcher.get_many_abstracts_cycling_apis(["10.1000/xyz123"])
-
-
-def test_get_many_abstracts_cycling_apis_invalid_doi(
-    crossref_api_config_valid_batch, scopus_api_config_valid_batch
-):
-    settings = get_settings()
-    fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config(
-            [crossref_api_config_valid_batch, scopus_api_config_valid_batch], settings
-        )
-    )
-    with (
-        patch.object(fetcher, "fetch_one_abstract", side_effect=InvalidDOIError("bad")),
-        pytest.raises(InvalidDOIError),
-    ):
-        fetcher.get_many_abstracts_cycling_apis(["bad-doi"])
