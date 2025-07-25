@@ -159,6 +159,9 @@ class AbstractFetcher:
             list[dict]: a list of dicts of abstracts and DOIs.
 
         """
+        dois = [
+            DOIIdentifier(identifier=x).identifier for x in dois
+        ]  # removing doi.org
         retrieved_abstracts = []
         for api in self.master_api_config["batch"]:
             api_count = 0
@@ -292,10 +295,6 @@ class AbstractFetcher:
                                     the API details and unpack strategy.
 
         """
-        dois = [
-            DOIIdentifier(identifier=x).identifier for x in dois
-        ]  # removing doi.org
-
         logger.debug(f"n incoming dois: {len(dois)}")
         logger.debug(f"query type: {api_config.query_type.value}")
         if chunk:
