@@ -123,11 +123,7 @@ class AbstractFetcher:
 
         """
         logger.info(f"seeking abstract for doi: {doi}")
-        for api in self.master_api_config[
-            "single"
-        ]:  # NOTE - @harryjmoss this is probably not a clean way of doing this...
-            # maybe we want to refine our master_api_config definition a little more
-            # now that it has single and batch elements.
+        for api in self.master_api_config["single"]:
             logger.info(f"attempting retrieval using api {api}.")
             doi_abstract_dict = self.fetch_one_abstract(
                 doi=doi, api_config=self.master_api_config["single"][api]
@@ -332,8 +328,7 @@ class AbstractFetcher:
                     f"requested doi(s): {_chunk} "
                     f"original error message: {e}"
                 )
-                continue  # NOTE - changed this out from raise
-                # if we get a 404 for a certain chunk??
+                continue
 
             if api_config.query_type == "batched_single":
                 logger.debug("yield for batched_single")
