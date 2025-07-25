@@ -94,11 +94,11 @@ class AbstractFetcher:
         logger.info(
             "available external APIs - SINGLE - in descending order of priority:"
         )
-        logger.debug(", ".join(master_api_config["single"].keys()))
+        logger.info(", ".join(master_api_config["single"].keys()))
         logger.info(
             "available external APIs - BATCH - in descending order of priority:"
         )
-        logger.debug(", ".join(master_api_config["batch"].keys()))
+        logger.info(", ".join(master_api_config["batch"].keys()))
 
     def get_one_abstract_cycling_apis(self, doi: str, *, verbose: bool = False) -> dict:
         """
