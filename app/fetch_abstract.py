@@ -100,6 +100,12 @@ class AbstractFetcher:
         )
         logger.info(", ".join(master_api_config["batch"].keys()))
 
+    @staticmethod
+    def process_doi(doi: DOIIdentifier | str) -> str:
+        """Process a DOI."""
+        doi = DOIIdentifier(identifier=doi).identifier
+        return str(doi).lower()
+
     def get_one_abstract_cycling_apis(self, doi: str, *, verbose: bool = False) -> dict:
         """
         retrieve one abstract, iterating through available APIs until
@@ -155,9 +161,7 @@ class AbstractFetcher:
             list[dict]: a list of dicts of abstracts and DOIs.
 
         """
-        dois = [
-            DOIIdentifier(identifier=x).identifier for x in dois
-        ]  # removing doi.org
+        dois = [self.process_doi(x) for x in dois]
         retrieved_abstracts = []
         for api in self.master_api_config["batch"]:
             api_count = 0
@@ -178,7 +182,8 @@ class AbstractFetcher:
             for response in retrieved_responses:
                 for abstract in response:
                     retrieved_abstracts.append(abstract)
-                    dois.remove(abstract["doi"])
+                    logger.debug(f"doi to remove: {abstract['doi']}.")
+                    dois.remove(self.process_doi(abstract["doi"]))
                     logger.info(
                         f'retrieved abstract for doi {abstract["doi"]}. '
                         "removing from master list."
@@ -238,9 +243,7 @@ class AbstractFetcher:
             error_message = f"invalid DOI: {doi}. please check the DOI and try again."
             logger.error(error_message)
             raise InvalidDOIError(error_message)
-        url = api_config.populate_query(query=DOIIdentifier(identifier=doi).identifier)[
-            "url"
-        ]
+        url = api_config.populate_query(query=self.process_doi(doi))["url"]
 
         logger.debug(f"fetching doi {doi} from api {api_config.name}")
 
