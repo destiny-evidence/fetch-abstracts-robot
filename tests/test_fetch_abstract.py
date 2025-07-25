@@ -6,10 +6,7 @@ import pytest
 import requests
 
 from app.config import get_settings
-from app.data_models.generic import (
-    AbstractNotFoundError,
-    AbstractUnpackError,
-)
+from app.data_models.generic import AbstractNotFoundError, AbstractUnpackError
 from app.fetch_abstract import AbstractFetcher, prepare_api_config
 from app.utils import InvalidDOIError
 
@@ -245,6 +242,18 @@ def test_clean_abstract_string_removes_all_tags():
     raw = "<jats:p>This is a <b>test</b> abstract.</jats:p>"
     cleaned = AbstractFetcher.clean_abstract_string(raw)
     assert cleaned == "This is a test abstract."
+
+
+def test_process_doi_remove_url():
+    raw = "https://doi.org/10.1109/pssgt64932.2025.11033854"
+    cleaned = AbstractFetcher.process_doi(raw)
+    assert cleaned == "10.1109/pssgt64932.2025.11033854"
+
+
+def test_process_doi_tolower():
+    raw = "10.1109/PSSGT64932.2025.11033854"
+    cleaned = AbstractFetcher.process_doi(raw)
+    assert cleaned == "10.1109/pssgt64932.2025.11033854"
 
 
 def test_unpack_abstract_with_cleaning(crossref_api_config_valid_single):
