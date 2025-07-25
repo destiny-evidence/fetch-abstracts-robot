@@ -313,7 +313,12 @@ class AbstractFetcher:
             )
         for i, _chunk in enumerate(dois):
             logger.debug(f"sending get request for chunk {i} out of {len(dois)}")
-            url, params, headers = api_config.populate_query(query=_chunk).values()
+            query_result = api_config.populate_query(query=_chunk)
+
+            url = query_result.get("url", "")
+            params = query_result.get("params", {})
+            headers = query_result.get("headers", {})
+
             try:
                 response = self.fetch(
                     url=url,
