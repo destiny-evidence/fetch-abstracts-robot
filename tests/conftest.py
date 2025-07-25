@@ -5,7 +5,16 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.config import Settings
-from app.data_models.generic import AbstractUnpackStrategy, APIConfig, ExternalAPI
+from app.data_models.generic import (
+    AbstractUnpackStrategy,
+    APIConfig,
+    ExternalAPI,
+    QueryType,
+)
+
+pytest_plugins = [
+    "tests.fixtures.generic",
+]
 
 
 def get_app() -> FastAPI:
@@ -47,7 +56,7 @@ def test_client(set_test_environment_variables) -> Generator[TestClient, None, N
 
 
 @pytest.fixture
-def scopus_api_config_valid():
+def scopus_api_config_valid_single():
     return APIConfig(
         name=ExternalAPI.SCOPUS,
         url="https://api.example.com/",
@@ -63,23 +72,25 @@ def scopus_api_config_valid():
 
 
 @pytest.fixture
-def wos_api_config_invalid():
+def scopus_api_config_valid_batch():
     return APIConfig(
-        name=ExternalAPI.WEB_OF_SCIENCE,
+        name=ExternalAPI.SCOPUS_BATCH,
         url="https://api.example.com/",
         require_api_key=True,
-        api_key_env_var_name="wos_key",  # pragma: allowlist secret
-        api_key_placement="wos_key",  # pragma: allowlist secret
+        api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
+        api_key_placement="X-API-Key",  # pragma: allowlist secret
         query_params={},
-        headers={"wos_key": ""},
+        headers={"X-API-Key": ""},
         unpack_strategy=AbstractUnpackStrategy(
-            source=ExternalAPI.WEB_OF_SCIENCE, strategy=["text", "meta", "abstract"]
+            source="scopus_batch",
+            doi_strategy=["search-results", "entry", "prism:doi"],
+            strategy=["search-results", "entry", "dc:description"],
         ),
     )
 
 
 @pytest.fixture
-def crossref_api_config_valid():
+def crossref_api_config_valid_single():
     return APIConfig(
         name=ExternalAPI.CROSSREF,
         url="https://api.example.com/",
@@ -88,6 +99,23 @@ def crossref_api_config_valid():
         api_key_placement=None,
         unpack_strategy=AbstractUnpackStrategy(
             source=ExternalAPI.CROSSREF,
+            clean_abstract_string=True,
+            strategy=["data", "abstract"],
+        ),
+    )
+
+
+@pytest.fixture
+def crossref_api_config_valid_batch():
+    return APIConfig(
+        name=ExternalAPI.CROSSREF_BATCH,
+        url="https://api.example.com/",
+        require_api_key=False,
+        api_key_env_var_name=None,
+        api_key_placement=None,
+        query_type=QueryType.BATCHED_SINGLE,
+        unpack_strategy=AbstractUnpackStrategy(
+            source=ExternalAPI.CROSSREF_BATCH,
             clean_abstract_string=True,
             strategy=["text", "meta", "abstract"],
         ),

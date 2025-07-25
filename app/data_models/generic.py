@@ -1,12 +1,11 @@
 """Define generic data models and validators."""
 
 from enum import StrEnum
-from functools import wraps
-from typing import Callable
 
 from pydantic import AnyUrl, BaseModel, Field, model_validator
 
 from app.config import Settings
+from app.logger import logger
 
 
 class APIKeyNotPresentError(Exception):
@@ -31,7 +30,6 @@ class ExternalAPI(StrEnum):
     """
 
     SCOPUS = "scopus"
-    WEB_OF_SCIENCE = "web_of_science"
     CROSSREF = "crossref"
     CROSSREF_BATCH = "crossref_batch"
     SCOPUS_BATCH = "scopus_batch"
@@ -63,7 +61,6 @@ external_api_priority_single = ExternalAPIPriority(
     priorities={
         ExternalAPI.CROSSREF: 1,
         ExternalAPI.SCOPUS: 2,
-        ExternalAPI.WEB_OF_SCIENCE: 3,
     },
 )
 
@@ -157,6 +154,7 @@ class APIConfig(BaseModel):
 
         """
         if self.require_api_key:
+            logger.debug(f"initializing API key for {self.name} API")
             api_key = (
                 getattr(settings, self.api_key_env_var_name, None)
                 if self.api_key_env_var_name
@@ -166,6 +164,8 @@ class APIConfig(BaseModel):
                 error_msg = f"API key for {self.name} is not present in settings."
                 raise APIKeyNotPresentError(error_msg)
             self.headers[self.api_key_placement] = api_key.get_secret_value()
+        else:
+            logger.info("API does not require an API key, skipping header population.")
 
     @staticmethod
     def build_query_single(doi: str, url: str) -> str:
@@ -214,9 +214,9 @@ class APIConfig(BaseModel):
 
     def populate_query(
         self, query: str | list[str], max_array_length: int = 15
-    ) -> tuple[str, str, str]:
+    ) -> dict:
         """
-        populate a query string into the query params dict.
+        Populate a query string into the query params dict.
 
         Args:
             query (str | list[str]): the body of the query - currently a doi or
@@ -229,10 +229,9 @@ class APIConfig(BaseModel):
             ValueError
 
         Returns:
-            tuple[str, str, str] of all required input quantities
-            (url, params, headers)
-            to the http request for retrieving
-            an abstract given target query and APIConfig.
+            dict: a dictionary containing the url, query_params, and headers.
+                   All passed to the http request for retrieving an
+                   abstract given target query and APIConfig.
 
         """
         if self.query_type == QueryType.SINGLE:
@@ -240,7 +239,11 @@ class APIConfig(BaseModel):
                 error_msg = "query_type `single` requires a `str` type query."
                 raise TypeError(error_msg)
             url = self.build_query_single(doi=query, url=self.url.encoded_string())
-            return url, self.query_params, self.headers
+            return {
+                "url": url,
+                "query_params": self.query_params,
+                "headers": self.headers,
+            }
 
         # we can add more configurations here...
         if self.query_type == QueryType.BATCH:
@@ -252,59 +255,21 @@ class APIConfig(BaseModel):
             )
             params = self.query_params.copy()
             params["query"] = query_field
-            return self.url, params, self.headers
+            return {"url": self.url, "query_params": params, "headers": self.headers}
 
         if self.query_type == QueryType.BATCHED_SINGLE:
             if not isinstance(query, str):
                 error_msg = "query_type `single` requires a `str` type query."
                 raise TypeError(error_msg)
             url = self.build_query_single(doi=query, url=self.url.encoded_string())
-            return url, self.query_params, self.headers
+            return {
+                "url": url,
+                "query_params": self.query_params,
+                "headers": self.headers,
+            }
 
         error_msg = (
             "unable to format query. ensure correct specification ",
             "of query and query type.",
         )
         raise ValueError(error_msg)
-
-    # def _batchify(foo):
-    #     def batchify_():
-    #         pass
-
-
-# def batchify(api_config: APIConfig) -> APIConfig:
-#     """
-#     Batchify an APIConfig with Query.Type=='single'.
-
-#     This batchified config can then be added
-#     to master API config for batched, as well as
-#     the API priority for batched, and it will run as
-
-#     """
-
-#     @wraps(api_config)
-#     def wrapper(api_config, dois, *args, **kwargs):
-#         if isinstance(dois, str):
-#             # Single DOI, just call as normal
-#             return fetch_func(api_config, dois, *args, **kwargs)
-#         results = {}
-#         for doi in dois:
-#             try:
-#                 results[doi] = fetch_func(api_config, doi, *args, **kwargs)
-#             except Exception as e:
-#                 results[doi] = {"error": str(e)}
-#         return results
-
-#     return wrapper
-
-
-# '''
-# decorator
-# - modify an APIConfig for single to be batch
-# - allow me to add this modified config to a priority list for batch,
-# and
-# '''
-
-
-# @batchify
-# crossref_batch_api_config = crossref_api_config

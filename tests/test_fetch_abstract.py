@@ -6,64 +6,117 @@ import pytest
 import requests
 
 from app.config import get_settings
-from app.data_models.generic import (
-    AbstractNotFoundError,
-    AbstractUnpackError,
-    external_api_priority,
-)
+from app.data_models.generic import AbstractNotFoundError, AbstractUnpackError
 from app.fetch_abstract import AbstractFetcher, prepare_api_config
 from app.utils import InvalidDOIError
 
 
-def test_prepare_api_config_success(scopus_api_config_valid, crossref_api_config_valid):
+def test_prepare_api_config_success(
+    scopus_api_config_valid_single,
+    scopus_api_config_valid_batch,
+    crossref_api_config_valid_single,
+    crossref_api_config_valid_batch,
+    external_api_priorities,
+):
     settings = get_settings()
-    configs = [scopus_api_config_valid, crossref_api_config_valid]
+    configs = [
+        scopus_api_config_valid_single,
+        scopus_api_config_valid_batch,
+        crossref_api_config_valid_single,
+        crossref_api_config_valid_batch,
+    ]
     result = prepare_api_config(
-        configs, settings, external_api_priority=external_api_priority
+        configs,
+        settings,
+        external_api_priority_single=external_api_priorities["single"],
+        external_api_priority_batch=external_api_priorities["batch"],
     )
-    assert "SCOPUS" in result
-    assert "CROSSREF" in result
-    assert not result["SCOPUS"].unpack_strategy.clean_abstract_string
-    assert result["SCOPUS"].headers["X-API-Key"] == "dummy_scopus_key"
-    assert result["CROSSREF"].headers == {"Accept": "application/json"}
-    assert result["CROSSREF"].api_key_env_var_name is None
-    assert result["CROSSREF"].unpack_strategy.clean_abstract_string
+    single_results = result["single"]
+    batch_results = result["batch"]
+    assert set(single_results.keys()) == {"CROSSREF", "SCOPUS"}
+    assert not single_results["SCOPUS"].unpack_strategy.clean_abstract_string
+    assert single_results["SCOPUS"].headers["X-API-Key"] == "dummy_scopus_key"
+    assert single_results["CROSSREF"].headers == {"Accept": "application/json"}
+    assert single_results["CROSSREF"].api_key_env_var_name is None
+    assert single_results["CROSSREF"].unpack_strategy.clean_abstract_string
+
+    assert set(batch_results.keys()) == {"CROSSREF_BATCH", "SCOPUS_BATCH"}
+    assert not batch_results["SCOPUS_BATCH"].unpack_strategy.clean_abstract_string
+    assert batch_results["SCOPUS_BATCH"].headers["X-API-Key"] == "dummy_scopus_key"
+    assert batch_results["CROSSREF_BATCH"].headers == {"Accept": "application/json"}
+    assert batch_results["CROSSREF_BATCH"].api_key_env_var_name is None
+    assert batch_results["CROSSREF_BATCH"].unpack_strategy.clean_abstract_string
 
 
-def test_prepare_api_config_missing_key(wos_api_config_invalid):
+def test_prepare_api_config_missing_key(external_api_priorities, invalid_api_config):
     settings = get_settings()
-    # NOTE - wos_api_config here is defined as missing a key.
-    # if this is ever functional, we shold explicitly populate
-    # a fixture with missing credentials.
-    configs = [wos_api_config_invalid]
+    configs = [invalid_api_config]
     result = prepare_api_config(
-        configs, settings, external_api_priority=external_api_priority
+        configs,
+        settings,
+        external_api_priority_single=external_api_priorities["single"],
+        external_api_priority_batch=external_api_priorities["batch"],
     )
-    assert result == {}
+    for value in result.values():
+        assert value == {}
 
 
-def test_abstract_fetcher_init_logs(scopus_api_config_valid):
+@pytest.mark.parametrize(
+    "api_config_fixture",
+    [
+        {
+            "single": "scopus_api_config_valid_single",
+            "batch": "scopus_api_config_valid_batch",
+        },
+        {
+            "single": "crossref_api_config_valid_single",
+            "batch": "crossref_api_config_valid_batch",
+        },
+    ],
+)
+def test_abstract_fetcher_init_logs(request, api_config_fixture):
+    api_config_single = request.getfixturevalue(api_config_fixture["single"])
+    api_config_batch = request.getfixturevalue(api_config_fixture["batch"])
+    settings = get_settings()
     with patch("app.fetch_abstract.logger") as mock_logger:
-        fetcher = AbstractFetcher({"SCOPUS": scopus_api_config_valid})
-        mock_logger.info.assert_any_call(
-            "available external APIs, in descending order of priority:"
+        master_api_config = prepare_api_config(
+            [api_config_single, api_config_batch], settings
         )
-        mock_logger.info.assert_any_call("SCOPUS")
+        fetcher = AbstractFetcher(master_api_config)
+        mock_logger.info.assert_any_call(
+            "available external APIs - SINGLE - in descending order of priority:"
+        )
+        mock_logger.info.assert_any_call(
+            "available external APIs - BATCH - in descending order of priority:"
+        )
+        for external_api_name in master_api_config["single"]:
+            assert external_api_name == api_config_single.name.value.upper()
+        for external_api_name in master_api_config["batch"]:
+            assert external_api_name == api_config_batch.name.value.upper()
         assert fetcher.timeout == 60
 
 
 @pytest.mark.parametrize(
     "api_config_fixture",
     [
-        "scopus_api_config_valid",
-        "crossref_api_config_valid",
+        {
+            "single": "scopus_api_config_valid_single",
+            "batch": "scopus_api_config_valid_batch",
+        },
+        {
+            "single": "crossref_api_config_valid_single",
+            "batch": "crossref_api_config_valid_batch",
+        },
     ],
 )
 def test_fetch_success(request, api_config_fixture):
     settings = get_settings()
-    api_config = request.getfixturevalue(api_config_fixture)
+    api_config_single = request.getfixturevalue(api_config_fixture["single"])
+    api_config_batch = request.getfixturevalue(api_config_fixture["batch"])
     fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([api_config], settings)
+        master_api_config=prepare_api_config(
+            [api_config_single, api_config_batch], settings
+        )
     )
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
@@ -74,10 +127,27 @@ def test_fetch_success(request, api_config_fixture):
         mock_get.assert_called_once()
 
 
-def test_fetch_http_error(scopus_api_config_valid):
+@pytest.mark.parametrize(
+    "api_config_fixture",
+    [
+        {
+            "single": "scopus_api_config_valid_single",
+            "batch": "scopus_api_config_valid_batch",
+        },
+        {
+            "single": "crossref_api_config_valid_single",
+            "batch": "crossref_api_config_valid_batch",
+        },
+    ],
+)
+def test_fetch_http_error(request, api_config_fixture):
     settings = get_settings()
+    api_config_single = request.getfixturevalue(api_config_fixture["single"])
+    api_config_batch = request.getfixturevalue(api_config_fixture["batch"])
     fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([scopus_api_config_valid], settings)
+        master_api_config=prepare_api_config(
+            [api_config_single, api_config_batch], settings
+        )
     )
     mock_response = MagicMock()
     mock_response.raise_for_status.side_effect = requests.HTTPError("fail")
@@ -88,51 +158,127 @@ def test_fetch_http_error(scopus_api_config_valid):
         fetcher.fetch("http://test", {}, {})
 
 
-def test_unpack_abstract_success(scopus_api_config_valid):
+@pytest.mark.parametrize(
+    "api_config_fixture",
+    [
+        {
+            "single": "scopus_api_config_valid_single",
+        },
+        {
+            "single": "crossref_api_config_valid_single",
+        },
+    ],
+)
+def test_unpack_one_abstract_success(request, api_config_fixture):
     settings = get_settings()
+    api_config_single = request.getfixturevalue(api_config_fixture["single"])
     fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([scopus_api_config_valid], settings)
+        master_api_config=prepare_api_config([api_config_single], settings)
     )
     response_obj = {"data": {"abstract": "This is the abstract."}}
-    result = fetcher.unpack_abstract(
-        response_obj, strategy=fetcher.master_api_config["SCOPUS"].unpack_strategy
+    external_api_name = api_config_single.name.value.upper()
+    result = fetcher.unpack_one_abstract(
+        response_obj,
+        strategy=fetcher.master_api_config["single"][external_api_name].unpack_strategy,
     )
     assert result == "This is the abstract."
 
 
-def test_unpack_abstract_keyerror(scopus_api_config_valid):
+def test_unpack_many_abstracts_scopus_batch_success(scopus_api_config_valid_batch):
     settings = get_settings()
+    api_config_batch = scopus_api_config_valid_batch
     fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([scopus_api_config_valid], settings)
+        master_api_config=prepare_api_config([api_config_batch], settings)
+    )
+    test_doi_one = "10.1000/xyz123"
+    test_doi_two = "10.1000/xyz124"
+    test_abstract_one = "This is one abstract."
+    test_abstract_two = "This is another abstract."
+    test_mocked_response_entry_object = [
+        {"prism:doi": test_doi_one, "dc:description": test_abstract_one},
+        {"prism:doi": test_doi_two, "dc:description": test_abstract_two},
+    ]
+    test_response_obj = {"search-results": {"entry": test_mocked_response_entry_object}}
+    external_api_name = api_config_batch.name.value.upper()
+    result = fetcher.unpack_many_abstracts(
+        test_response_obj,
+        strategy=fetcher.master_api_config["batch"][external_api_name].unpack_strategy,
+    )
+    assert len(result) == len(test_mocked_response_entry_object)
+    assert result[0]["doi"] == test_doi_one
+    assert result[1]["doi"] == test_doi_two
+    assert result[0]["abstract"] == test_abstract_one
+    assert result[1]["abstract"] == test_abstract_two
+
+
+@pytest.mark.parametrize(
+    "api_config_fixture",
+    [
+        {
+            "single": "scopus_api_config_valid_single",
+        },
+        {
+            "single": "crossref_api_config_valid_single",
+        },
+    ],
+)
+def test_unpack_one_abstract_keyerror(request, api_config_fixture):
+    settings = get_settings()
+    api_config_single = request.getfixturevalue(api_config_fixture["single"])
+    fetcher = AbstractFetcher(
+        master_api_config=prepare_api_config([api_config_single], settings)
     )
     response_obj = {"data": {"foo": "bar"}}
     with pytest.raises(AbstractUnpackError):
-        fetcher.unpack_abstract(
-            response_obj, strategy=fetcher.master_api_config["SCOPUS"].unpack_strategy
+        fetcher.unpack_one_abstract(
+            response_obj,
+            strategy=fetcher.master_api_config["single"][
+                api_config_single.name.value.upper()
+            ].unpack_strategy,
         )
 
 
-def test_clean_abstract_string_removes_jats_tags():
+def test_clean_abstract_string_removes_all_tags():
     raw = "<jats:p>This is a <b>test</b> abstract.</jats:p>"
     cleaned = AbstractFetcher.clean_abstract_string(raw)
-    assert cleaned == "This is a <b>test</b> abstract."
+    assert cleaned == "This is a test abstract."
 
 
-def test_unpack_abstract_with_cleaning(crossref_api_config_valid):
-    fetcher = AbstractFetcher({"CROSSREF": crossref_api_config_valid})
-    response_obj = {"text": {"meta": {"abstract": "<jats:p>Clean me!</jats:p>"}}}
+def test_process_doi_remove_url():
+    raw = "https://doi.org/10.1109/pssgt64932.2025.11033854"
+    cleaned = AbstractFetcher.process_doi(raw)
+    assert cleaned == "10.1109/pssgt64932.2025.11033854"
 
-    result = fetcher.unpack_abstract(
-        response_obj, strategy=fetcher.master_api_config["CROSSREF"].unpack_strategy
+
+def test_process_doi_tolower():
+    raw = "10.1109/PSSGT64932.2025.11033854"
+    cleaned = AbstractFetcher.process_doi(raw)
+    assert cleaned == "10.1109/pssgt64932.2025.11033854"
+
+
+def test_unpack_abstract_with_cleaning(crossref_api_config_valid_single):
+    settings = get_settings()
+    fetcher = AbstractFetcher(
+        master_api_config=prepare_api_config(
+            [crossref_api_config_valid_single], settings
+        )
+    )
+    response_obj = {"data": {"abstract": "<jats:p>Clean me!</jats:p>"}}
+
+    result = fetcher.unpack_one_abstract(
+        response_obj,
+        strategy=fetcher.master_api_config["single"]["CROSSREF"].unpack_strategy,
     )
     assert result == "Clean me!"
 
 
-def test_fetch_one_abstract_success(crossref_api_config_valid, scopus_api_config_valid):
+def test_fetch_one_abstract_success(
+    crossref_api_config_valid_single, scopus_api_config_valid_single
+):
     settings = get_settings()
     fetcher = AbstractFetcher(
         master_api_config=prepare_api_config(
-            [crossref_api_config_valid, scopus_api_config_valid], settings
+            [crossref_api_config_valid_single, scopus_api_config_valid_single], settings
         )
     )
     doi = "10.1000/xyz123"
@@ -141,95 +287,137 @@ def test_fetch_one_abstract_success(crossref_api_config_valid, scopus_api_config
         patch.object(
             fetcher,
             "fetch",
-            return_value={"text": {"meta": {"abstract": "<jats:p>abc</jats:p>"}}},
+            return_value={"data": {"abstract": "<jats:p>abc</jats:p>"}},
         ),
     ):
-        result = fetcher.fetch_one_abstract(doi, crossref_api_config_valid)
-        assert result == "abc"
+        result = fetcher.fetch_one_abstract(doi, crossref_api_config_valid_single)
+        assert result == {"abstract": "abc", "doi": doi}
 
 
-def test_fetch_one_abstract_invalid_doi(scopus_api_config_valid):
+def test_fetch_one_abstract_invalid_doi(scopus_api_config_valid_single):
     settings = get_settings()
     fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([scopus_api_config_valid], settings)
+        master_api_config=prepare_api_config([scopus_api_config_valid_single], settings)
     )
     with (
         patch("app.fetch_abstract.validate_doi", return_value=False),
         pytest.raises(InvalidDOIError),
     ):
-        fetcher.fetch_one_abstract("bad-doi", scopus_api_config_valid)
+        fetcher.fetch_one_abstract("bad-doi", scopus_api_config_valid_single)
 
 
-def test_fetch_one_abstract_http_error(scopus_api_config_valid):
+def test_fetch_one_abstract_http_error(scopus_api_config_valid_single):
     settings = get_settings()
     fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([scopus_api_config_valid], settings)
+        master_api_config=prepare_api_config([scopus_api_config_valid_single], settings)
     )
     with (
         patch("app.fetch_abstract.validate_doi", return_value=True),
         patch.object(fetcher, "fetch", side_effect=requests.HTTPError("fail")),
         pytest.raises(requests.HTTPError),
     ):
-        fetcher.fetch_one_abstract("10.1000/xyz123", scopus_api_config_valid)
+        fetcher.fetch_one_abstract("10.1000/xyz123", scopus_api_config_valid_single)
 
 
-def test_fetch_one_abstract_unpack_error(scopus_api_config_valid):
+def test_fetch_one_abstract_unpack_error(scopus_api_config_valid_single):
     settings = get_settings()
     fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([scopus_api_config_valid], settings)
+        master_api_config=prepare_api_config([scopus_api_config_valid_single], settings)
     )
     with (
         patch("app.fetch_abstract.validate_doi", return_value=True),
         patch.object(fetcher, "fetch", return_value={"data": {}}),
         patch.object(
-            fetcher, "unpack_abstract", side_effect=AbstractUnpackError("fail")
+            fetcher, "unpack_one_abstract", side_effect=AbstractUnpackError("fail")
         ),
-        pytest.raises(AbstractUnpackError),
     ):
-        fetcher.fetch_one_abstract("10.1000/xyz123", scopus_api_config_valid)
+        doi_abstract_dict = fetcher.fetch_one_abstract(
+            "10.1000/xyz123", scopus_api_config_valid_single
+        )
+        assert doi_abstract_dict is None
 
 
-def test_get_abstract_cycling_apis_success(
-    crossref_api_config_valid, scopus_api_config_valid
+def test_get_one_abstract_cycling_apis_success(
+    crossref_api_config_valid_single, scopus_api_config_valid_single
 ):
     settings = get_settings()
     fetcher = AbstractFetcher(
         master_api_config=prepare_api_config(
-            [crossref_api_config_valid, scopus_api_config_valid], settings
+            [crossref_api_config_valid_single, scopus_api_config_valid_single], settings
         )
     )
     with patch.object(fetcher, "fetch_one_abstract", return_value="abstract text"):
-        result = fetcher.get_abstract_cycling_apis("10.1000/xyz123")
+        result = fetcher.get_one_abstract_cycling_apis("10.1000/xyz123")
         assert result == "abstract text"
 
 
-def test_get_abstract_cycling_apis_not_found(
-    crossref_api_config_valid, scopus_api_config_valid
+def test_get_one_abstract_cycling_apis_not_found(
+    crossref_api_config_valid_single, scopus_api_config_valid_single
 ):
     settings = get_settings()
     fetcher = AbstractFetcher(
         master_api_config=prepare_api_config(
-            [crossref_api_config_valid, scopus_api_config_valid], settings
+            [crossref_api_config_valid_single, scopus_api_config_valid_single], settings
         )
     )
     with (
         patch.object(fetcher, "fetch_one_abstract", return_value=None),
         pytest.raises(AbstractNotFoundError),
     ):
-        fetcher.get_abstract_cycling_apis("10.1000/xyz123")
+        fetcher.get_one_abstract_cycling_apis("10.1000/xyz123")
 
 
-def test_get_abstract_cycling_apis_invalid_doi(
-    crossref_api_config_valid, scopus_api_config_valid
+def test_get_one_abstract_cycling_apis_invalid_doi(
+    crossref_api_config_valid_single, scopus_api_config_valid_single
 ):
     settings = get_settings()
     fetcher = AbstractFetcher(
         master_api_config=prepare_api_config(
-            [crossref_api_config_valid, scopus_api_config_valid], settings
+            [crossref_api_config_valid_single, scopus_api_config_valid_single], settings
         )
     )
     with (
         patch.object(fetcher, "fetch_one_abstract", side_effect=InvalidDOIError("bad")),
         pytest.raises(InvalidDOIError),
     ):
-        fetcher.get_abstract_cycling_apis("bad-doi")
+        fetcher.get_one_abstract_cycling_apis("bad-doi")
+
+
+def test_get_many_abstracts_cycling_apis_success(
+    crossref_api_config_valid_batch, scopus_api_config_valid_batch
+):
+    settings = get_settings()
+    fetcher = AbstractFetcher(
+        master_api_config=prepare_api_config(
+            [crossref_api_config_valid_batch, scopus_api_config_valid_batch], settings
+        )
+    )
+    test_doi_list = ["10.1000/xyz123", "10.1000/xyz124", "10.1000/xyz125"]
+    test_abstract_list = ["abstract text 1", "abstract text 2", "abstract text 3"]
+    test_response_objects = [
+        [{"doi": doi, "abstract": abstract}]
+        for doi, abstract in zip(test_doi_list, test_abstract_list, strict=False)
+    ]
+    with patch.object(
+        fetcher, "fetch_many_abstracts", return_value=(x for x in test_response_objects)
+    ):
+        result = fetcher.get_many_abstracts_cycling_apis(
+            ["10.1000/xyz123", "10.1000/xyz124", "10.1000/xyz125"]
+        )
+        assert result == [item for sublist in test_response_objects for item in sublist]
+
+
+def test_get_many_abstracts_cycling_apis_not_found(
+    crossref_api_config_valid_batch, scopus_api_config_valid_batch
+):
+    settings = get_settings()
+    fetcher = AbstractFetcher(
+        master_api_config=prepare_api_config(
+            [crossref_api_config_valid_batch, scopus_api_config_valid_batch], settings
+        )
+    )
+    with (
+        patch.object(fetcher, "fetch_many_abstracts", return_value=None),
+        pytest.raises(AbstractNotFoundError),
+    ):
+        fetcher.get_many_abstracts_cycling_apis(["10.1000/xyz123"])

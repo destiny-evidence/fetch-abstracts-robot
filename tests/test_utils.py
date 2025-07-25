@@ -59,6 +59,37 @@ def test_get_doi_from_reference_success():
         assert get_doi_from_reference(dummy_ref) == test_good_doi
 
 
+@pytest.mark.parametrize(
+    "test_full_url_doi",
+    [
+        "https://doi.org/10.1000/xyz123",
+        "http://doi.org/10.1000/xyz123",
+        "10.1000/xyz123",
+        "10.1000/xyz123/abc",
+    ],
+)
+def test_get_valid_doi_from_full_url_success(test_full_url_doi):
+    """Test that we can extract a DOI from a full URL."""
+    assert validate_doi(
+        test_full_url_doi
+    ), "Expect this list of valid DOIs to be valid."
+
+
+@pytest.mark.parametrize(
+    "test_full_url_doi",
+    [
+        "https://doi.org/foo",
+        "http://doi.org/bar",
+        "baz/123",
+    ],
+)
+def test_get_invalid_doi_from_full_url_fails_properly(test_full_url_doi):
+    """Test that we can extract a DOI from a full URL."""
+    assert not validate_doi(
+        test_full_url_doi
+    ), "Expect this list of invalid DOIs to be evaluated as invalid."
+
+
 def test_get_doi_from_reference_missing_doi_error():
     error_message = "No DOI found for reference"
     test_id = uuid4()
