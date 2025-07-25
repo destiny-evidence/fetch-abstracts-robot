@@ -2,10 +2,10 @@
 
 from enum import StrEnum
 
-from loguru import logger
 from pydantic import AnyUrl, BaseModel, Field, model_validator
 
 from app.config import Settings
+from app.logger import logger
 
 
 class APIKeyNotPresentError(Exception):
