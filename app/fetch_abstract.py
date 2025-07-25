@@ -316,7 +316,7 @@ class AbstractFetcher:
             query_result = api_config.populate_query(query=_chunk)
 
             url = query_result.get("url", "")
-            params = query_result.get("params", {})
+            params = query_result.get("query_params", {})
             headers = query_result.get("headers", {})
 
             try:
