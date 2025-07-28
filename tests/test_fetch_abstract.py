@@ -238,10 +238,136 @@ def test_unpack_one_abstract_keyerror(request, api_config_fixture):
         )
 
 
+def test_traverse_non_dict_returns_none():
+    # Should return None if input is not a dict
+    result = AbstractFetcher._traverse("notadict", ["foo"])  # noqa: SLF001
+    assert result is None
+
+
+def test_traverse_missing_key_returns_none():
+    # Should return None if key is missing
+    d = {"foo": {"bar": 1}}
+    result = AbstractFetcher._traverse(d, ["foo", "baz"])  # noqa: SLF001
+    assert result is None
+
+
+def test_unpack_many_abstracts_missing_doi_or_abstract(scopus_api_config_valid_batch):
+    settings = get_settings()
+    fetcher = AbstractFetcher(
+        master_api_config=prepare_api_config([scopus_api_config_valid_batch], settings)
+    )
+    # Entry missing abstract
+    response_obj = {"search-results": {"entry": [{"prism:doi": "10.1000/xyz123"}]}}
+    result = fetcher.unpack_many_abstracts(
+        response_obj,
+        strategy=fetcher.master_api_config["batch"]["SCOPUS_BATCH"].unpack_strategy,
+    )
+    assert result == []
+
+
+def test_unpack_many_abstracts_empty_entries(scopus_api_config_valid_batch):
+    """Should return empty list if entries is not a list (e.g., None or dict)."""
+    settings = get_settings()
+    fetcher = AbstractFetcher(
+        master_api_config=prepare_api_config([scopus_api_config_valid_batch], settings)
+    )
+    # entries is None
+    response_obj = {"search-results": {"entry": None}}
+    result = fetcher.unpack_many_abstracts(
+        response_obj,
+        strategy=fetcher.master_api_config["batch"]["SCOPUS_BATCH"].unpack_strategy,
+    )
+    assert result == []
+
+    # entries is a dict, not a list
+    response_obj = {"search-results": {"entry": {"prism:doi": "10.1000/xyz123"}}}
+    result = fetcher.unpack_many_abstracts(
+        response_obj,
+        strategy=fetcher.master_api_config["batch"]["SCOPUS_BATCH"].unpack_strategy,
+    )
+    assert result == []
+
+
+def test_unpack_many_abstracts_entry_missing_doi_and_abstract(
+    scopus_api_config_valid_batch,
+):
+    """Should skip entries missing both DOI and abstract."""
+    settings = get_settings()
+    fetcher = AbstractFetcher(
+        master_api_config=prepare_api_config([scopus_api_config_valid_batch], settings)
+    )
+    # Entry missing both DOI and abstract
+    response_obj = {"search-results": {"entry": [{}]}}
+    result = fetcher.unpack_many_abstracts(
+        response_obj,
+        strategy=fetcher.master_api_config["batch"]["SCOPUS_BATCH"].unpack_strategy,
+    )
+    assert result == []
+
+
+def test_unpack_many_abstracts_with_cleaning(crossref_api_config_valid_batch):
+    """Should clean abstract string if clean_abstract_string is True."""
+    settings = get_settings()
+    fetcher = AbstractFetcher(
+        master_api_config=prepare_api_config(
+            [crossref_api_config_valid_batch], settings
+        )
+    )
+    # Abstract contains tags, should be cleaned
+    response_obj = {
+        "message": {
+            "items": [
+                {
+                    "DOI": "10.1000/xyz123",
+                    "abstract": "<jats:p>Clean <b>me</b>!</jats:p>",
+                }
+            ]
+        }
+    }
+    result = fetcher.unpack_many_abstracts(
+        response_obj,
+        strategy=fetcher.master_api_config["batch"]["CROSSREF_BATCH"].unpack_strategy,
+    )
+    assert result[0]["abstract"] == "Clean me!"
+
+
+def test_unpack_many_abstracts_multiple_batches(scopus_api_config_valid_batch):
+    """Should handle a list of batches as input."""
+    settings = get_settings()
+    fetcher = AbstractFetcher(
+        master_api_config=prepare_api_config([scopus_api_config_valid_batch], settings)
+    )
+    batch1 = {
+        "search-results": {
+            "entry": [{"prism:doi": "10.1000/xyz123", "dc:description": "A1"}]
+        }
+    }
+    batch2 = {
+        "search-results": {
+            "entry": [{"prism:doi": "10.1000/xyz124", "dc:description": "A2"}]
+        }
+    }
+    response_obj = [batch1, batch2]
+    result = fetcher.unpack_many_abstracts(
+        response_obj,
+        strategy=fetcher.master_api_config["batch"]["SCOPUS_BATCH"].unpack_strategy,
+    )
+    assert len(result) == 2
+    assert result[0]["doi"] == "10.1000/xyz123"
+    assert result[1]["doi"] == "10.1000/xyz124"
+
+
 def test_clean_abstract_string_removes_all_tags():
     raw = "<jats:p>This is a <b>test</b> abstract.</jats:p>"
     cleaned = AbstractFetcher.clean_abstract_string(raw)
     assert cleaned == "This is a test abstract."
+
+
+def test_clean_abstract_string_fallback_regex():
+    # invalid XML, should trigger the regex fallback
+    raw = "<notclosed>This is broken"
+    cleaned = AbstractFetcher.clean_abstract_string(raw)
+    assert cleaned == "This is broken"
 
 
 def test_process_doi_remove_url():

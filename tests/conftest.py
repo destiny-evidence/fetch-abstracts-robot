@@ -117,7 +117,8 @@ def crossref_api_config_valid_batch():
         unpack_strategy=AbstractUnpackStrategy(
             source=ExternalAPI.CROSSREF_BATCH,
             clean_abstract_string=True,
-            strategy=["text", "meta", "abstract"],
+            strategy=["message", "items", "abstract"],
+            doi_strategy=["message", "items", "DOI"],
         ),
     )
 

@@ -103,7 +103,7 @@ def test_abstract_unpack_strategy_():
             "https://api.example.com/",
             {},
             ExternalAPI.CROSSREF_BATCH,
-            ["text", "meta", "abstract"],
+            ["message", "items", "abstract"],
         ),
     ],
 )

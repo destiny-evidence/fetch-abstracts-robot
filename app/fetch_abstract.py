@@ -469,9 +469,16 @@ class AbstractFetcher:
             if isinstance(nested_abstract_dict, dict):
                 obj = nested_abstract_dict.get(key)
             else:
-                logger.warning(
-                    f"level {i}: expected dict, got {type(obj)}. returning None."
-                )
+                try:
+                    warning_msg = (
+                        f"level {i}: expected dict, got {type(obj)}. returning None."
+                    )
+                except NameError:
+                    warning_msg = (
+                        "level {i}: expected dict, got.",
+                        f"{type(nested_abstract_dict)}returning None.",
+                    )
+                logger.warning(warning_msg)
                 return None
             if obj is None:
                 logger.warning(f"level {i}: key '{key}' not found. returning None.")
@@ -493,6 +500,12 @@ class AbstractFetcher:
         logger.debug(f"Abstract path: {abstract_path}")
         logger.debug(f"DOI path: {doi_path}")
         logger.debug(f"Clean abstract string: {clean}")
+
+        if doi_path is None:
+            logger.error(
+                "doi_strategy is None in unpack strategy; cannot unpack many abstracts."
+            )
+            return []
 
         # @harryjmoss not sure if this is the best
         # approach. should we instead encode this into the UnpackStrategy?
