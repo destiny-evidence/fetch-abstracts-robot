@@ -30,3 +30,26 @@ variable "environment" {
   description = "Environment for the Fetch Abstracts Robot, should be either development, staging or production."
   default     = "development"
 }
+
+variable "subscription_id" {
+  description = "The Azure subscription ID to use for the deployment."
+  type        = string
+}
+
+variable "owner_name" {
+  description = "Name of the owner of the robot."
+}
+
+variable "owner_email" {
+  description = "Email of the owner of the robot."
+}
+
+variable "environment_description" {
+  description = "Description of the environment the robot is deployed to."
+  default     = "warm"
+}
+
+variable "region_friendly_name" {
+  description = "Friendly name of the region the robot is deployed to."
+  default     = "Sweden Central"
+}
