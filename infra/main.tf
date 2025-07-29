@@ -10,10 +10,10 @@ resource "azurerm_resource_group" "robot_resource_group" {
   location = "swedencentral"
   tags = {
     "Budget Code" = "destiny-evidence"
-    "Created by" = "Harry Moss"
-    "Owner" = "cceaoss@ucl.ac.uk"
-    "Environment" = "warm"
-    "Region" = "Sweden Central"
+    "Created by" = "${var.owner_name}"
+    "Owner" = "${var.owner_email}"
+    "Environment" = "${var.environment_description}"
+    "Region" = "${var.region_friendly_name}"
   }
 }
 
