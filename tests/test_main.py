@@ -65,7 +65,7 @@ def test_create_abstract_enhancement_happy_path(
         ),
     )
     mocker.patch(
-        "app.fetch_abstract.AbstractFetcher.unpack_abstract",
+        "app.fetch_abstract.AbstractFetcher.unpack_one_abstract",
         return_value="This is a mocked abstract response.",
     )
     response = test_client.post("/abstract/enhancement/single/", json=request_body)

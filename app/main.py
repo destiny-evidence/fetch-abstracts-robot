@@ -9,7 +9,8 @@ from fastapi import BackgroundTasks, Depends, FastAPI, Response, status
 
 from app.auth import auth_strategy_robot
 from app.config import get_settings
-from app.data_models.scopus import scopus_api_config
+from app.data_models.crossref import crossref_api_config
+from app.data_models.scopus import scopus_api_config, scopus_batch_api_config
 from app.fetch_abstract import AbstractFetcher, prepare_api_config
 from app.utils import get_doi_from_reference, get_version_number_from_pyproject
 
@@ -27,7 +28,9 @@ client = destiny_sdk.client.Client(
 
 # configurations for all APIs we can hit to get abstracts
 AVAILABLE_API_CONFIGS = [
-    scopus_api_config  # add more here as more apis get defined/implemented
+    scopus_api_config,
+    scopus_batch_api_config,
+    crossref_api_config,
 ]
 global_api_config = prepare_api_config(
     api_configs=AVAILABLE_API_CONFIGS, settings=settings
@@ -66,7 +69,10 @@ def generate_abstract_enhancement(
 ) -> destiny_sdk.enhancements.Enhancement:
     """Generate an abstract enhancement."""
     doi = get_doi_from_reference(reference=reference)
-    abstract = abstract_fetcher.get_abstract_cycling_apis(doi=doi)
+    abstract_object = abstract_fetcher.get_one_abstract_cycling_apis(doi=doi)
+    abstract = abstract_object[
+        "abstract"
+    ]  # @ NOTE - @harryjmoss maybe we implement its own pydantic model for this?
 
     return destiny_sdk.enhancements.Enhancement(
         reference_id=reference.id,
@@ -101,18 +107,49 @@ def create_batch_abstract_enhancement(
     """
     Create a batch of abstract enhancements with efficient memory usage.
 
-    NOTE -- not yet implemented!
+    This leverages the `get_many_abstracts_cycling_apis` method,
+    rather than strictly looping over individual requests (although
+    this may be done in the background, depending on API config).
     """
+    version_number = get_version_number_from_pyproject()
     file_content = b""
     with (
         httpx.Client() as httpx_client,
         httpx_client.stream("GET", str(request.reference_storage_url)) as response,
     ):
         response.raise_for_status()
-        for entry in response.iter_lines():
-            reference = destiny_sdk.references.Reference.model_validate_json(entry)
-            enhancement = generate_abstract_enhancement(reference.id)
-            file_content += (enhancement.to_jsonl() + "\n").encode("utf-8")
+
+        references_in = [
+            destiny_sdk.references.Reference.model_validate_json(entry)
+            for entry in response.iter_lines()
+        ]
+        dois = [get_doi_from_reference(ref) for ref in references_in]
+
+        abstracts = abstract_fetcher.get_many_abstracts_cycling_apis(dois)
+
+        references_out = [
+            ref
+            for ref in references_in
+            if get_doi_from_reference(ref)
+            in [abstract["doi"] for abstract in abstracts]
+        ]
+
+        for ref, ab in zip(references_out, abstracts, strict=True):
+            file_content += (
+                destiny_sdk.enhancements.Enhancement(
+                    reference_id=ref.id,
+                    source=TITLE,
+                    visibility=destiny_sdk.visibility.Visibility.PUBLIC,
+                    robot_version=version_number,
+                    content_version=f"{uuid.uuid4()}",
+                    enhancement_type=destiny_sdk.enhancements.EnhancementType.ABSTRACT,
+                    content=destiny_sdk.enhancements.AbstractContentEnhancement(
+                        process=destiny_sdk.enhancements.AbstractProcessType.CLOSED_API,
+                        abstract=ab["abstract"],
+                    ),
+                ).to_jsonl()
+                + "\n"
+            ).encode("utf-8")
 
     with httpx.Client() as httpx_client:
         response = httpx_client.put(
@@ -155,11 +192,7 @@ def request_abstract_enhancement(
 def request_batch_abstract_enhancement(
     request: destiny_sdk.robots.BatchRobotRequest, background_tasks: BackgroundTasks
 ) -> Response:
-    """
-    Receive a request to create a lot of abstract enhancements.
-
-    NOTE - not yet implemented.
-    """
+    """Receive a request to create many abstract enhancements."""
     background_tasks.add_task(create_batch_abstract_enhancement, request)
 
     return Response(status_code=status.HTTP_202_ACCEPTED)
