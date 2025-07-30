@@ -60,9 +60,9 @@ poetry run fastapi dev --port 8001
         Robot->>Robot: Create enhancement background job
         Robot->>Destiny Repository: Response: 202 Accepted or Failure Status Code
         alt Background Job Success
-            Robot->>Destiny Repository: POST /robot/enhancement/single/ : destiny_sdk.robots.RobotResult(request_id, enhancement)
+            Robot->>Destiny Repository: POST /enhancement-request/single-requests/ : destiny_sdk.robots.RobotResult(request_id, enhancement)
         else Failure
-            Robot->>-Destiny Repository: POST /robot/enhancement/single/ : destiny_sdk.robots.RobotResult(request_id, RobotError)
+            Robot->>-Destiny Repository: POST /enhancement-request/single-requests/ : destiny_sdk.robots.RobotResult(request_id, RobotError)
         end
 ```
 
@@ -80,9 +80,9 @@ poetry run fastapi dev --port 8001
         Robot->>Robot: Process batch
         alt Background Job Success
             Robot->>Blob Storage: Upload created enhancements
-            Robot->>Destiny Repository: POST /robot/enhancement/batch/ : destiny_sdk.robots.BatchRobotResult(request_id, url_storage)
+            Robot->>Destiny Repository: POST /enhancement-request/batch-requests/ : destiny_sdk.robots.BatchRobotResult(request_id, url_storage)
         else Failure
-            Robot->>-Destiny Repository: POST /robot/enhancement/batch/ : destiny_sdk.robots.BatchRobotResult(request_id, RobotError)
+            Robot->>-Destiny Repository: POST /enhancement-request/batch-requests/ : destiny_sdk.robots.BatchRobotResult(request_id, RobotError)
         end
 ```
 
