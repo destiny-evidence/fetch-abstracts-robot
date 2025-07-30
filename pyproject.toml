@@ -19,13 +19,13 @@ version = "0.1.0"
 
 [tool.poetry.dependencies]
 defusedxml = "^0.7.1"
+destiny-sdk = "^0.2.0"
 fastapi = {extras = ["standard"], version = "^0.115.6"}
 loguru = "^0.7.3"
 pydantic-settings = "^2.7.1"
 python = "^3.12"
 requests = "^2.32.4"
 toml = "^0.10.2"
-destiny-sdk = "^0.2.0"
 
 [tool.poetry.group.dev.dependencies]
 detect-secrets = "^1.5.0"
