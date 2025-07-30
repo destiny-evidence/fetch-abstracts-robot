@@ -15,7 +15,7 @@ description = "Robot for adding abstract enhancements to items in the destiny re
 name = "fetch-abstracts-robot"
 package-mode = false
 readme = "README.md"
-version = "0.1.0"
+version = "0.2.0"
 
 [tool.poetry.dependencies]
 defusedxml = "^0.7.1"
