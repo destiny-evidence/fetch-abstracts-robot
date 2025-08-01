@@ -30,6 +30,14 @@ dev = [
     "pytest>=8.3.4",
     "ruff>=0.8.6",
 ]
+docs = [
+    "mkdocs",
+    "mkdocs-include-markdown-plugin",
+    "mkdocs-material",
+    "mkdocstrings",
+    "mkdocstrings-python",
+    "tox>=4.27.0",
+]
 test = [
     "pytest-cov>=6.2.1",
     "pytest-mock>=3.14.1",
@@ -87,3 +95,18 @@ spaces_indent_inline_array = 4
 trailing_comma_inline_array = true
 overrides."project.classifiers".inline_arrays = false
 overrides."tool.coverage.paths.source".inline_arrays = false
+
+[tool.tox]
+env_list = [
+    "py313",
+]
+env.docs = {commands = [
+    [
+        "--strict",
+        "build",
+        "mkdocs",
+    ],
+], extras = [
+    "docs",
+]}
+gh.python."3.13" = ["py313"]

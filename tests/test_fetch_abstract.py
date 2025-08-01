@@ -1,4 +1,4 @@
-"""tests for the core fetch_abstract module in app/fetch_abstract.py."""
+"""tests for the core fetch_abstract module in src/app/fetch_abstract.py."""
 
 from unittest.mock import MagicMock, patch
 
