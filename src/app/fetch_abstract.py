@@ -1,4 +1,7 @@
-"""module for fetching abstracts from various APIs."""
+"""
+Core module containing the `AbstractFetcher` class to get abstracts
+from various APIs.
+"""
 
 import re
 from collections.abc import Generator
@@ -7,6 +10,7 @@ from xml.etree.ElementTree import Element
 import requests
 from defusedxml.ElementTree import ParseError, fromstring
 from destiny_sdk.identifiers import DOIIdentifier
+from loguru import logger
 
 from app.config import Settings
 from app.data_models.generic import (
@@ -19,7 +23,6 @@ from app.data_models.generic import (
     external_api_priority_batch,
     external_api_priority_single,
 )
-from app.logger import logger
 from app.utils import InvalidDOIError, validate_doi
 
 
@@ -84,31 +87,55 @@ def prepare_api_config(
 
 
 class AbstractFetcher:
-    """a class that handles the fetching of abstracts from target APIs."""
+    """
+    Handles the fetching of abstracts from target APIs.
+    Can fetch either a `single` abstract, or a `batch` of
+    abstracts.
+    Will _cycle_ through available API configurations
+    in order to retrieve abstracts by DOI.
+    Will unpack and, if required, clean abstract.
+    """
 
     def __init__(self, master_api_config: dict, timeout: int = 60) -> None:
-        """init our AbstractFetcher instance."""
+        """
+        Init our AbstractFetcher instance.
+
+        Args:
+            master_api_config (dict): retrieved from `prepare_api_config`
+                using all provided API configs.
+            timeout (int, optional): Network timeout. Defaults to 60.
+
+        """
         self.master_api_config = master_api_config  # type: dict
         self.timeout = timeout
 
         logger.info(
-            "available external APIs - SINGLE - in descending order of priority:"
+            "Available external APIs - SINGLE - in descending order of priority:"
         )
         logger.info(", ".join(master_api_config["single"].keys()))
         logger.info(
-            "available external APIs - BATCH - in descending order of priority:"
+            "Available external APIs - BATCH - in descending order of priority:"
         )
         logger.info(", ".join(master_api_config["batch"].keys()))
 
     @staticmethod
     def process_doi(doi: DOIIdentifier | str) -> str:
-        """Process a DOI."""
+        """
+        Process a DOI.
+
+        Args:
+            doi (DOIIdentifier | str): Target _doi_
+
+        Returns:
+            str: processed doi.
+
+        """
         doi = DOIIdentifier(identifier=doi).identifier
         return str(doi).lower()
 
     def get_one_abstract_cycling_apis(self, doi: str, *, verbose: bool = False) -> dict:
         """
-        retrieve one abstract, iterating through available APIs until
+        Retrieve one abstract, iterating through available APIs until
         abstract found or options exhausted.
 
         Args:
@@ -199,7 +226,7 @@ class AbstractFetcher:
     def fetch(
         self, url: str, params: dict, headers: dict, *, verbose: bool = False
     ) -> dict:
-        """fetch a response from one of the APIs (generic)."""
+        """Fetch a response from one of the APIs (generic)."""
         response = requests.get(
             url=url, params=params, headers=headers, timeout=self.timeout
         )
@@ -364,11 +391,10 @@ class AbstractFetcher:
     @staticmethod
     def clean_abstract_string(abstract_string: str) -> str:
         """
-        remove all XML/JATS/HTML tags from the abstract string.
+        Remove all XML/JATS/HTML tags from abstract string.
 
-        rather than the builtin `xml` module, we leverage `defusedxml`
-        which should hopefully protect us from malicious xml infecting our
-        server.
+        Rather than the builtin `xml` module, we leverage `defusedxml`
+        which should hopefully protect us from malicious xml.
 
         Args:
             abstract_string, str, the string of the abstract
@@ -406,20 +432,20 @@ class AbstractFetcher:
         strategy: AbstractUnpackStrategy,
     ) -> str:
         """
-        unpack the plain text of the abstract using an unpack strategy.
+        Unpack the plain text of the abstract using an unpack strategy.
 
-        if our `AbstractUnpackStrategy` has field `clean_abstract_string`
+        If our `AbstractUnpackStrategy` has field `clean_abstract_string`
         set to `True`, we will run the `clean_abstract_string` method.
 
         Args:
             response_obj (dict): JSON response object from the API.
             strategy (AbstractUnpackStrategy): Unpack strategy to use.
 
-        Raises:
-            AbstractUnpackError: If unpacking the abstract fails.
-
         Returns:
             str: The plain text abstract extracted from the response object.
+
+        Raises:
+            AbstractUnpackError: If unpacking the abstract fails.
 
         """
         logger.debug("in abstract unpack")
@@ -481,7 +507,10 @@ class AbstractFetcher:
                 logger.warning(warning_msg)
                 return None
             if obj is None:
-                logger.warning(f"level {i}: key '{key}' not found. returning None.")
+                obj_is_none_warning_msg = (
+                    f"level {i}: key '{key}' not found. returning None."
+                )
+                logger.warning(obj_is_none_warning_msg)
                 return None
             nested_abstract_dict = obj
         return obj
