@@ -19,7 +19,7 @@ dependencies = [
 description = "Robot for adding abstract enhancements to items in the destiny repo from alternate sources."
 name = "fetch-abstracts-robot"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 version = "0.1.0"
 
 [project.optional-dependencies]
