@@ -1,4 +1,4 @@
-"""misc/utility functions for our abstract fetcher robot."""
+"""Misc/Utility functions for our abstract fetcher robot."""
 
 import toml
 from destiny_sdk.identifiers import DOIIdentifier, ExternalIdentifierType
@@ -8,16 +8,16 @@ from pydantic import ValidationError
 
 
 class InvalidDOIError(Exception):
-    """custom exception to throw when DOI is invalid."""
+    """Custom exception to throw when DOI is invalid."""
 
 
 class MissingDOIError(Exception):
-    """exception for when a reference doesn't contain a DOI."""
+    """Exception for when a reference doesn't contain a DOI."""
 
 
 def validate_doi(doi_string: str) -> bool:
     """
-    validate a DOI string using a regular expression.
+    Validate a DOI string using a regular expression.
 
     returns `True` if valid, `False` otherwise.
     """
@@ -60,7 +60,7 @@ def get_version_number_from_pyproject(
     key: str = "version",
 ) -> str:
     """
-    retrieve the version number from a pyproject.toml file.
+    Retrieve the version number from a pyproject.toml file.
 
     Args:
         pyproject_toml_file (str): Path to the pyproject.toml file.

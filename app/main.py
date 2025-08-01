@@ -90,7 +90,7 @@ def generate_abstract_enhancement(
 
 def create_abstract_enhancement(request: destiny_sdk.robots.RobotRequest) -> None:
     """
-    create an abstract enhancement.
+    Create an abstract enhancement.
 
     this wraps around `generate_abstract_enhancement` and queues it.
     """

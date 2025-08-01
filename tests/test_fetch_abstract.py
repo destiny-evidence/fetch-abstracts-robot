@@ -84,10 +84,10 @@ def test_abstract_fetcher_init_logs(request, api_config_fixture):
         )
         fetcher = AbstractFetcher(master_api_config)
         mock_logger.info.assert_any_call(
-            "available external APIs - SINGLE - in descending order of priority:"
+            "Available external APIs - SINGLE - in descending order of priority:"
         )
         mock_logger.info.assert_any_call(
-            "available external APIs - BATCH - in descending order of priority:"
+            "Available external APIs - BATCH - in descending order of priority:"
         )
         for external_api_name in master_api_config["single"]:
             assert external_api_name == api_config_single.name.value.upper()
