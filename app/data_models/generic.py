@@ -1,4 +1,4 @@
-"""Define generic data models and validators."""
+"""Generic data models and validators for working with external APIs."""
 
 from enum import StrEnum
 
@@ -13,16 +13,16 @@ class APIKeyNotPresentError(Exception):
 
 
 class AbstractUnpackError(Exception):
-    """to raise when we fail to unpack an abstract."""
+    """Raise when we fail to unpack an abstract."""
 
 
 class AbstractNotFoundError(Exception):
-    """to raise when we fail to find an abstract."""
+    """Raise when we fail to find an abstract."""
 
 
 class ExternalAPI(StrEnum):
     """
-    exhaustive list of permitted external APIs which we can hit to retrieve abstracts.
+    Exhaustive list of permitted external APIs which we can hit to retrieve abstracts.
 
     new additions here will require definition of
     new pydantic models for parsing their output and new
@@ -37,8 +37,8 @@ class ExternalAPI(StrEnum):
 
 class QueryType(StrEnum):
     """
-    exhaustive list of permitted query types,
-    e.g. `single` or `batch`.
+    Exhaustive list of permitted query types,
+    e.g. `single`, `batched_single` or `batch`.
 
     """
 
@@ -48,7 +48,7 @@ class QueryType(StrEnum):
 
 
 class ExternalAPIPriority(BaseModel):
-    """priority definition of APIs to call for any given abstract."""
+    """Priority definition of APIs to call for any given abstract."""
 
     name: str = Field(description="name of the api priority")
     priorities: dict[ExternalAPI, int] = Field(
@@ -75,9 +75,11 @@ external_api_priority_batch = ExternalAPIPriority(
 
 class AbstractUnpackStrategy(BaseModel):
     """
-    when we retrieve an abstract, all we really want is the actual abstract text.
+    Strategy for unpacking a retrieved abstract object.
+    When we retrieve an abstract, all we really want
+    is the actual abstract text.
 
-    this will be in different places for different
+    This will be hidden in different places for different
     APIs, so here we can stick all the sequential sub-keys we need
     to reference to find our abstract.
     """
@@ -85,57 +87,59 @@ class AbstractUnpackStrategy(BaseModel):
     source: ExternalAPI
     clean_abstract_string: bool = Field(
         default=False,
-        description="""a bool indicating whether
+        description="""A bool indicating whether
         we want to run the `clean_abstract_string` method
         on the string retrieved.
         """,
     )
     doi_strategy: list[str] | None = Field(
-        default=None, description="strategy for unpacking DOI from response. optional."
+        default=None, description="Strategy for unpacking DOI from response. Optional."
     )
     strategy: list[str] | list[list] = Field(
-        description="""a list of keys to sequentially
+        description="""A list of keys to sequentially
         pass to the json response object to retrieve
         plain-text abstract."""
     )
 
 
 class APIConfig(BaseModel):
-    """a model of essential config required to get an abstract from an API."""
+    """
+    Essential config required to use an external API to get
+    abstracts, clean them, and make them available to a destiny Work.
+    """
 
     name: ExternalAPI = Field(
-        description="the name (we've given) to this external API service"
+        description="Name (we've given) to this external API service"
     )
-    url: AnyUrl = Field(description="the url/endpoint for the given API")
-    require_api_key: bool = Field(
-        description="indicates whether an API key is required to" "reach this API."
-    )
+    url: AnyUrl = Field(description="URL/endpoint for the given API")
+    require_api_key: bool = Field(description="Is API key required to hit this API.")
     api_key_env_var_name: str | None = Field(
-        description="the name of the environment variable/settings field "
+        description="Name of the environment variable/settings field "
         "which represents an api key for this api."
     )
     api_key_placement: str | None = Field(
-        description="the dict key in `headers` where we should insert our API key."
+        description="Dict key in `headers` where we should insert our API key."
     )
     query_type: QueryType = Field(
-        default=QueryType.SINGLE, description="the type of query; e.g. single or batch."
+        default=QueryType.SINGLE,
+        description="Type of query; i.e. single, batched_single or batch.",
     )
     query_params: dict = Field(
         default={},
-        description="the query params to pass with the api call.",
+        description="Query params to pass with the api call.",
     )
     headers: dict = Field(
         default={"Accept": "application/json"},
-        description="the headers to pass with the request.",
+        description="Headers to pass with the request.",
     )
     unpack_strategy: AbstractUnpackStrategy = Field(
-        description="the unpack strategy to employ to get a plain-text abstract"
+        description="Unpack strategy to employ to get a plain-text abstract"
     )
 
     @model_validator(mode="before")
     @classmethod
     def api_key_placement_in_headers(cls, values: dict) -> dict:
-        """ensure that api_key_placement is a key in the headers dict."""
+        """Ensure `api_key_placement` is a key in the headers dict."""
         if values["require_api_key"] and (
             values["headers"] is not None
             and values["api_key_placement"] not in values["headers"]
@@ -147,7 +151,7 @@ class APIConfig(BaseModel):
 
     def init_api_key(self, settings: Settings) -> None:
         """
-        populate proper request headers with API key if present.
+        Populate proper request headers with API key if present.
 
         Raises:
             APIKeyNotPresentError
@@ -245,7 +249,6 @@ class APIConfig(BaseModel):
                 "headers": self.headers,
             }
 
-        # we can add more configurations here...
         if self.query_type == QueryType.BATCH:
             if not isinstance(query, list):
                 error_msg = "query_type `batch` requires a `list` type query."

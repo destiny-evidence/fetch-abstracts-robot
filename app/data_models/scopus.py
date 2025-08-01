@@ -1,4 +1,4 @@
-"""pyndatic models, validation and other scopus business."""
+"""Config constants for SCOPUS API; single & batch."""
 
 from app.data_models.generic import AbstractUnpackStrategy, APIConfig
 

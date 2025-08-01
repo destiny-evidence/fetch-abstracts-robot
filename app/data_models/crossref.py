@@ -1,4 +1,4 @@
-"""pydantic models, validation and other business for CrossRef."""
+"""Config constants for CrossRef API; single & batch."""
 
 from app.config import get_settings
 from app.data_models.generic import AbstractUnpackStrategy, APIConfig, QueryType
