@@ -1,42 +1,43 @@
 [build-system]
-build-backend = "poetry.core.masonry.api"
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=45", "wheel"]
+
+[project]
+authors = [
+    {email = "h.moss@ucl.ac.uk", name = "Harry Moss"},
+    {email = "n.loynes@ucl.ac.uk", name = "Nik Loynes"},
+]
+dependencies = [
+    "defusedxml>=0.7.1",
+    "destiny-sdk>=0.2.0",
+    "fastapi[standard]>=0.115.6",
+    "loguru>=0.7.3",
+    "pydantic-settings>=2.7.1",
+    "requests>=2.32.4",
+    "toml>=0.10.2",
+]
+description = "Robot for adding abstract enhancements to items in the destiny repo from alternate sources."
+name = "fetch-abstracts-robot"
+readme = "README.md"
+requires-python = ">=3.12"
+version = "0.1.0"
+
+[project.optional-dependencies]
+dev = [
+    "detect-secrets>=1.5.0",
+    "pre-commit>=4.0.1",
+    "pytest-httpx>=0.35.0",
+    "pytest>=8.3.4",
+    "ruff>=0.8.6",
+]
+test = [
+    "pytest-cov>=6.2.1",
+    "pytest-mock>=3.14.1",
+]
 
 [tool.mypy]
 explicit_package_bases = true
 plugins = ["pydantic.mypy"]
-
-[tool.poetry]
-authors = [
-    "Harry Moss <h.moss@ucl.ac.uk>",
-    "Nik Loynes <n.loynes@ucl.ac.uk>",
-]
-description = "Robot for adding abstract enhancements to items in the destiny repo from alternate sources."
-name = "fetch-abstracts-robot"
-package-mode = false
-readme = "README.md"
-version = "0.1.0"
-
-[tool.poetry.dependencies]
-defusedxml = "^0.7.1"
-destiny-sdk = "^0.2.0"
-fastapi = {extras = ["standard"], version = "^0.115.6"}
-loguru = "^0.7.3"
-pydantic-settings = "^2.7.1"
-python = "^3.12"
-requests = "^2.32.4"
-toml = "^0.10.2"
-
-[tool.poetry.group.dev.dependencies]
-detect-secrets = "^1.5.0"
-pre-commit = "^4.0.1"
-pytest = "^8.3.4"
-pytest-httpx = "^0.35.0"
-ruff = "^0.8.6"
-
-[tool.poetry.group.test.dependencies]
-pytest-cov = "^6.2.1"
-pytest-mock = "^3.14.1"
 
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--import-mode=importlib", "--verbose"]
@@ -73,6 +74,12 @@ lint.per-file-ignores = {"tests*" = [
 lint.select = ["ALL"]
 lint.mccabe.max-complexity = 18
 lint.pep8-naming.classmethod-decorators = ["classmethod"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.tomlsort]
 all = true

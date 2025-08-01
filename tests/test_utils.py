@@ -127,7 +127,7 @@ def test_get_version_number_from_pyproject_success(tmp_path):
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text(
         """
-        [tool.poetry]
+        [project]
         name = "fetch-abstracts-robot"
         version = "1.2.3"
         """
@@ -150,6 +150,6 @@ def test_get_version_number_from_pyproject_missing_section(tmp_path):
 
 def test_get_version_number_from_pyproject_missing_key(tmp_path):
     pyproject = tmp_path / "pyproject.toml"
-    pyproject.write_text("[tool.poetry]\nname = 'fetch-abstracts-robot'\n")
+    pyproject.write_text("[project]\nname = 'fetch-abstracts-robot'\n")
     with pytest.raises(KeyError):
         get_version_number_from_pyproject(str(pyproject))
