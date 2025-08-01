@@ -6,7 +6,7 @@ This derived from the example robot producing toy enhancements against the desti
 
 ## tl, dr
 
-A **robot** is an extension/plugin to the _DESTINY_ repository, which, using _DESTINY_'s API (specifically POST) endpoints to create `Enhancement`s on the core unit of analysis, `Work`s (the bespoke data model for scientific publications, reports, papers, etc. which are stored in _DESTINY_-repository).
+A **robot** is an extension/plugin to the _DESTINY_ repository, which, using _DESTINY_'s API (specifically POST) endpoints to create `Enhancement`s on the core unit of analysis, `Record`s (the bespoke data model for scientific publications, reports, papers, etc. which are stored in _DESTINY_-repository).
 
 The **Fetch Abstracts Robot (FAR)** contains functionality for retrieving abstracts for target works by [_DOI_](https://en.wikipedia.org/wiki/Digital_object_identifier). Abstracts are retrieved from third-party APIs and transformed into generic enhancements to a target work. Third-party APIs are configured via an `APIConfig` class, with functionality for handling authentication, abstract unpacking (`AbstractUnpackStrategy`) and abstract (string) cleaning. There is functionality for batch and single abstract retrieval. The hierarchy of which API to hit first is then declared in an `ExternalAPIPriority` class.
 
