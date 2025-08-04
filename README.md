@@ -34,13 +34,13 @@ source .venv/bin/activate
 Then install the dependencies with the uv-managed `pip`:
 
 ```sh
-uv pip install .
+uv sync
 ```
 
 To install additional development and test dependencies, run:
 
 ```sh
-uv pip install ".[dev,test]"
+uv sync --all-extras
 ```
 
 ## Development
