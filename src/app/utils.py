@@ -56,7 +56,7 @@ def get_doi_from_reference(reference: Reference) -> str:
 
 def get_version_number_from_pyproject(
     pyproject_toml_file: str = "pyproject.toml",
-    section: str = "tool.poetry",
+    section: str = "project",
     key: str = "version",
 ) -> str:
     """
@@ -76,7 +76,7 @@ def get_version_number_from_pyproject(
 
     """
     data = toml.load(pyproject_toml_file)
-    # Traverse the section path (e.g., "tool.poetry")
+    # Traverse the section path (e.g., "project")
     section_dict = data
     for part in section.split("."):
         section_dict = section_dict[part]

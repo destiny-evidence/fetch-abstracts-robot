@@ -1,18 +1,34 @@
 FROM python:3.13-slim-bookworm AS base
+
 WORKDIR /app
 
 FROM base AS builder
 
-RUN pip install poetry poetry-plugin-bundle
-COPY pyproject.toml poetry.lock README.md ./
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
+# Install uv
+ADD https://astral.sh/uv/install.sh /uv-installer.sh
 
-RUN poetry bundle venv -vvv --only=main /app/.venv;
+# Run uv installer and remove it
+RUN sh /uv-installer.sh && rm /uv-installer.sh
+
+# Ensure the installed binary is on the `PATH`
+ENV PATH="/root/.local/bin/:$PATH"
+
+COPY pyproject.toml uv.lock README.md ./
+COPY src/ ./src/
+
+RUN uv sync --locked
 
 FROM base AS final
+
+# Copy the entire virtual environment from builder stage
 COPY --from=builder /app/.venv /app/.venv
 
-COPY app/ ./app
+# Copy source code
+COPY --from=builder /app/src /app/src
+
+# Ensure virtual environment is in PATH
 ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8001
-ENTRYPOINT ["fastapi",  "run", "app/main.py", "--port", "8001"]
+ENTRYPOINT ["fastapi", "run", "src/app/main.py", "--port", "8001"]
