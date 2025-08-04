@@ -102,13 +102,16 @@ overrides."tool.tox.env.docs.commands".inline_arrays = false
 env_list = [
     "py313",
 ]
-env.docs = {commands = [
+
+[tool.tox.env.docs]
+commands = [
     [
         "mkdocs",
         "build",
         "--strict",
     ],
-], extras = [
+]
+extras = [
     "docs",
-]}
+]
 gh.python."3.13" = ["py313"]
