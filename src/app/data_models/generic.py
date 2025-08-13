@@ -154,7 +154,7 @@ class APIConfig(BaseModel):
         Populate proper request headers with API key if present.
 
         Raises:
-            APIKeyNotPresentError
+            ApiKeyNotPresentError: if the API key is not present in settings.
 
         """
         if self.require_api_key:
@@ -199,7 +199,7 @@ class APIConfig(BaseModel):
                                               Defaults to 15.
 
         Raises:
-            ValueError: if
+            ValueError: If the number of items in the payload exceeds max_array_length.
 
         Returns:
             str: query string
@@ -229,8 +229,9 @@ class APIConfig(BaseModel):
                                               build the query from. Defaults to 15.
 
         Raises:
-            TypeError
-            ValueError
+            TypeError: If the query type does not correspond to the expected type
+                for the query type.
+            ValueError: If the query type is invalid.
 
         Returns:
             dict: a dictionary containing the url, query_params, and headers.
@@ -272,7 +273,7 @@ class APIConfig(BaseModel):
             }
 
         error_msg = (
-            "unable to format query. ensure correct specification ",
+            "Unable to format query. Ensure correct specification ",
             "of query and query type.",
         )
         raise ValueError(error_msg)

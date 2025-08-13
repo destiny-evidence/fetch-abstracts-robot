@@ -59,7 +59,7 @@ pre-commit hooks will run automatically when you commit changes. To run them man
 pre-commit run --all-files
 ```
 
-See [.pre-commit-config.yaml](.pre-commit-config.yaml) for the list of pre-commit hooks and their configuration.
+See `.pre-commit-config.yaml` for the list of pre-commit hooks and their configuration.
 
 ## Application
 
@@ -111,13 +111,13 @@ fastapi dev --port 8001
 
 Authentication between the Toy Robot and Destiny Repository uses HMAC authentication, where a request signature is encrypted with the robot's secret key and set as a header. To simplify this process, the destiny_sdk provides both a client for communicating with destiny repository that handles adding signatures, and a service auth that can be used to validate incoming requests.
 
-In Toy Robot the client is inititalised in [main.py](app/main.py) and used for sending requests, the service auth is initialised in [auth.py](app/auth.py) and then used as a dependency on the app endpoints in [main.py](app/main.py)
+In Toy Robot the client is inititalised in `src/app/main.py` and used for sending requests, the service auth is initialised in `src/app/auth.py` and then used as a dependency on the app endpoints in `src/app/main.py`.
 
 ### Configuring Authentication
 
 - If you are running the robot with a local instance of destiny repository that is not enforcing authentication, add `ENV=local` to your `.env` file. This will cause the robot to bypass authentication. This is to allow easy development only and the robot should not be deployed with `env=local`.
   - In this case you will need to set dummy values for the `ROBOT_ID` and the `ROBOT_SECRET`. For example `ROBOT_ID="9fa8b9bd-12b1-4450-affb-712face23390"` and `ROBOT_SECRET="dummy_secret"`
-- If you want to deploy the Toy Robot and use it with destiny repository, the robot will need to be registered with that deployment of destiny repository. The registration process will provide the robot_id and client_secret needed to configure authentication. You can check out the proceedure for registering a robot [here](https://destiny-evidence.github.io/destiny-repository/procedures/robot-registration.html).
+- If you want to deploy the Toy Robot and use it with destiny repository, the robot will need to be registered with that deployment of destiny repository. The registration process will provide the robot_id and client_secret needed to configure authentication. You can check out the proceedure for registering a robot [in the DESTinY documentation](https://destiny-evidence.github.io/destiny-repository/procedures/robot-registration.html).
 
 ## Container Image
 

@@ -140,7 +140,7 @@ class AbstractFetcher:
 
         Args:
             doi (str): a valid DOI to for the work for which
-            we're looking for an abstract.
+                we're looking for an abstract.
 
         Raises:
             InvalidDOIError: if DOI is not valid (see concerns
@@ -391,17 +391,17 @@ class AbstractFetcher:
     @staticmethod
     def clean_abstract_string(abstract_string: str) -> str:
         """
-        Remove all XML/JATS/HTML tags from abstract string.
+        Remove all XML/JATS/HTML tags from the abstract string.
 
         Rather than the builtin `xml` module, we leverage `defusedxml`
         which should hopefully protect us from malicious xml.
 
         Args:
-            abstract_string, str, the string of the abstract
+            abstract_string (str): The abstract string to clean.
 
-        returns:
-            the cleaned abstract string (currently still contains latex
-            and newline)
+        Returns:
+            The cleaned abstract string (currently still contains latex
+                and newline)
 
         """
         logger.debug("removing xml/jats tags from abstract string...")

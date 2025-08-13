@@ -1,4 +1,4 @@
-"""tests for functions in app/utils.py."""
+"""tests for functions in src/app/utils.py."""
 
 from unittest.mock import patch
 from uuid import uuid4
