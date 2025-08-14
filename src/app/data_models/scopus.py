@@ -69,7 +69,7 @@ class ScopusAPIConfig(APIConfig):
         if inst_token is None:
             error_message = (
                 f"Inst token for {self.name} is not present in settings"
-                "skipping header population."
+                " skipping header population."
             )
             logger.warning(error_message)
         self.headers[self.api_key_placement] = api_key.get_secret_value()

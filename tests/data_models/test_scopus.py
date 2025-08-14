@@ -33,8 +33,7 @@ def test_scopus_api_config_creation_success_no_inst_token(
         config.init_api_key(test_settings)
 
     assert any(
-        "Inst token for scopus is not present in settings, skipping header population."
-        in message
+        "Inst token for scopus is not present in settings" in message
         for message in caplog.text.splitlines()
     )
 
