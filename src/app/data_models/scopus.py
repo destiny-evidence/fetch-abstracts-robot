@@ -34,13 +34,7 @@ SCOPUS_BATCH_UNPACK_STRATEGY = AbstractUnpackStrategy(
 
 
 class ScopusAPIConfig(APIConfig):
-    """
-    Configuration for the SCOPUS API.
-
-    Args:
-        APIConfig (_type_): Base configuration for external APIs.
-
-    """
+    """Configuration for the SCOPUS API."""
 
     api_inst_token_placement: str | None = Field(
         description="Inst token for Scopus API", default="X-ELS-Insttoken"
