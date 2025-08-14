@@ -54,12 +54,8 @@ def prepare_api_config(
     """
     master_api_config = {}  # type: dict
     api_config_map = {config.name.value: config for config in api_configs}
-    logger.debug(
-        f"external_api_priority_single: {external_api_priority_single.priorities}"
-    )
-    logger.debug(
-        f"external_api_priority_batch: {external_api_priority_batch.priorities}"
-    )
+    logger.debug(f"external_api_priority_single: {external_api_priority_single.priorities}")
+    logger.debug(f"external_api_priority_batch: {external_api_priority_batch.priorities}")
     logger.debug(f"supplied api candidates: {', '.join(api_config_map.keys())}")
 
     for external_api_priority in [
@@ -109,13 +105,9 @@ class AbstractFetcher:
         self.master_api_config = master_api_config  # type: dict
         self.timeout = timeout
 
-        logger.info(
-            "Available external APIs - SINGLE - in descending order of priority:"
-        )
+        logger.info("Available external APIs - SINGLE - in descending order of priority:")
         logger.info(", ".join(master_api_config["single"].keys()))
-        logger.info(
-            "Available external APIs - BATCH - in descending order of priority:"
-        )
+        logger.info("Available external APIs - BATCH - in descending order of priority:")
         logger.info(", ".join(master_api_config["batch"].keys()))
 
     @staticmethod
@@ -158,9 +150,7 @@ class AbstractFetcher:
         logger.info(f"seeking abstract for doi: {doi}")
         for api in self.master_api_config["single"]:
             logger.info(f"attempting retrieval using api {api}.")
-            doi_abstract_dict = self.fetch_one_abstract(
-                doi=doi, api_config=self.master_api_config["single"][api]
-            )
+            doi_abstract_dict = self.fetch_one_abstract(doi=doi, api_config=self.master_api_config["single"][api])
             if doi_abstract_dict:
                 found_message = f"abstract retrieval through {api} was successful."
                 logger.info(found_message)
@@ -173,9 +163,7 @@ class AbstractFetcher:
         error_msg = f"unable to find abstract for {doi}."
         raise AbstractNotFoundError(error_msg)
 
-    def get_many_abstracts_cycling_apis(
-        self, dois: list[str], *, verbose: bool = False
-    ) -> list[dict]:
+    def get_many_abstracts_cycling_apis(self, dois: list[str], *, verbose: bool = False) -> list[dict]:
         """
         Get many abstracts from a list of DOIs, cycling APIs in order of priority.
 
@@ -211,10 +199,7 @@ class AbstractFetcher:
                     retrieved_abstracts.append(abstract)
                     logger.debug(f"doi to remove: {abstract['doi']}.")
                     dois.remove(self.process_doi(abstract["doi"]))
-                    logger.info(
-                        f'retrieved abstract for doi {abstract["doi"]}. '
-                        "removing from master list."
-                    )
+                    logger.info(f'retrieved abstract for doi {abstract["doi"]}. ' "removing from master list.")
                     api_count += 1
 
             logger.info(f"found {api_count} abstracts for api {api}.")
@@ -223,13 +208,9 @@ class AbstractFetcher:
 
         return retrieved_abstracts
 
-    def fetch(
-        self, url: str, params: dict, headers: dict, *, verbose: bool = False
-    ) -> dict:
+    def fetch(self, url: str, params: dict, headers: dict, *, verbose: bool = False) -> dict:
         """Fetch a response from one of the APIs (generic)."""
-        response = requests.get(
-            url=url, params=params, headers=headers, timeout=self.timeout
-        )
+        response = requests.get(url=url, params=params, headers=headers, timeout=self.timeout)
         if verbose:
             request_actual_headers = f"request headers: {response.request.headers}"
             request_url = f"request url: {response.request.url}"
@@ -282,18 +263,13 @@ class AbstractFetcher:
                 verbose=True,
             )
         except requests.HTTPError as e:
-            logger.error(
-                "encountered HTTPError on attempting to retrieve abstract. "
-                f"original error message: {e}"
-            )
+            logger.error("encountered HTTPError on attempting to retrieve abstract. " f"original error message: {e}")
             raise
 
         try:
             return {
                 "doi": doi,
-                "abstract": self.unpack_one_abstract(
-                    response_obj=response, strategy=api_config.unpack_strategy
-                ),
+                "abstract": self.unpack_one_abstract(response_obj=response, strategy=api_config.unpack_strategy),
             }
         except AbstractUnpackError as abstract_unpack_error:
             error_message = f"""Error unpacking abstract for {doi=}\
@@ -325,10 +301,7 @@ class AbstractFetcher:
         logger.debug(f"query type: {api_config.query_type.value}")
         if chunk:
             # batching as we don't want to make our URL longer than 2000 chars.
-            chunked_dois = [
-                dois[i : i + doi_batch_size]
-                for i in range(0, len(dois), doi_batch_size)
-            ]
+            chunked_dois = [dois[i : i + doi_batch_size] for i in range(0, len(dois), doi_batch_size)]
             dois = chunked_dois  # type: ignore[no-redef, assignment]
             logger.debug(
                 (
@@ -489,16 +462,12 @@ class AbstractFetcher:
         """
         logger.debug(f"traversing object with path: {path}")
         for i, key in enumerate(path):
-            logger.debug(
-                f"level {i}: object type: {type(nested_abstract_dict)}, key: {key}"
-            )
+            logger.debug(f"level {i}: object type: {type(nested_abstract_dict)}, key: {key}")
             if isinstance(nested_abstract_dict, dict):
                 obj = nested_abstract_dict.get(key)
             else:
                 try:
-                    warning_msg = (
-                        f"level {i}: expected dict, got {type(obj)}. returning None."
-                    )
+                    warning_msg = f"level {i}: expected dict, got {type(obj)}. returning None."
                 except NameError:
                     warning_msg = (
                         "level {i}: expected dict, got.",
@@ -507,17 +476,13 @@ class AbstractFetcher:
                 logger.warning(warning_msg)
                 return None
             if obj is None:
-                obj_is_none_warning_msg = (
-                    f"level {i}: key '{key}' not found. returning None."
-                )
+                obj_is_none_warning_msg = f"level {i}: key '{key}' not found. returning None."
                 logger.warning(obj_is_none_warning_msg)
                 return None
             nested_abstract_dict = obj
         return obj
 
-    def unpack_many_abstracts(
-        self, response_obj: dict | list, strategy: AbstractUnpackStrategy
-    ) -> list[dict]:
+    def unpack_many_abstracts(self, response_obj: dict | list, strategy: AbstractUnpackStrategy) -> list[dict]:
         """Unpack many abstracts using strategy and doi_strategy."""
         logger.debug("Starting unpack_many_abstracts...")
         out = []
@@ -531,9 +496,7 @@ class AbstractFetcher:
         logger.debug(f"Clean abstract string: {clean}")
 
         if doi_path is None:
-            logger.error(
-                "doi_strategy is None in unpack strategy; cannot unpack many abstracts."
-            )
+            logger.error("doi_strategy is None in unpack strategy; cannot unpack many abstracts.")
             return []
 
         # @harryjmoss not sure if this is the best
@@ -564,9 +527,7 @@ class AbstractFetcher:
             entries = self._traverse(batch, shared_prefix)
 
             if not isinstance(entries, list):
-                logger.warning(
-                    f"batch {batch_idx}: entries is not a list. skipping batch."
-                )
+                logger.warning(f"batch {batch_idx}: entries is not a list. skipping batch.")
                 continue
 
             logger.debug(f"batch {batch_idx}: found {len(entries)} entries.")
@@ -584,10 +545,7 @@ class AbstractFetcher:
                     logger.info(f"xtracted abstract for DOI: {doi}")
 
                 else:
-                    logger.warning(
-                        f"entry {entry_idx}: missing DOI or abstract. DOI: {doi}, "
-                        "abstract: {abstract}"
-                    )
+                    logger.warning(f"entry {entry_idx}: missing DOI or abstract. DOI: {doi}, " "abstract: {abstract}")
 
         logger.debug(f"total n abstracts unpacked: {len(out)}")
         return out

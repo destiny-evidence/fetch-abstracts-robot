@@ -32,9 +32,7 @@ AVAILABLE_API_CONFIGS = [
     scopus_batch_api_config,
     crossref_api_config,
 ]
-global_api_config = prepare_api_config(
-    api_configs=AVAILABLE_API_CONFIGS, settings=settings
-)
+global_api_config = prepare_api_config(api_configs=AVAILABLE_API_CONFIGS, settings=settings)
 
 # our abstract fetcher util we will use in abstract/enhancement functions in this module
 abstract_fetcher = AbstractFetcher(global_api_config)
@@ -70,9 +68,7 @@ def generate_abstract_enhancement(
     """Generate an abstract enhancement."""
     doi = get_doi_from_reference(reference=reference)
     abstract_object = abstract_fetcher.get_one_abstract_cycling_apis(doi=doi)
-    abstract = abstract_object[
-        "abstract"
-    ]  # @ NOTE - @harryjmoss maybe we implement its own pydantic model for this?
+    abstract = abstract_object["abstract"]  # @ NOTE - @harryjmoss maybe we implement its own pydantic model for this?
 
     return destiny_sdk.enhancements.Enhancement(
         reference_id=reference.id,
@@ -96,9 +92,7 @@ def create_abstract_enhancement(request: destiny_sdk.robots.RobotRequest) -> Non
     """
     enhancement = generate_abstract_enhancement(request.reference)
 
-    client.send_robot_result(
-        destiny_sdk.robots.RobotResult(request_id=request.id, enhancement=enhancement)
-    )
+    client.send_robot_result(destiny_sdk.robots.RobotResult(request_id=request.id, enhancement=enhancement))
 
 
 def create_batch_abstract_enhancement(
@@ -119,19 +113,13 @@ def create_batch_abstract_enhancement(
     ):
         response.raise_for_status()
 
-        references_in = [
-            destiny_sdk.references.Reference.model_validate_json(entry)
-            for entry in response.iter_lines()
-        ]
+        references_in = [destiny_sdk.references.Reference.model_validate_json(entry) for entry in response.iter_lines()]
         dois = [get_doi_from_reference(ref) for ref in references_in]
 
         abstracts = abstract_fetcher.get_many_abstracts_cycling_apis(dois)
 
         references_out = [
-            ref
-            for ref in references_in
-            if get_doi_from_reference(ref)
-            in [abstract["doi"] for abstract in abstracts]
+            ref for ref in references_in if get_doi_from_reference(ref) in [abstract["doi"] for abstract in abstracts]
         ]
 
         for ref, ab in zip(references_out, abstracts, strict=True):
@@ -164,9 +152,7 @@ def create_batch_abstract_enhancement(
         response.raise_for_status()
 
     client.send_batch_robot_result(
-        destiny_sdk.robots.BatchRobotResult(
-            request_id=request.id, storage_url=request.result_storage_url
-        )
+        destiny_sdk.robots.BatchRobotResult(request_id=request.id, storage_url=request.result_storage_url)
     )
 
 

@@ -79,16 +79,10 @@ def test_abstract_fetcher_init_logs(request, api_config_fixture):
     api_config_batch = request.getfixturevalue(api_config_fixture["batch"])
     settings = get_settings()
     with patch("app.fetch_abstract.logger") as mock_logger:
-        master_api_config = prepare_api_config(
-            [api_config_single, api_config_batch], settings
-        )
+        master_api_config = prepare_api_config([api_config_single, api_config_batch], settings)
         fetcher = AbstractFetcher(master_api_config)
-        mock_logger.info.assert_any_call(
-            "Available external APIs - SINGLE - in descending order of priority:"
-        )
-        mock_logger.info.assert_any_call(
-            "Available external APIs - BATCH - in descending order of priority:"
-        )
+        mock_logger.info.assert_any_call("Available external APIs - SINGLE - in descending order of priority:")
+        mock_logger.info.assert_any_call("Available external APIs - BATCH - in descending order of priority:")
         for external_api_name in master_api_config["single"]:
             assert external_api_name == api_config_single.name.value.upper()
         for external_api_name in master_api_config["batch"]:
@@ -113,11 +107,7 @@ def test_fetch_success(request, api_config_fixture):
     settings = get_settings()
     api_config_single = request.getfixturevalue(api_config_fixture["single"])
     api_config_batch = request.getfixturevalue(api_config_fixture["batch"])
-    fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config(
-            [api_config_single, api_config_batch], settings
-        )
-    )
+    fetcher = AbstractFetcher(master_api_config=prepare_api_config([api_config_single, api_config_batch], settings))
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
     mock_response.json.return_value = {"foo": "bar"}
@@ -144,11 +134,7 @@ def test_fetch_http_error(request, api_config_fixture):
     settings = get_settings()
     api_config_single = request.getfixturevalue(api_config_fixture["single"])
     api_config_batch = request.getfixturevalue(api_config_fixture["batch"])
-    fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config(
-            [api_config_single, api_config_batch], settings
-        )
-    )
+    fetcher = AbstractFetcher(master_api_config=prepare_api_config([api_config_single, api_config_batch], settings))
     mock_response = MagicMock()
     mock_response.raise_for_status.side_effect = requests.HTTPError("fail")
     with (
@@ -172,9 +158,7 @@ def test_fetch_http_error(request, api_config_fixture):
 def test_unpack_one_abstract_success(request, api_config_fixture):
     settings = get_settings()
     api_config_single = request.getfixturevalue(api_config_fixture["single"])
-    fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([api_config_single], settings)
-    )
+    fetcher = AbstractFetcher(master_api_config=prepare_api_config([api_config_single], settings))
     response_obj = {"data": {"abstract": "This is the abstract."}}
     external_api_name = api_config_single.name.value.upper()
     result = fetcher.unpack_one_abstract(
@@ -187,9 +171,7 @@ def test_unpack_one_abstract_success(request, api_config_fixture):
 def test_unpack_many_abstracts_scopus_batch_success(scopus_api_config_valid_batch):
     settings = get_settings()
     api_config_batch = scopus_api_config_valid_batch
-    fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([api_config_batch], settings)
-    )
+    fetcher = AbstractFetcher(master_api_config=prepare_api_config([api_config_batch], settings))
     test_doi_one = "10.1000/xyz123"
     test_doi_two = "10.1000/xyz124"
     test_abstract_one = "This is one abstract."
@@ -225,16 +207,12 @@ def test_unpack_many_abstracts_scopus_batch_success(scopus_api_config_valid_batc
 def test_unpack_one_abstract_keyerror(request, api_config_fixture):
     settings = get_settings()
     api_config_single = request.getfixturevalue(api_config_fixture["single"])
-    fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([api_config_single], settings)
-    )
+    fetcher = AbstractFetcher(master_api_config=prepare_api_config([api_config_single], settings))
     response_obj = {"data": {"foo": "bar"}}
     with pytest.raises(AbstractUnpackError):
         fetcher.unpack_one_abstract(
             response_obj,
-            strategy=fetcher.master_api_config["single"][
-                api_config_single.name.value.upper()
-            ].unpack_strategy,
+            strategy=fetcher.master_api_config["single"][api_config_single.name.value.upper()].unpack_strategy,
         )
 
 
@@ -253,9 +231,7 @@ def test_traverse_missing_key_returns_none():
 
 def test_unpack_many_abstracts_missing_doi_or_abstract(scopus_api_config_valid_batch):
     settings = get_settings()
-    fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([scopus_api_config_valid_batch], settings)
-    )
+    fetcher = AbstractFetcher(master_api_config=prepare_api_config([scopus_api_config_valid_batch], settings))
     # Entry missing abstract
     response_obj = {"search-results": {"entry": [{"prism:doi": "10.1000/xyz123"}]}}
     result = fetcher.unpack_many_abstracts(
@@ -268,9 +244,7 @@ def test_unpack_many_abstracts_missing_doi_or_abstract(scopus_api_config_valid_b
 def test_unpack_many_abstracts_empty_entries(scopus_api_config_valid_batch):
     """Should return empty list if entries is not a list (e.g., None or dict)."""
     settings = get_settings()
-    fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([scopus_api_config_valid_batch], settings)
-    )
+    fetcher = AbstractFetcher(master_api_config=prepare_api_config([scopus_api_config_valid_batch], settings))
     # entries is None
     response_obj = {"search-results": {"entry": None}}
     result = fetcher.unpack_many_abstracts(
@@ -293,9 +267,7 @@ def test_unpack_many_abstracts_entry_missing_doi_and_abstract(
 ):
     """Should skip entries missing both DOI and abstract."""
     settings = get_settings()
-    fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([scopus_api_config_valid_batch], settings)
-    )
+    fetcher = AbstractFetcher(master_api_config=prepare_api_config([scopus_api_config_valid_batch], settings))
     # Entry missing both DOI and abstract
     response_obj = {"search-results": {"entry": [{}]}}
     result = fetcher.unpack_many_abstracts(
@@ -308,11 +280,7 @@ def test_unpack_many_abstracts_entry_missing_doi_and_abstract(
 def test_unpack_many_abstracts_with_cleaning(crossref_api_config_valid_batch):
     """Should clean abstract string if clean_abstract_string is True."""
     settings = get_settings()
-    fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config(
-            [crossref_api_config_valid_batch], settings
-        )
-    )
+    fetcher = AbstractFetcher(master_api_config=prepare_api_config([crossref_api_config_valid_batch], settings))
     # Abstract contains tags, should be cleaned
     response_obj = {
         "message": {
@@ -334,19 +302,9 @@ def test_unpack_many_abstracts_with_cleaning(crossref_api_config_valid_batch):
 def test_unpack_many_abstracts_multiple_batches(scopus_api_config_valid_batch):
     """Should handle a list of batches as input."""
     settings = get_settings()
-    fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([scopus_api_config_valid_batch], settings)
-    )
-    batch1 = {
-        "search-results": {
-            "entry": [{"prism:doi": "10.1000/xyz123", "dc:description": "A1"}]
-        }
-    }
-    batch2 = {
-        "search-results": {
-            "entry": [{"prism:doi": "10.1000/xyz124", "dc:description": "A2"}]
-        }
-    }
+    fetcher = AbstractFetcher(master_api_config=prepare_api_config([scopus_api_config_valid_batch], settings))
+    batch1 = {"search-results": {"entry": [{"prism:doi": "10.1000/xyz123", "dc:description": "A1"}]}}
+    batch2 = {"search-results": {"entry": [{"prism:doi": "10.1000/xyz124", "dc:description": "A2"}]}}
     response_obj = [batch1, batch2]
     result = fetcher.unpack_many_abstracts(
         response_obj,
@@ -384,11 +342,7 @@ def test_process_doi_tolower():
 
 def test_unpack_abstract_with_cleaning(crossref_api_config_valid_single):
     settings = get_settings()
-    fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config(
-            [crossref_api_config_valid_single], settings
-        )
-    )
+    fetcher = AbstractFetcher(master_api_config=prepare_api_config([crossref_api_config_valid_single], settings))
     response_obj = {"data": {"abstract": "<jats:p>Clean me!</jats:p>"}}
 
     result = fetcher.unpack_one_abstract(
@@ -398,9 +352,7 @@ def test_unpack_abstract_with_cleaning(crossref_api_config_valid_single):
     assert result == "Clean me!"
 
 
-def test_fetch_one_abstract_success(
-    crossref_api_config_valid_single, scopus_api_config_valid_single
-):
+def test_fetch_one_abstract_success(crossref_api_config_valid_single, scopus_api_config_valid_single):
     settings = get_settings()
     fetcher = AbstractFetcher(
         master_api_config=prepare_api_config(
@@ -422,9 +374,7 @@ def test_fetch_one_abstract_success(
 
 def test_fetch_one_abstract_invalid_doi(scopus_api_config_valid_single):
     settings = get_settings()
-    fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([scopus_api_config_valid_single], settings)
-    )
+    fetcher = AbstractFetcher(master_api_config=prepare_api_config([scopus_api_config_valid_single], settings))
     with (
         patch("app.fetch_abstract.validate_doi", return_value=False),
         pytest.raises(InvalidDOIError),
@@ -434,9 +384,7 @@ def test_fetch_one_abstract_invalid_doi(scopus_api_config_valid_single):
 
 def test_fetch_one_abstract_http_error(scopus_api_config_valid_single):
     settings = get_settings()
-    fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([scopus_api_config_valid_single], settings)
-    )
+    fetcher = AbstractFetcher(master_api_config=prepare_api_config([scopus_api_config_valid_single], settings))
     with (
         patch("app.fetch_abstract.validate_doi", return_value=True),
         patch.object(fetcher, "fetch", side_effect=requests.HTTPError("fail")),
@@ -447,25 +395,17 @@ def test_fetch_one_abstract_http_error(scopus_api_config_valid_single):
 
 def test_fetch_one_abstract_unpack_error(scopus_api_config_valid_single):
     settings = get_settings()
-    fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([scopus_api_config_valid_single], settings)
-    )
+    fetcher = AbstractFetcher(master_api_config=prepare_api_config([scopus_api_config_valid_single], settings))
     with (
         patch("app.fetch_abstract.validate_doi", return_value=True),
         patch.object(fetcher, "fetch", return_value={"data": {}}),
-        patch.object(
-            fetcher, "unpack_one_abstract", side_effect=AbstractUnpackError("fail")
-        ),
+        patch.object(fetcher, "unpack_one_abstract", side_effect=AbstractUnpackError("fail")),
     ):
-        doi_abstract_dict = fetcher.fetch_one_abstract(
-            "10.1000/xyz123", scopus_api_config_valid_single
-        )
+        doi_abstract_dict = fetcher.fetch_one_abstract("10.1000/xyz123", scopus_api_config_valid_single)
         assert doi_abstract_dict is None
 
 
-def test_get_one_abstract_cycling_apis_success(
-    crossref_api_config_valid_single, scopus_api_config_valid_single
-):
+def test_get_one_abstract_cycling_apis_success(crossref_api_config_valid_single, scopus_api_config_valid_single):
     settings = get_settings()
     fetcher = AbstractFetcher(
         master_api_config=prepare_api_config(
@@ -477,9 +417,7 @@ def test_get_one_abstract_cycling_apis_success(
         assert result == "abstract text"
 
 
-def test_get_one_abstract_cycling_apis_not_found(
-    crossref_api_config_valid_single, scopus_api_config_valid_single
-):
+def test_get_one_abstract_cycling_apis_not_found(crossref_api_config_valid_single, scopus_api_config_valid_single):
     settings = get_settings()
     fetcher = AbstractFetcher(
         master_api_config=prepare_api_config(
@@ -493,9 +431,7 @@ def test_get_one_abstract_cycling_apis_not_found(
         fetcher.get_one_abstract_cycling_apis("10.1000/xyz123")
 
 
-def test_get_one_abstract_cycling_apis_invalid_doi(
-    crossref_api_config_valid_single, scopus_api_config_valid_single
-):
+def test_get_one_abstract_cycling_apis_invalid_doi(crossref_api_config_valid_single, scopus_api_config_valid_single):
     settings = get_settings()
     fetcher = AbstractFetcher(
         master_api_config=prepare_api_config(
@@ -509,38 +445,25 @@ def test_get_one_abstract_cycling_apis_invalid_doi(
         fetcher.get_one_abstract_cycling_apis("bad-doi")
 
 
-def test_get_many_abstracts_cycling_apis_success(
-    crossref_api_config_valid_batch, scopus_api_config_valid_batch
-):
+def test_get_many_abstracts_cycling_apis_success(crossref_api_config_valid_batch, scopus_api_config_valid_batch):
     settings = get_settings()
     fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config(
-            [crossref_api_config_valid_batch, scopus_api_config_valid_batch], settings
-        )
+        master_api_config=prepare_api_config([crossref_api_config_valid_batch, scopus_api_config_valid_batch], settings)
     )
     test_doi_list = ["10.1000/xyz123", "10.1000/xyz124", "10.1000/xyz125"]
     test_abstract_list = ["abstract text 1", "abstract text 2", "abstract text 3"]
     test_response_objects = [
-        [{"doi": doi, "abstract": abstract}]
-        for doi, abstract in zip(test_doi_list, test_abstract_list, strict=False)
+        [{"doi": doi, "abstract": abstract}] for doi, abstract in zip(test_doi_list, test_abstract_list, strict=False)
     ]
-    with patch.object(
-        fetcher, "fetch_many_abstracts", return_value=(x for x in test_response_objects)
-    ):
-        result = fetcher.get_many_abstracts_cycling_apis(
-            ["10.1000/xyz123", "10.1000/xyz124", "10.1000/xyz125"]
-        )
+    with patch.object(fetcher, "fetch_many_abstracts", return_value=(x for x in test_response_objects)):
+        result = fetcher.get_many_abstracts_cycling_apis(["10.1000/xyz123", "10.1000/xyz124", "10.1000/xyz125"])
         assert result == [item for sublist in test_response_objects for item in sublist]
 
 
-def test_get_many_abstracts_cycling_apis_not_found(
-    crossref_api_config_valid_batch, scopus_api_config_valid_batch
-):
+def test_get_many_abstracts_cycling_apis_not_found(crossref_api_config_valid_batch, scopus_api_config_valid_batch):
     settings = get_settings()
     fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config(
-            [crossref_api_config_valid_batch, scopus_api_config_valid_batch], settings
-        )
+        master_api_config=prepare_api_config([crossref_api_config_valid_batch, scopus_api_config_valid_batch], settings)
     )
     with (
         patch.object(fetcher, "fetch_many_abstracts", return_value=None),

@@ -65,9 +65,7 @@ def scopus_api_config_valid_single():
         api_key_placement="X-API-Key",  # pragma: allowlist secret
         query_params={},
         headers={"X-API-Key": ""},
-        unpack_strategy=AbstractUnpackStrategy(
-            source=ExternalAPI.SCOPUS, strategy=["data", "abstract"]
-        ),
+        unpack_strategy=AbstractUnpackStrategy(source=ExternalAPI.SCOPUS, strategy=["data", "abstract"]),
     )
 
 

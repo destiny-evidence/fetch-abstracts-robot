@@ -29,9 +29,7 @@ class Environment(StrEnum):
 class Settings(BaseSettings):
     """Settings model for API."""
 
-    model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     robot_secret: str | None = Field(
         default=None,
@@ -54,9 +52,7 @@ class Settings(BaseSettings):
     )
 
     # API keys for abstract retrieval
-    elsevier_scopus_key: SecretStr | None = Field(
-        default=None, description="api key for elsevier scopus api."
-    )
+    elsevier_scopus_key: SecretStr | None = Field(default=None, description="api key for elsevier scopus api.")
 
 
 @lru_cache(maxsize=1)

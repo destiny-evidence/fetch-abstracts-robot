@@ -70,9 +70,7 @@ def test_get_doi_from_reference_success():
 )
 def test_get_valid_doi_from_full_url_success(test_full_url_doi):
     """Test that we can extract a DOI from a full URL."""
-    assert validate_doi(
-        test_full_url_doi
-    ), "Expect this list of valid DOIs to be valid."
+    assert validate_doi(test_full_url_doi), "Expect this list of valid DOIs to be valid."
 
 
 @pytest.mark.parametrize(
@@ -85,9 +83,7 @@ def test_get_valid_doi_from_full_url_success(test_full_url_doi):
 )
 def test_get_invalid_doi_from_full_url_fails_properly(test_full_url_doi):
     """Test that we can extract a DOI from a full URL."""
-    assert not validate_doi(
-        test_full_url_doi
-    ), "Expect this list of invalid DOIs to be evaluated as invalid."
+    assert not validate_doi(test_full_url_doi), "Expect this list of invalid DOIs to be evaluated as invalid."
 
 
 def test_get_doi_from_reference_missing_doi_error():

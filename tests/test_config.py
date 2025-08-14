@@ -3,9 +3,7 @@
 from app.config import Settings
 
 
-def test_get_settings(
-    set_test_environment_variables: None, test_settings: Settings
-) -> None:
+def test_get_settings(set_test_environment_variables: None, test_settings: Settings) -> None:
     """
     Test the get_settings function.
 
@@ -20,15 +18,10 @@ def test_get_settings(
     expected_elsevier_scopus_key = "dummy_scopus_key"
 
     assert test_settings.env == expected_env
-    assert (
-        test_settings.destiny_repository_url.encoded_string()
-        == expected_destiny_repository_url
-    )
+    assert test_settings.destiny_repository_url.encoded_string() == expected_destiny_repository_url
     assert str(test_settings.robot_id) == expected_robot_id
     assert test_settings.robot_secret == expected_robot_secret
     test_elsevier_scopus_key = (
-        test_settings.elsevier_scopus_key.get_secret_value()
-        if test_settings.elsevier_scopus_key
-        else None
+        test_settings.elsevier_scopus_key.get_secret_value() if test_settings.elsevier_scopus_key else None
     )
     assert test_elsevier_scopus_key == expected_elsevier_scopus_key

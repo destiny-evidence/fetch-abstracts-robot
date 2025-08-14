@@ -51,9 +51,7 @@ class ExternalAPIPriority(BaseModel):
     """Priority definition of APIs to call for any given abstract."""
 
     name: str = Field(description="name of the api priority")
-    priorities: dict[ExternalAPI, int] = Field(
-        ..., description="mapping of `ExternalAPIs` to their priority rank."
-    )
+    priorities: dict[ExternalAPI, int] = Field(..., description="mapping of `ExternalAPIs` to their priority rank.")
 
 
 external_api_priority_single = ExternalAPIPriority(
@@ -108,18 +106,13 @@ class APIConfig(BaseModel):
     abstracts, clean them, and make them available to a destiny Work.
     """
 
-    name: ExternalAPI = Field(
-        description="Name (we've given) to this external API service"
-    )
+    name: ExternalAPI = Field(description="Name (we've given) to this external API service")
     url: AnyUrl = Field(description="URL/endpoint for the given API")
     require_api_key: bool = Field(description="Is API key required to hit this API.")
     api_key_env_var_name: str | None = Field(
-        description="Name of the environment variable/settings field "
-        "which represents an api key for this api."
+        description="Name of the environment variable/settings field " "which represents an api key for this api."
     )
-    api_key_placement: str | None = Field(
-        description="Dict key in `headers` where we should insert our API key."
-    )
+    api_key_placement: str | None = Field(description="Dict key in `headers` where we should insert our API key.")
     query_type: QueryType = Field(
         default=QueryType.SINGLE,
         description="Type of query; i.e. single, batched_single or batch.",
@@ -141,8 +134,7 @@ class APIConfig(BaseModel):
     def api_key_placement_in_headers(cls, values: dict) -> dict:
         """Ensure `api_key_placement` is a key in the headers dict."""
         if values["require_api_key"] and (
-            values["headers"] is not None
-            and values["api_key_placement"] not in values["headers"]
+            values["headers"] is not None and values["api_key_placement"] not in values["headers"]
         ):
             error_msg = f"api_key_placement '{values['api_key_placement']}'"
             "must be in the values dict"
@@ -159,11 +151,7 @@ class APIConfig(BaseModel):
         """
         if self.require_api_key:
             logger.debug(f"initializing API key for {self.name} API")
-            api_key = (
-                getattr(settings, self.api_key_env_var_name, None)
-                if self.api_key_env_var_name
-                else None
-            )
+            api_key = getattr(settings, self.api_key_env_var_name, None) if self.api_key_env_var_name else None
             if api_key is None:
                 error_msg = f"API key for {self.name} is not present in settings."
                 raise APIKeyNotPresentError(error_msg)
@@ -209,16 +197,11 @@ class APIConfig(BaseModel):
         # is the conventional limit of 2000 characters. we're assuming
         # a mean DOI length of 120 chars.
         if len(payload) > max_array_length:
-            error_msg = (
-                "array of items to query for is too long. max"
-                f"n(items): {max_array_length}"
-            )
+            error_msg = "array of items to query for is too long. max" f"n(items): {max_array_length}"
             raise ValueError(error_msg)
         return " OR ".join([f"DOI({x})" for x in payload])
 
-    def populate_query(
-        self, query: str | list[str], max_array_length: int = 15
-    ) -> dict:
+    def populate_query(self, query: str | list[str], max_array_length: int = 15) -> dict:
         """
         Populate a query string into the query params dict.
 
@@ -254,9 +237,7 @@ class APIConfig(BaseModel):
             if not isinstance(query, list):
                 error_msg = "query_type `batch` requires a `list` type query."
                 raise TypeError(error_msg)
-            query_field = self.build_query_batch(
-                payload=query, max_array_length=max_array_length
-            )
+            query_field = self.build_query_batch(payload=query, max_array_length=max_array_length)
             params = self.query_params.copy()
             params["query"] = query_field
             return {"url": self.url, "query_params": params, "headers": self.headers}

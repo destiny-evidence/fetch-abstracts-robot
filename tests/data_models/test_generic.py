@@ -51,9 +51,7 @@ def test_external_api_priority_model():
 
 
 def test_abstract_unpack_strategy_():
-    my_strategy = AbstractUnpackStrategy(
-        source=ExternalAPI.SCOPUS, strategy=["abstracts", "abstractText"]
-    )
+    my_strategy = AbstractUnpackStrategy(source=ExternalAPI.SCOPUS, strategy=["abstracts", "abstractText"])
     assert my_strategy.source == ExternalAPI.SCOPUS
     assert my_strategy.strategy == ["abstracts", "abstractText"]
 
@@ -146,9 +144,7 @@ def test_api_config_validator_failure(scopus_api_config_valid_single, monkeypatc
         ("crossref_api_config_valid_single", None, None),
     ],
 )
-def test_api_config_init_api_key_success(
-    request, api_config_fixture, expected_key, expected_value, monkeypatch
-):
+def test_api_config_init_api_key_success(request, api_config_fixture, expected_key, expected_value, monkeypatch):
     api_config = request.getfixturevalue(api_config_fixture)
     settings = get_settings()
 
