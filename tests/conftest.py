@@ -1,3 +1,4 @@
+# ruff: noqa: E501, S106
 from collections.abc import Generator
 
 import pytest
@@ -11,6 +12,8 @@ from app.data_models.generic import (
     ExternalAPI,
     QueryType,
 )
+from app.data_models.scopus import ScopusAPIConfig
+from app.logger import logger
 
 pytest_plugins = [
     "tests.fixtures.generic",
@@ -40,12 +43,14 @@ def set_test_environment_variables(
     monkeypatch.setenv("ROBOT_ID", "e0aba318-eee9-4b4c-b503-7f72547063d8")
     monkeypatch.setenv("ROBOT_SECRET", "dummy_secret")
     monkeypatch.setenv("ELSEVIER_SCOPUS_KEY", "dummy_scopus_key")
+    monkeypatch.setenv("ELSEVIER_SCOPUS_INST_TOKEN", "dummy_inst_token")
     yield
     monkeypatch.delenv("ENV")
     monkeypatch.delenv("DESTINY_REPOSITORY_URL")
     monkeypatch.delenv("ROBOT_ID")
     monkeypatch.delenv("ROBOT_SECRET")
     monkeypatch.delenv("ELSEVIER_SCOPUS_KEY")
+    monkeypatch.delenv("ELSEVIER_SCOPUS_INST_TOKEN")
 
 
 @pytest.fixture
@@ -57,7 +62,7 @@ def test_client(set_test_environment_variables) -> Generator[TestClient, None, N
 
 @pytest.fixture
 def scopus_api_config_valid_single():
-    return APIConfig(
+    return ScopusAPIConfig(
         name=ExternalAPI.SCOPUS,
         url="https://api.example.com/",
         require_api_key=True,
@@ -68,12 +73,14 @@ def scopus_api_config_valid_single():
         unpack_strategy=AbstractUnpackStrategy(
             source=ExternalAPI.SCOPUS, strategy=["data", "abstract"]
         ),
+        api_inst_token_env_var_name="elsevier_scopus_inst_token",  # pragma: allowlist secret
+        api_inst_token_placement="X-Inst-Token",  # pragma: allowlist secret
     )
 
 
 @pytest.fixture
 def scopus_api_config_valid_batch():
-    return APIConfig(
+    return ScopusAPIConfig(
         name=ExternalAPI.SCOPUS_BATCH,
         url="https://api.example.com/",
         require_api_key=True,
@@ -86,6 +93,8 @@ def scopus_api_config_valid_batch():
             doi_strategy=["search-results", "entry", "prism:doi"],
             strategy=["search-results", "entry", "dc:description"],
         ),
+        api_inst_token_env_var_name="elsevier_scopus_inst_token",  # pragma: allowlist secret
+        api_inst_token_placement="X-Inst-Token",  # pragma: allowlist secret
     )
 
 
@@ -126,3 +135,24 @@ def crossref_api_config_valid_batch():
 @pytest.fixture
 def test_settings(set_test_environment_variables) -> Settings:
     return Settings()
+
+
+@pytest.fixture
+def caplog(
+    caplog: pytest.LogCaptureFixture,
+) -> Generator[pytest.LogCaptureFixture, None, None]:
+    """
+    Fixture to capture log messages **from loguru** during tests.
+
+    See https://github.com/Delgan/loguru/issues/59#issuecomment-1150084462
+
+    Args:
+        caplog (pytest.LogCaptureFixture): The log capture fixture.
+
+    Yields:
+        Generator[pytest.LogCaptureFixture, None, None]: The log capture fixture.
+
+    """
+    handler_id = logger.add(caplog.handler, format="{message}", level="WARNING")
+    yield caplog
+    logger.remove(handler_id)

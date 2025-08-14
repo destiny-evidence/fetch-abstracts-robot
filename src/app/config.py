@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     elsevier_scopus_key: SecretStr | None = Field(
         default=None, description="api key for elsevier scopus api."
     )
+    elsevier_scopus_inst_token: SecretStr | None = Field(
+        default=None, description="inst token for elsevier scopus api."
+    )
 
 
 @lru_cache(maxsize=1)
