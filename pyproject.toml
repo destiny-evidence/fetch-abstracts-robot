@@ -85,10 +85,10 @@ lint.mccabe.max-complexity = 18
 lint.pep8-naming.classmethod-decorators = ["classmethod"]
 
 [tool.setuptools.package-dir]
-"" = "src"
+"" = "app"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["app"]
 
 [tool.tomlsort]
 all = true
