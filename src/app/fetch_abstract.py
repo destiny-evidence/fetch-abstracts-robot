@@ -26,6 +26,10 @@ from app.data_models.generic import (
 from app.utils import InvalidDOIError, validate_doi
 
 
+class FetchAbstractError(Exception):
+    """Custom exception for errors occurring during abstract fetching."""
+
+
 def prepare_api_config(
     api_configs: list[APIConfig],
     settings: Settings,
@@ -158,9 +162,13 @@ class AbstractFetcher:
         logger.info(f"seeking abstract for doi: {doi}")
         for api in self.master_api_config["single"]:
             logger.info(f"attempting retrieval using api {api}.")
-            doi_abstract_dict = self.fetch_one_abstract(
-                doi=doi, api_config=self.master_api_config["single"][api]
-            )
+            try:
+                doi_abstract_dict = self.fetch_one_abstract(
+                    doi=doi, api_config=self.master_api_config["single"][api]
+                )
+            except FetchAbstractError as fetch_error:
+                logger.error(f"Error fetching abstract from {api}: {fetch_error}")
+                continue
             if doi_abstract_dict:
                 found_message = f"abstract retrieval through {api} was successful."
                 logger.info(found_message)
@@ -281,12 +289,12 @@ class AbstractFetcher:
                 headers=api_config.headers,
                 verbose=True,
             )
-        except requests.HTTPError as e:
+        except requests.HTTPError as http_error:
             logger.error(
                 "encountered HTTPError on attempting to retrieve abstract. "
-                f"original error message: {e}"
+                f"original error message: {http_error}"
             )
-            raise
+            raise FetchAbstractError from http_error
 
         try:
             return {

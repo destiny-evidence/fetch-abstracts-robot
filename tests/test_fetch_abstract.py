@@ -7,7 +7,7 @@ import requests
 
 from app.config import get_settings
 from app.data_models.generic import AbstractNotFoundError, AbstractUnpackError
-from app.fetch_abstract import AbstractFetcher, prepare_api_config
+from app.fetch_abstract import AbstractFetcher, FetchAbstractError, prepare_api_config
 from app.utils import InvalidDOIError
 
 
@@ -440,7 +440,7 @@ def test_fetch_one_abstract_http_error(scopus_api_config_valid_single):
     with (
         patch("app.fetch_abstract.validate_doi", return_value=True),
         patch.object(fetcher, "fetch", side_effect=requests.HTTPError("fail")),
-        pytest.raises(requests.HTTPError),
+        pytest.raises(FetchAbstractError),
     ):
         fetcher.fetch_one_abstract("10.1000/xyz123", scopus_api_config_valid_single)
 
