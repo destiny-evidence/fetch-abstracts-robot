@@ -166,8 +166,8 @@ class AbstractFetcher:
                 doi_abstract_dict = self.fetch_one_abstract(
                     doi=doi, api_config=self.master_api_config["single"][api]
                 )
-            except FetchAbstractError as fetch_error:
-                logger.error(f"Error fetching abstract from {api}: {fetch_error}")
+            except FetchAbstractError:
+                logger.error(f"Error fetching abstract from {api}.")
                 continue
             if doi_abstract_dict:
                 found_message = f"abstract retrieval through {api} was successful."
@@ -290,11 +290,13 @@ class AbstractFetcher:
                 verbose=True,
             )
         except requests.HTTPError as http_error:
-            logger.error(
-                "encountered HTTPError on attempting to retrieve abstract. "
-                f"original error message: {http_error}"
+            error_message = (
+                f"Error fetching abstract for {doi=}"
+                f" with API {api_config.name}. "
+                f"Original error: {http_error}"
             )
-            raise FetchAbstractError from http_error
+            logger.error(error_message)
+            raise FetchAbstractError(error_message) from http_error
 
         try:
             return {
@@ -304,9 +306,11 @@ class AbstractFetcher:
                 ),
             }
         except AbstractUnpackError as abstract_unpack_error:
-            error_message = f"""Error unpacking abstract for {doi=}\
-            with API {api_config.name}."""
-            error_message += f"\nOriginal error: {abstract_unpack_error}"
+            error_message = (
+                f"Error unpacking abstract for {doi=}"
+                f" with API {api_config.name}. "
+                f"Original error: {abstract_unpack_error}"
+            )
             logger.error(error_message)
             return None
 
@@ -468,13 +472,13 @@ class AbstractFetcher:
                 logger.debug("`clean_abstract_string` is True, cleaning abstract.")
                 abstract_object = self.clean_abstract_string(abstract_object)
 
-        except KeyError as e:
+        except KeyError as missing_key:
             error_message = (
                 "Key not found in response object with current unpack strategy.",
-                f"Original error message: {e}",
+                f"Key not found: {missing_key}",
             )
 
-            raise AbstractUnpackError(error_message) from e
+            raise AbstractUnpackError(error_message) from missing_key
         if not isinstance(abstract_object, str):
             abstract_not_string_error_message = "Expected abstract to be a string."
             raise AbstractUnpackError(abstract_not_string_error_message)

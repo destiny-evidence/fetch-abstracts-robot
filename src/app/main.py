@@ -6,10 +6,12 @@ from typing import Final
 import destiny_sdk
 import httpx
 from fastapi import BackgroundTasks, Depends, FastAPI, Response, status
+from loguru import logger
 
 from app.auth import auth_strategy_robot
 from app.config import get_settings
 from app.data_models.crossref import crossref_api_config
+from app.data_models.generic import AbstractNotFoundError
 from app.data_models.scopus import scopus_api_config, scopus_batch_api_config
 from app.fetch_abstract import AbstractFetcher, prepare_api_config
 from app.utils import get_doi_from_reference, get_version_number_from_pyproject
@@ -69,11 +71,19 @@ def generate_abstract_enhancement(
 ) -> destiny_sdk.enhancements.Enhancement:
     """Generate an abstract enhancement."""
     doi = get_doi_from_reference(reference=reference)
-    abstract_object = abstract_fetcher.get_one_abstract_cycling_apis(doi=doi)
-    abstract = abstract_object[
-        "abstract"
-    ]  # @ NOTE - @harryjmoss maybe we implement its own pydantic model for this?
-
+    try:
+        abstract_object = abstract_fetcher.get_one_abstract_cycling_apis(doi=doi)
+        abstract = abstract_object[
+            "abstract"
+        ]  # @ NOTE - @harryjmoss maybe we implement its own pydantic model for this?
+    except AbstractNotFoundError:
+        logger.error(f"Abstract not found for DOI: {doi}")
+        return destiny_sdk.enhancements.Enhancement(
+            reference_id=reference.id,
+            source=TITLE,
+            visibility=destiny_sdk.visibility.Visibility.PUBLIC,
+            robot_version=get_version_number_from_pyproject(),
+        )
     return destiny_sdk.enhancements.Enhancement(
         reference_id=reference.id,
         source=TITLE,
