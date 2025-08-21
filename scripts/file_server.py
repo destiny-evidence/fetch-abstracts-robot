@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
 app = FastAPI()
@@ -25,21 +25,27 @@ async def serve_file():
 
 
 @app.put("/three_reference_results.jsonl")
-async def upload_file(file: UploadFile):
+async def upload_file(data: bytes):
     """
-    Accept a new file upload and save it as 'three_reference_results.jsonl'.
+    Accept a new file upload as UTF-8 encoded bytes and save it as 'three_reference_results.jsonl'.
 
     Args:
-        file (UploadFile): The uploaded file.
+        data (bytes): The UTF-8 encoded bytes of the uploaded file.
 
     Returns:
         dict: A success message.
 
     """
+    target_file = BASE_DIR / "three_reference_results.jsonl"
     try:
-        with TARGET_FILE.open("wb") as f:
-            f.write(await file.read())
-        return {"message": f"File '{TARGET_FILE.name}' successfully uploaded."}
+        content = data.decode("utf-8")
+        with target_file.open("w", encoding="utf-8") as f:
+            f.write(content)
+        return {"message": f"File '{target_file.name}' successfully uploaded."}
+    except UnicodeDecodeError as e:
+        raise HTTPException(
+            status_code=400, detail=f"Invalid UTF-8 encoding: {e}"
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to upload file: {e}"
@@ -47,5 +53,4 @@ async def upload_file(file: UploadFile):
 
 
 if __name__ == "__main__":
-    # Run the FastAPI app on port 8003
     uvicorn.run(app, host="0.0.0.0", port=8003)  # noqa: S104
