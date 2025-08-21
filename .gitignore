@@ -182,3 +182,5 @@ misc
 
 # MacOS system files
 .DS_Store
+
+*.secrets

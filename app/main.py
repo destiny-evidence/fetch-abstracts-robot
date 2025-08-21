@@ -14,7 +14,7 @@ from app.data_models.crossref import crossref_api_config
 from app.data_models.generic import AbstractNotFoundError
 from app.data_models.scopus import scopus_api_config, scopus_batch_api_config
 from app.fetch_abstract import AbstractFetcher, prepare_api_config
-from app.utils import get_doi_from_reference, get_version_number_from_pyproject
+from app.utils import get_doi_from_reference, get_version_number
 
 settings = get_settings()
 abstract_collector_auth = auth_strategy_robot(settings=settings)
@@ -78,17 +78,15 @@ def generate_abstract_enhancement(
         ]  # @ NOTE - @harryjmoss maybe we implement its own pydantic model for this?
     except AbstractNotFoundError:
         logger.error(f"Abstract not found for DOI: {doi}")
-        return destiny_sdk.enhancements.Enhancement(
-            reference_id=reference.id,
-            source=TITLE,
-            visibility=destiny_sdk.visibility.Visibility.PUBLIC,
-            robot_version=get_version_number_from_pyproject(),
-        )
+        return None
+    except httpx.HTTPError as http_error:
+        logger.error(f"HTTP error occurred: {http_error}")
+        return None
     return destiny_sdk.enhancements.Enhancement(
         reference_id=reference.id,
         source=TITLE,
         visibility=destiny_sdk.visibility.Visibility.PUBLIC,
-        robot_version=get_version_number_from_pyproject(),
+        robot_version=get_version_number(),
         content_version=f"{uuid.uuid4()}",
         enhancement_type=destiny_sdk.enhancements.EnhancementType.ABSTRACT,
         content=destiny_sdk.enhancements.AbstractContentEnhancement(
@@ -104,11 +102,23 @@ def create_abstract_enhancement(request: destiny_sdk.robots.RobotRequest) -> Non
 
     this wraps around `generate_abstract_enhancement` and queues it.
     """
-    enhancement = generate_abstract_enhancement(request.reference)
+    try:
+        enhancement = generate_abstract_enhancement(request.reference)
+    except Exception as generic_exception:  # noqa: BLE001 We really do want to catch anything here...
+        logger.error(f"Error generating abstract enhancement: {generic_exception}")
 
+        robot_error = destiny_sdk.robots.RobotError(
+            message=str(generic_exception),
+        )
+        error_response = destiny_sdk.robots.RobotResult(
+            request_id=request.id, error=robot_error
+        )
+        client.send_robot_result(error_response)
+        return
     client.send_robot_result(
         destiny_sdk.robots.RobotResult(request_id=request.id, enhancement=enhancement)
     )
+    return
 
 
 def create_batch_abstract_enhancement(
@@ -121,7 +131,7 @@ def create_batch_abstract_enhancement(
     rather than strictly looping over individual requests (although
     this may be done in the background, depending on API config).
     """
-    version_number = get_version_number_from_pyproject()
+    version_number = get_version_number()
     file_content = b""
     with (
         httpx.Client() as httpx_client,

@@ -69,7 +69,16 @@ lint.ignore = [
     "FIX002", # implicit trust that TODOs are not trivial, or else they would be fixed
     "ISC001", # simplify implicit str concatenation (ruff-format recommended)
 ]
-lint.per-file-ignores = {"tests*" = [
+lint.per-file-ignores = {"scripts*" = [
+    "D100", # Missing docstring in public module
+    "D101", # Missing docstring in public module
+    "D103", # Missing docstring in public function
+    "D401", # First line of docstring should be in imperative mood
+    "E501", # Line too long
+    "ERA001", # Found commented-out code
+    "F841", # Local variable name is assigned to but never used
+    "RET504", # Unnecessary assignement to variable before return statement
+], "tests*" = [
     "ANN001", # No return type annotation
     "ANN201", # No return type annotation
     "ARG001", # Unused function argument
