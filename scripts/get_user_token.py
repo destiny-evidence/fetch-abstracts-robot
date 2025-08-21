@@ -75,7 +75,7 @@ def main() -> None:
     settings = get_settings()
     # access_token = get_device_flow(settings)
     access_token = get_app_flow(settings)
-    logger.info(access_token)
+    logger.info(access_token["access_token"])
 
 
 if __name__ == "__main__":

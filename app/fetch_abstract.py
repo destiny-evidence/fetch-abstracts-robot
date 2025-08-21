@@ -593,7 +593,7 @@ class AbstractFetcher:
                         logger.debug(f"entry {entry_idx}: cleaning abstract string.")
                         abstract = self.clean_abstract_string(str(abstract))
                     out.append({"doi": doi, "abstract": abstract})
-                    logger.info(f"xtracted abstract for DOI: {doi}")
+                    logger.info(f"Extracted abstract for DOI: {doi}")
 
                 else:
                     logger.warning(

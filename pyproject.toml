@@ -70,6 +70,7 @@ lint.ignore = [
     "ISC001", # simplify implicit str concatenation (ruff-format recommended)
 ]
 lint.per-file-ignores = {"scripts*" = [
+    "ANN201", # Missing return type annotation for public function
     "D100", # Missing docstring in public module
     "D101", # Missing docstring in public module
     "D103", # Missing docstring in public function
@@ -78,6 +79,7 @@ lint.per-file-ignores = {"scripts*" = [
     "ERA001", # Found commented-out code
     "F841", # Local variable name is assigned to but never used
     "RET504", # Unnecessary assignement to variable before return statement
+    "TRY300", # Consider moving this statement to an else block
 ], "tests*" = [
     "ANN001", # No return type annotation
     "ANN201", # No return type annotation
