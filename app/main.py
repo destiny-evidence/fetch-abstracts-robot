@@ -78,10 +78,10 @@ def generate_abstract_enhancement(
         ]  # @ NOTE - @harryjmoss maybe we implement its own pydantic model for this?
     except AbstractNotFoundError:
         logger.error(f"Abstract not found for DOI: {doi}")
-        return None
+        raise
     except httpx.HTTPError as http_error:
         logger.error(f"HTTP error occurred: {http_error}")
-        return None
+        raise
     return destiny_sdk.enhancements.Enhancement(
         reference_id=reference.id,
         source=TITLE,
@@ -104,8 +104,24 @@ def create_abstract_enhancement(request: destiny_sdk.robots.RobotRequest) -> Non
     """
     try:
         enhancement = generate_abstract_enhancement(request.reference)
+        logger.info("Got single reference abstract. Sending response.")
+        try:
+            client.send_robot_result(
+                destiny_sdk.robots.RobotResult(
+                    request_id=request.id, enhancement=enhancement
+                )
+            )
+            logger.success("Result submitted.")
+
+        except httpx.ConnectError as connection_error:
+            logger.critical(f"Error sending robot result: {connection_error}")
+            return
     except Exception as generic_exception:  # noqa: BLE001 We really do want to catch anything here...
-        logger.error(f"Error generating abstract enhancement: {generic_exception}")
+        error_message = (
+            f"Error generating abstract enhancement: {generic_exception}"
+            f" for {request.reference.id}"
+        )
+        logger.error(error_message)
 
         robot_error = destiny_sdk.robots.RobotError(
             message=str(generic_exception),
@@ -113,12 +129,10 @@ def create_abstract_enhancement(request: destiny_sdk.robots.RobotRequest) -> Non
         error_response = destiny_sdk.robots.RobotResult(
             request_id=request.id, error=robot_error
         )
-        client.send_robot_result(error_response)
-        return
-    client.send_robot_result(
-        destiny_sdk.robots.RobotResult(request_id=request.id, enhancement=enhancement)
-    )
-    return
+        try:
+            client.send_robot_result(error_response)
+        except httpx.ConnectError as connection_error:
+            logger.critical(f"Error sending robot result: {connection_error}")
 
 
 def create_batch_abstract_enhancement(
