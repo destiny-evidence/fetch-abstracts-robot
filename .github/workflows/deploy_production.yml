@@ -1,4 +1,4 @@
-name: Manual staging deployment of fetch-abstract-robot to Azure Container Apps
+name: Manual production deployment of fetch-abstract-robot to Azure Container Apps
 
 on:
   workflow_dispatch:
@@ -7,9 +7,9 @@ permissions:
   contents: read
 
 jobs:
-  build-and-deploy-staging:
+  build-and-deploy-production:
     runs-on: ubuntu-latest
-    environment: staging
+    environment: production
 
     env:
       IMAGE_NAME: fetch-abstract-robot
@@ -32,13 +32,15 @@ jobs:
         env:
           DOCKER_BUILDKIT: 1
       - run: |
-          export TAG=$(git rev-parse --short HEAD)
+          sha_short=$(git rev-parse --short HEAD)
+          export TAG="${sha_short}-prod"
           docker build -t ${{ secrets.REPOSITORY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${TAG} .
           docker push ${{ secrets.REPOSITORY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${TAG}
       - name: Deploy to Azure Container App
         run: |
-          export TAG=$(git rev-parse --short HEAD)
+          sha_short=$(git rev-parse --short HEAD)
+          export TAG="${sha_short}-prod"
           az containerapp update \
-            --name ${{ secrets.CONTAINER_APP_NAME_STAGING }} \
-            --resource-group ${{ secrets.RESOURCE_GROUP_STAGING }} \
+            --name ${{ secrets.CONTAINER_APP_NAME_PRODUCTION }} \
+            --resource-group ${{ secrets.RESOURCE_GROUP_PRODUCTION }} \
             --image ${{ secrets.REPOSITORY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${TAG}
