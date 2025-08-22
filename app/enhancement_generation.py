@@ -2,7 +2,6 @@
 
 import uuid
 
-import httpx
 from destiny_sdk.enhancements import (
     AbstractContentEnhancement,
     AbstractProcessType,
@@ -14,6 +13,7 @@ from destiny_sdk.robots import (
 )
 from destiny_sdk.visibility import Visibility
 from loguru import logger
+from requests import HTTPError
 
 from app.data_models.generic import AbstractNotFoundError, APIConfig
 from app.fetch_abstract import AbstractFetcher
@@ -42,7 +42,7 @@ def generate_abstract_enhancement_single_request(
 
     Raises:
         AbstractNotFoundError: If no abstract is found for the given reference.
-        httpx.HTTPError: If there is an HTTP error during the API call.
+        HTTPError: If there is an HTTP error during the API call.
 
     """
     doi = get_doi_from_reference(reference=reference)
@@ -52,7 +52,7 @@ def generate_abstract_enhancement_single_request(
     except AbstractNotFoundError:
         logger.error(f"Abstract not found for DOI: {doi}")
         raise
-    except httpx.HTTPError as http_error:
+    except HTTPError as http_error:
         logger.error(f"HTTP error occurred: {http_error}")
         raise
     return Enhancement(
@@ -99,16 +99,18 @@ def generate_abstract_enhancement_batch_request(
     for reference in references:
         enhancement = enhancements_by_id.get(reference.id)
         if not enhancement:
-            error_message = f"Enhancement generation error for {reference.id}."
+            error_message = (
+                f"Enhancement generation error for {reference.id}."
+                " Reference ID is missing in the enhancements map."
+            )
             logger.error(error_message)
             raise BatchEnhancementGenerationError(error_message)
         abstract = enhancement.get("abstract", None)
         if not abstract:
-            sources = [
-                config.name.value
+            sources = {
+                config.name.value.split("_")[0].upper()
                 for config in available_api_configs
-                if "_" not in config.name.value
-            ]
+            }
             error_message = f"No abstract found in {sources}"
             logger.warning(error_message)
             # Confirmed by Jack that we should be writing a LinkedRobotError
@@ -147,7 +149,7 @@ def generate_abstract_enhancement_batch_request(
         ).encode("utf-8")
         successful_enhancements += 1
     if successful_enhancements == 0:
-        reference_ids_attempted = ", ".join([ref.id for ref in references])
+        reference_ids_attempted = ", ".join([str(ref.id) for ref in references])
         error_message = (
             "No successful enhancements generated for reference"
             f" IDs {reference_ids_attempted}"
