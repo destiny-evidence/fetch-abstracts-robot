@@ -1,22 +1,22 @@
-name: Manual staging deployment of fetch-abstract-robot to Azure Container Apps
+name: Manually deploy fetch-abstract-robot to Azure Container Apps - production
 
 on:
   workflow_dispatch:
     inputs:
       imageTag:
-        description: "Image tag to deploy (leave empty to use latest commit SHA)"
+        description: "Image tag to deploy (leave empty to use latest commit SHA - recommended)"
         required: false
 
 permissions:
   contents: read
 
 jobs:
-  build-and-deploy-staging:
+  build-and-deploy-production:
     runs-on: ubuntu-latest
-    environment: staging
+    environment: production
 
     env:
-      IMAGE_NAME: fetch-abstract-robot
+      IMAGE_NAME: fetch-abstract-robot-production
 
     steps:
       - name: Checkout code
@@ -30,7 +30,8 @@ jobs:
         id: vars
         run: |
           sha_short=$(git rev-parse --short HEAD)
-          echo "sha_short=${sha_short}" >> $GITHUB_OUTPUT
+          unique_tag="${sha_short}-prod"
+          echo "unique_tag=${unique_tag}" >> $GITHUB_OUTPUT
       - name: Build and push Docker image
         id: buildpush
         uses: docker/login-action@v3
@@ -41,14 +42,13 @@ jobs:
         env:
           DOCKER_BUILDKIT: 1
       - run: |
-          export TAG=${{ github.event.inputs.imageTag || steps.vars.outputs.sha_short }}
+          export TAG=${{ github.event.inputs.imageTag || steps.vars.outputs.unique_tag }}
           docker build -t ${{ secrets.REPOSITORY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${TAG} .
           docker push ${{ secrets.REPOSITORY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${TAG}
           echo "TAG=${TAG}" >> $GITHUB_OUTPUT
       - name: Deploy to Azure Container App
         run: |
-          export TAG=${{ github.event.inputs.imageTag || github.sha }}
           az containerapp update \
-            --name ${{ secrets.CONTAINER_APP_NAME_STAGING }} \
+            --name ${{ secrets.CONTAINER_APP_NAME_PRODUCTION }} \
             --resource-group ${{ secrets.RESOURCE_GROUP }} \
             --image ${{ secrets.REPOSITORY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.buildpush.outputs.TAG }}
