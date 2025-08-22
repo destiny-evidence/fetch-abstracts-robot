@@ -36,6 +36,7 @@ def test_prepare_api_config_success(
     assert set(single_results.keys()) == {"CROSSREF", "SCOPUS"}
     assert not single_results["SCOPUS"].unpack_strategy.clean_abstract_string
     assert single_results["SCOPUS"].headers["X-API-Key"] == "dummy_scopus_key"
+    assert single_results["SCOPUS"].headers["X-Inst-Token"] == "dummy_inst_token"
     assert single_results["CROSSREF"].headers == {"Accept": "application/json"}
     assert single_results["CROSSREF"].api_key_env_var_name is None
     assert single_results["CROSSREF"].unpack_strategy.clean_abstract_string
@@ -43,6 +44,7 @@ def test_prepare_api_config_success(
     assert set(batch_results.keys()) == {"CROSSREF_BATCH", "SCOPUS_BATCH"}
     assert not batch_results["SCOPUS_BATCH"].unpack_strategy.clean_abstract_string
     assert batch_results["SCOPUS_BATCH"].headers["X-API-Key"] == "dummy_scopus_key"
+    assert batch_results["SCOPUS_BATCH"].headers["X-Inst-Token"] == "dummy_inst_token"
     assert batch_results["CROSSREF_BATCH"].headers == {"Accept": "application/json"}
     assert batch_results["CROSSREF_BATCH"].api_key_env_var_name is None
     assert batch_results["CROSSREF_BATCH"].unpack_strategy.clean_abstract_string
