@@ -25,7 +25,7 @@ async def serve_file():
 
 
 @app.put("/three_reference_results.jsonl")
-async def upload_file(data: bytes):
+async def upload_file(data: str):
     """
     Accept a new file upload as UTF-8 encoded bytes and save it as 'three_reference_results.jsonl'.
 
@@ -38,9 +38,8 @@ async def upload_file(data: bytes):
     """
     target_file = BASE_DIR / "three_reference_results.jsonl"
     try:
-        content = data.decode("utf-8")
         with target_file.open("w", encoding="utf-8") as f:
-            f.write(content)
+            f.write(data)
         return {"message": f"File '{target_file.name}' successfully uploaded."}
     except UnicodeDecodeError as e:
         raise HTTPException(
