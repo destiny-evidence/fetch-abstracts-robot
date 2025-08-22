@@ -1,4 +1,5 @@
 # ruff: noqa: E501, S106
+import logging
 from collections.abc import Generator
 
 import pytest
@@ -138,21 +139,11 @@ def test_settings(set_test_environment_variables) -> Settings:
 
 
 @pytest.fixture
-def caplog(
-    caplog: pytest.LogCaptureFixture,
-) -> Generator[pytest.LogCaptureFixture, None, None]:
-    """
-    Fixture to capture log messages **from loguru** during tests.
+def caplog(caplog):
+    class PropogateHandler(logging.Handler):
+        def emit(self, record) -> None:
+            logging.getLogger(record.name).handle(record)
 
-    See https://github.com/Delgan/loguru/issues/59#issuecomment-1150084462
-
-    Args:
-        caplog (pytest.LogCaptureFixture): The log capture fixture.
-
-    Yields:
-        Generator[pytest.LogCaptureFixture, None, None]: The log capture fixture.
-
-    """
-    handler_id = logger.add(caplog.handler, format="{message}", level="WARNING")
+    handler_id = logger.add(PropogateHandler(), format="{message}")
     yield caplog
     logger.remove(handler_id)
