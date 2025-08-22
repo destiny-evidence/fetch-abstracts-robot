@@ -160,21 +160,23 @@ class AbstractFetcher:
 
         """
         logger.info(f"seeking abstract for doi: {doi}")
+        enhancement_dict: dict[str, str] | None = {}
         for api in self.master_api_config["single"]:
             logger.info(f"attempting retrieval using api {api}.")
             try:
-                doi_abstract_dict = self.fetch_one_abstract(
+                enhancement_dict = self.fetch_one_abstract(
                     doi=doi, api_config=self.master_api_config["single"][api]
                 )
             except FetchAbstractError:
                 logger.error(f"Error fetching abstract from {api}.")
                 continue
-            if doi_abstract_dict:
+            if enhancement_dict:
                 found_message = f"abstract retrieval through {api} was successful."
                 logger.info(found_message)
+                enhancement_dict["source"] = api
                 if verbose:
-                    logger.debug(f"abstract text: {doi_abstract_dict['abstract']}")
-                return doi_abstract_dict
+                    logger.debug(f"abstract text: {enhancement_dict.get('abstract')}")
+                return enhancement_dict
             not_found_message = f"Abstract retrieval through {api} was unsuccessful."
             logger.info(not_found_message)
 
@@ -197,6 +199,7 @@ class AbstractFetcher:
 
         """
         dois = [self.process_doi(x) for x in dois]
+        references_provided = len(dois)
         retrieved_abstracts = []
         for api in self.master_api_config["batch"]:
             api_count = 0
@@ -208,26 +211,37 @@ class AbstractFetcher:
             retrieved_responses = self.fetch_many_abstracts(
                 dois=dois, api_config=api_config, chunk=chunk, verbose=verbose
             )
+            if retrieved_responses:
+                for response in retrieved_responses:
+                    for enhancement_dict in response:
+                        enhancement_dict["source"] = api
+                        retrieved_abstracts.append(enhancement_dict)
+                        logger.debug(f"doi to remove: {enhancement_dict.get("doi")}.")
+                    dois.remove(self.process_doi(enhancement_dict.get("doi")))
+                    logger.debug(
+                        f'retrieved abstract for doi {enhancement_dict.get("doi")}. '
+                        "removing from master list."
+                    )
+                    api_count += 1
             if not retrieved_responses:
                 error_message = f"""No abstracts found in {api} with\
                 query type {api_config.query_type.value}.
                 """
                 logger.error(error_message)
-                raise AbstractNotFoundError(error_message)
-            for response in retrieved_responses:
-                for abstract in response:
-                    retrieved_abstracts.append(abstract)
-                    logger.debug(f"doi to remove: {abstract['doi']}.")
-                    dois.remove(self.process_doi(abstract["doi"]))
-                    logger.info(
-                        f'retrieved abstract for doi {abstract["doi"]}. '
-                        "removing from master list."
-                    )
-                    api_count += 1
 
-            logger.info(f"found {api_count} abstracts for api {api}.")
+            logger.debug(f"found {api_count} abstracts for api {api}.")
             logger.info(f"found {len(retrieved_abstracts)} total.")
             logger.info(f"remaining dois to collect: {len(dois)}")
+
+        logger.info(
+            f"{len(retrieved_abstracts)} abstracts"
+            f" retrieved of {references_provided} requested."
+        )
+        logger.info(f"{len(dois)} abstracts not retrieved.")
+        abstracts_not_found = [
+            {"doi": doi, "abstract": None, "source": None} for doi in dois
+        ]
+        retrieved_abstracts.extend(abstracts_not_found)
 
         return retrieved_abstracts
 

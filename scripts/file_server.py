@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
 app = FastAPI()
@@ -25,7 +25,7 @@ async def serve_file():
 
 
 @app.put("/three_reference_results.jsonl")
-async def upload_file(data: str):
+async def upload_file(data: bytes = Body(...)):  # noqa: FAST002
     """
     Accept a new file upload as UTF-8 encoded bytes and save it as 'three_reference_results.jsonl'.
 
@@ -38,8 +38,11 @@ async def upload_file(data: str):
     """
     target_file = BASE_DIR / "three_reference_results.jsonl"
     try:
+        # Decode the bytes to ensure they are valid UTF-8
+        content = data.decode("utf-8")
+        # Save the decoded content to the target file
         with target_file.open("w", encoding="utf-8") as f:
-            f.write(data)
+            f.write(content)
         return {"message": f"File '{target_file.name}' successfully uploaded."}
     except UnicodeDecodeError as e:
         raise HTTPException(
