@@ -171,7 +171,7 @@ def generate_abstract_enhancement_batch_request(
     enhancements_by_id = {
         enhancement["id"]: enhancement for enhancement in enhancements_references_map
     }
-
+    successful_enhancements = 0
     for reference in references:
         enhancement = enhancements_by_id.get(reference.id)
         if not enhancement:
@@ -221,6 +221,15 @@ def generate_abstract_enhancement_batch_request(
             ).to_jsonl()
             + "\n"
         ).encode("utf-8")
+        successful_enhancements += 1
+    if successful_enhancements == 0:
+        reference_ids_attempted = ", ".join([ref.id for ref in references])
+        error_message = (
+            "No successful enhancements generated for reference"
+            f" IDs {reference_ids_attempted}"
+        )
+        logger.error(error_message)
+        raise BatchEnhancementGenerationError(error_message)
     return file_content
 
 
