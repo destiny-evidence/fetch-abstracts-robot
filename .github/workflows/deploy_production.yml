@@ -36,12 +36,11 @@ jobs:
           export TAG="${sha_short}-prod"
           docker build -t ${{ secrets.REPOSITORY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${TAG} .
           docker push ${{ secrets.REPOSITORY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${TAG}
-          echo "TAG=${TAG}" >> $GITHUB_OUTPUT
       - name: Deploy to Azure Container App
         run: |
           sha_short=$(git rev-parse --short HEAD)
           export TAG="${sha_short}-prod"
           az containerapp update \
             --name ${{ secrets.CONTAINER_APP_NAME_PRODUCTION }} \
-            --resource-group ${{ secrets.RESOURCE_GROUP }} \
+            --resource-group ${{ secrets.RESOURCE_GROUP_PRODUCTION }} \
             --image ${{ secrets.REPOSITORY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${TAG}
