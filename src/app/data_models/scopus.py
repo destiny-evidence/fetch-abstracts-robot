@@ -8,7 +8,7 @@ from app.data_models.generic import (
     APIConfig,
     APIKeyNotPresentError,
 )
-from app.logger import logger
+from loguru import logger
 
 SCOPUS_URL = "https://api.elsevier.com/content/abstract/doi"
 SCOPUS_QUERY_PARAMS = {"view": "META_ABS"}
