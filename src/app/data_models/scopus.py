@@ -1,5 +1,6 @@
 """Config constants for SCOPUS API; single & batch."""
 
+from loguru import logger
 from pydantic import Field
 
 from app.config import Settings
@@ -8,7 +9,6 @@ from app.data_models.generic import (
     APIConfig,
     APIKeyNotPresentError,
 )
-from loguru import logger
 
 SCOPUS_URL = "https://api.elsevier.com/content/abstract/doi"
 SCOPUS_QUERY_PARAMS = {"view": "META_ABS"}
