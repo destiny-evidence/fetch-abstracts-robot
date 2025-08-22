@@ -224,9 +224,10 @@ class AbstractFetcher:
                     )
                     api_count += 1
             if not retrieved_responses:
-                error_message = f"""No abstracts found in {api} with\
-                query type {api_config.query_type.value}.
-                """
+                error_message = (
+                    f"No abstracts found in {api} with"
+                    f" query type {api_config.query_type.value}."
+                )
                 logger.error(error_message)
 
             logger.debug(f"found {api_count} abstracts for api {api}.")

@@ -1,8 +1,10 @@
+import logging
 from collections.abc import Generator
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from loguru import logger
 
 from app.config import Settings
 from app.data_models.generic import (
@@ -15,6 +17,17 @@ from app.data_models.generic import (
 pytest_plugins = [
     "tests.fixtures.generic",
 ]
+
+
+@pytest.fixture
+def caplog(caplog):
+    class PropogateHandler(logging.Handler):
+        def emit(self, record) -> None:
+            logging.getLogger(record.name).handle(record)
+
+    handler_id = logger.add(PropogateHandler(), format="{message}")
+    yield caplog
+    logger.remove(handler_id)
 
 
 def get_app() -> FastAPI:
