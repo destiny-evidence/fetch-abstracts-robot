@@ -1,35 +1,31 @@
 """Main module for the Fetch Abstracts Robot."""
 
-import uuid
 from typing import Final
 
 import httpx
 from destiny_sdk.client import Client as DestinyClient
-from destiny_sdk.enhancements import (
-    AbstractContentEnhancement,
-    AbstractProcessType,
-    Enhancement,
-)
 from destiny_sdk.references import Reference
 from destiny_sdk.robots import (
     BatchRobotRequest,
     BatchRobotResult,
-    LinkedRobotError,
     RobotError,
     RobotRequest,
     RobotResult,
 )
-from destiny_sdk.visibility import Visibility
 from fastapi import BackgroundTasks, Depends, FastAPI, Response, status
 from loguru import logger
 
 from app.auth import auth_strategy_robot
 from app.config import get_settings
 from app.data_models.crossref import crossref_api_config, crossref_batch_api_config
-from app.data_models.generic import AbstractNotFoundError
 from app.data_models.scopus import scopus_api_config, scopus_batch_api_config
+from app.enhancement_generation import (
+    BatchEnhancementGenerationError,
+    generate_abstract_enhancement_batch_request,
+    generate_abstract_enhancement_single_request,
+)
 from app.fetch_abstract import AbstractFetcher, prepare_api_config
-from app.utils import get_doi_from_reference, get_version_number
+from app.utils import get_doi_from_reference
 
 settings = get_settings()
 abstract_collector_auth = auth_strategy_robot(settings=settings)
@@ -58,10 +54,6 @@ global_api_config = prepare_api_config(
 abstract_fetcher = AbstractFetcher(global_api_config)
 
 
-class BatchEnhancementGenerationError(Exception):
-    """Custom exception for errors during batch enhancement generation."""
-
-
 @app.get("/")
 async def root() -> dict[str, str]:
     """
@@ -86,33 +78,6 @@ async def health_check() -> dict[str, str]:
     return {"status": "healthy"}
 
 
-def generate_abstract_enhancement_single_request(
-    reference: Reference,
-) -> Enhancement:
-    """Generate an abstract enhancement."""
-    doi = get_doi_from_reference(reference=reference)
-    try:
-        enhancement_dict = abstract_fetcher.get_one_abstract_cycling_apis(doi=doi)
-        abstract = enhancement_dict.get("abstract", None)
-    except AbstractNotFoundError:
-        logger.error(f"Abstract not found for DOI: {doi}")
-        raise
-    except httpx.HTTPError as http_error:
-        logger.error(f"HTTP error occurred: {http_error}")
-        raise
-    return Enhancement(
-        reference_id=reference.id,
-        source=TITLE,
-        visibility=Visibility.PUBLIC,
-        robot_version=get_version_number(),
-        content_version=f"{uuid.uuid4()}",
-        content=AbstractContentEnhancement(
-            process=AbstractProcessType.CLOSED_API,
-            abstract=abstract,
-        ),
-    )
-
-
 def create_abstract_enhancement(request: RobotRequest) -> None:
     """
     Create an abstract enhancement.
@@ -120,7 +85,11 @@ def create_abstract_enhancement(request: RobotRequest) -> None:
     Wraps `generate_abstract_enhancement_single_request` and queues it.
     """
     try:
-        enhancement = generate_abstract_enhancement_single_request(request.reference)
+        enhancement = generate_abstract_enhancement_single_request(
+            abstract_fetcher=abstract_fetcher,
+            reference=request.reference,
+            app_title=TITLE,
+        )
         logger.info("Got single reference abstract. Sending response.")
         try:
             client.send_robot_result(
@@ -145,92 +114,6 @@ def create_abstract_enhancement(request: RobotRequest) -> None:
             client.send_robot_result(error_response)
         except httpx.HTTPError as connection_error:
             logger.critical(f"Error sending robot result: {connection_error}")
-
-
-def generate_abstract_enhancement_batch_request(
-    references: list[Reference], enhancements_references_map: list[dict]
-) -> bytes:
-    """
-    Generate a batch of abstract enhancements from a batch of references.
-
-    Args:
-        references (list[Reference]): A list of reference objects.
-        enhancements_references_map (list[dict]): A list of enhancement dictionaries
-            that map reference IDs to their enhancements.
-
-    Returns:
-        bytes: The generated batch of enhancements in JSONL format.
-
-    Raises:
-        BatchEnhancementGenerationError: If there is an error generating the batch.
-            Represents a complete failing of the enhancement process.
-
-    """
-    file_content = b""
-    version_number = get_version_number()
-    enhancements_by_id = {
-        enhancement["id"]: enhancement for enhancement in enhancements_references_map
-    }
-    successful_enhancements = 0
-    for reference in references:
-        enhancement = enhancements_by_id.get(reference.id)
-        if not enhancement:
-            error_message = f"Enhancement generation error for {reference.id}."
-            logger.error(error_message)
-            raise BatchEnhancementGenerationError(error_message)
-        abstract = enhancement.get("abstract", None)
-        if not abstract:
-            sources = [
-                config.name.value
-                for config in AVAILABLE_API_CONFIGS
-                if "_" not in config.name.value
-            ]
-            error_message = f"No abstract found in {sources}"
-            logger.warning(error_message)
-            # Confirmed by Jack that we should be writing a LinkedRobotError
-            # (see https://destiny-evidence.github.io/destiny-repository/sdk/schemas.html#libs.sdk.src.destiny_sdk.robots.LinkedRobotError)
-            # for the references that fail
-            linked_robot_error = LinkedRobotError(
-                message=error_message,
-                reference_id=reference.id,
-            )
-            file_content += (linked_robot_error.to_jsonl() + "\n").encode("utf-8")
-            continue
-        enhancement_source = enhancement.get("source", TITLE)
-        if not enhancement_source:
-            enhancement_source_short = "UNKNOWN"
-        if enhancement_source:
-            enhancement_source_short = enhancement_source.split("_")[0].upper()
-        visibility_level = (
-            Visibility.PUBLIC
-            if enhancement_source_short == "CROSSREF"
-            else Visibility.RESTRICTED
-        )
-
-        file_content += (
-            Enhancement(
-                reference_id=reference.id,
-                source=TITLE,
-                visibility=visibility_level,
-                robot_version=version_number,
-                content_version=f"{uuid.uuid4()}",
-                content=AbstractContentEnhancement(
-                    process=AbstractProcessType.CLOSED_API,
-                    abstract=enhancement["abstract"],
-                ),
-            ).to_jsonl()
-            + "\n"
-        ).encode("utf-8")
-        successful_enhancements += 1
-    if successful_enhancements == 0:
-        reference_ids_attempted = ", ".join([ref.id for ref in references])
-        error_message = (
-            "No successful enhancements generated for reference"
-            f" IDs {reference_ids_attempted}"
-        )
-        logger.error(error_message)
-        raise BatchEnhancementGenerationError(error_message)
-    return file_content
 
 
 def create_batch_abstract_enhancement(
@@ -271,6 +154,8 @@ def create_batch_abstract_enhancement(
             file_content = generate_abstract_enhancement_batch_request(
                 references=references,
                 enhancements_references_map=enhancement_reference_map,
+                available_api_configs=AVAILABLE_API_CONFIGS,
+                app_title=TITLE,
             )
         except BatchEnhancementGenerationError as batch_error:
             error_message = (
