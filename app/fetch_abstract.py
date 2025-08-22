@@ -39,12 +39,12 @@ def prepare_api_config(
     """
     Prepare a dict of APIConfig objects, populated with API keys.
 
-    if API keys are not present for a given API,
-    this will be omited from the overall API config
+    If API keys are not present for a given API,
+    this will be omitted from the overall API config.
 
-    NOTE: right now, we can pass a list of APIConfigs.
-    an API config will only be allowed if it's in the list of
-    permitted APIs in generic.ExternalAPI.
+    NOTE: Right now, we can pass a list of APIConfigs.
+    An API config will only be allowed if it's in
+    the list of permitted APIs in generic.ExternalAPI.
 
     Args:
         api_configs (list[APIConfig]): list of APIConfig objects to prepare.
