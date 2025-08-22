@@ -20,7 +20,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
       
@@ -579,6 +579,36 @@
       scopus
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="scopus">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#app.data_models.scopus.ScopusAPIConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      ScopusAPIConfig
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ScopusAPIConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#app.data_models.scopus.ScopusAPIConfig.init_api_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      init_api_key
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1157,6 +1187,36 @@
       scopus
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="scopus">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#app.data_models.scopus.ScopusAPIConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      ScopusAPIConfig
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ScopusAPIConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#app.data_models.scopus.ScopusAPIConfig.init_api_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      init_api_key
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1746,7 +1806,10 @@
 <span class="normal">56</span>
 <span class="normal">57</span>
 <span class="normal">58</span>
-<span class="normal">59</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Settings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Settings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings model for API.&quot;&quot;&quot;</span>
 
     <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span>
@@ -1776,6 +1839,9 @@
     <span class="c1"># API keys for abstract retrieval</span>
     <span class="n">elsevier_scopus_key</span><span class="p">:</span> <span class="n">SecretStr</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;api key for elsevier scopus api.&quot;</span>
+    <span class="p">)</span>
+    <span class="n">elsevier_scopus_inst_token</span><span class="p">:</span> <span class="n">SecretStr</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;inst token for elsevier scopus api.&quot;</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
@@ -1821,10 +1887,10 @@
 
             <details class="quote">
               <summary>Source code in <code>src/app/config.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">62</span>
-<span class="normal">63</span>
-<span class="normal">64</span>
-<span class="normal">65</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_settings</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Settings</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a cached settings object.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">Settings</span><span class="p">()</span>  <span class="c1"># type: ignore[call-arg]</span>
@@ -3493,6 +3559,257 @@ e.g. <code>single</code>, <code>batched_single</code> or <code>batch</code>.</p>
 
 
 
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="app.data_models.scopus.ScopusAPIConfig" class="doc doc-heading">
+            <code>ScopusAPIConfig</code>
+
+
+</h4>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="APIConfig (app.data_models.generic.APIConfig)" href="#app.data_models.generic.APIConfig">APIConfig</a></code></p>
+
+
+        <p>Configuration for the SCOPUS API.</p>
+<p>Extends the base APIConfig to add Insttoken handling.</p>
+
+
+
+
+
+
+
+              <details class="quote">
+                <summary>Source code in <code>src/app/data_models/scopus.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span>
+<span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ScopusAPIConfig</span><span class="p">(</span><span class="n">APIConfig</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Configuration for the SCOPUS API.</span>
+
+<span class="sd">    Extends the base APIConfig to add Insttoken handling.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">api_inst_token_placement</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Inst token for Scopus API&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;X-ELS-Insttoken&quot;</span>
+    <span class="p">)</span>
+    <span class="n">api_inst_token_env_var_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Environment variable for Inst token&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;elsevier_scopus_inst_token&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">init_api_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">:</span> <span class="n">Settings</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Populate proper request headers with API key if present.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ApiKeyNotPresentError: If the API key is not present in settings.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;initializing API key for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> API&quot;</span><span class="p">)</span>
+        <span class="n">api_key</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_key_env_var_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_key_env_var_name</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="n">inst_token</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_inst_token_env_var_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_inst_token_env_var_name</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">api_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">error_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;API key for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> is not present in settings.&quot;</span>
+            <span class="k">raise</span> <span class="n">APIKeyNotPresentError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">inst_token</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Inst token for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> is not present in settings&quot;</span>
+                <span class="s2">&quot; skipping header population.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">api_key_placement</span><span class="p">]</span> <span class="o">=</span> <span class="n">api_key</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">api_inst_token_placement</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">inst_token</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">()</span> <span class="k">if</span> <span class="n">inst_token</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+              </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="app.data_models.scopus.ScopusAPIConfig.init_api_key" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">init_api_key</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span></code>
+
+</h5>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Populate proper request headers with API key if present.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ApiKeyNotPresentError">ApiKeyNotPresentError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the API key is not present in settings.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="quote">
+              <summary>Source code in <code>src/app/data_models/scopus.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span>
+<span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">init_api_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">:</span> <span class="n">Settings</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Populate proper request headers with API key if present.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ApiKeyNotPresentError: If the API key is not present in settings.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;initializing API key for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> API&quot;</span><span class="p">)</span>
+    <span class="n">api_key</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">getattr</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_key_env_var_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_key_env_var_name</span>
+        <span class="k">else</span> <span class="kc">None</span>
+    <span class="p">)</span>
+    <span class="n">inst_token</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">getattr</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_inst_token_env_var_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_inst_token_env_var_name</span>
+        <span class="k">else</span> <span class="kc">None</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">api_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">error_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;API key for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> is not present in settings.&quot;</span>
+        <span class="k">raise</span> <span class="n">APIKeyNotPresentError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">inst_token</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Inst token for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> is not present in settings&quot;</span>
+            <span class="s2">&quot; skipping header population.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">api_key_placement</span><span class="p">]</span> <span class="o">=</span> <span class="n">api_key</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">api_inst_token_placement</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">inst_token</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">()</span> <span class="k">if</span> <span class="n">inst_token</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
 
 
 
@@ -6268,11 +6585,11 @@ set to <code>True</code>, we will run the <code>clean_abstract_string</code> met
     <div class="doc doc-contents ">
 
         <p>Prepare a dict of APIConfig objects, populated with API keys.</p>
-<p>if API keys are not present for a given API,
-this will be omited from the overall API config</p>
-<p>NOTE: right now, we can pass a list of APIConfigs.
-an API config will only be allowed if it's in the list of
-permitted APIs in generic.ExternalAPI.</p>
+<p>If API keys are not present for a given API,
+this will be omitted from the overall API config.</p>
+<p>NOTE: Right now, we can pass a list of APIConfigs.
+An API config will only be allowed if it's in
+the list of permitted APIs in generic.ExternalAPI.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6445,12 +6762,12 @@ permitted APIs in generic.ExternalAPI.</p>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Prepare a dict of APIConfig objects, populated with API keys.</span>
 
-<span class="sd">    if API keys are not present for a given API,</span>
-<span class="sd">    this will be omited from the overall API config</span>
+<span class="sd">    If API keys are not present for a given API,</span>
+<span class="sd">    this will be omitted from the overall API config.</span>
 
-<span class="sd">    NOTE: right now, we can pass a list of APIConfigs.</span>
-<span class="sd">    an API config will only be allowed if it&#39;s in the list of</span>
-<span class="sd">    permitted APIs in generic.ExternalAPI.</span>
+<span class="sd">    NOTE: Right now, we can pass a list of APIConfigs.</span>
+<span class="sd">    An API config will only be allowed if it&#39;s in</span>
+<span class="sd">    the list of permitted APIs in generic.ExternalAPI.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        api_configs (list[APIConfig]): list of APIConfig objects to prepare.</span>
@@ -7600,7 +7917,8 @@ this may be done in the background, depending on API config).</p>
   
 </div>
       
-        <div class="md-social">
+        
+<div class="md-social">
   
     
     
@@ -7627,10 +7945,10 @@ this may be done in the background, depending on API config).</p>
     
     
       
-      <script id="__config" type="application/json">{"base": "..", "features": ["content.action.edit"], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "..", "features": ["content.action.edit"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../assets/javascripts/bundle.92b07e13.min.js"></script>
       
     
   </body>
