@@ -12,7 +12,7 @@ jobs:
     environment: production
 
     env:
-      IMAGE_NAME: fetch-abstract-robot-production
+      IMAGE_NAME: fetch-abstract-robot
 
     steps:
       - name: Checkout code
