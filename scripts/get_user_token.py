@@ -1,4 +1,5 @@
 import time
+from uuid import UUID
 
 import msal
 from loguru import logger
@@ -8,10 +9,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     destiny_robot_dev_auth_secret: SecretStr
-    destiny_robot_dev_auth_app_id: str
-    jt_ad_tenant_id: str
-    destiny_repository_development_app_id: str
-    destiny_repository_staging_app_id: str
+    destiny_robot_dev_auth_app_id: UUID
+    jt_ad_tenant_id: UUID
+    destiny_repository_development_app_id: UUID
+    destiny_repository_staging_app_id: UUID
 
     model_config = SettingsConfigDict(env_file="user_token.secrets")
 
