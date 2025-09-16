@@ -87,6 +87,7 @@ def scopus_api_config_valid_batch():
         require_api_key=True,
         api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
         api_key_placement="X-API-Key",  # pragma: allowlist secret
+        query_type=QueryType.BATCH,
         query_params={},
         headers={"X-API-Key": ""},
         unpack_strategy=AbstractUnpackStrategy(

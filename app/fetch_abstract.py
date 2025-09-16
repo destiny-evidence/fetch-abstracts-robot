@@ -223,7 +223,7 @@ class AbstractFetcher:
                         "removing from master list."
                     )
                     api_count += 1
-            if not retrieved_responses:
+            else:
                 error_message = (
                     f"No abstracts found in {api} with"
                     f" query type {api_config.query_type.value}."

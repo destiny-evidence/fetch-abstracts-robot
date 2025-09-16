@@ -553,6 +553,11 @@ def test_get_many_abstracts_cycling_apis_no_abstracts_found(
     mocker.patch.object(fetcher, "fetch_many_abstracts", return_value=None)
     with caplog.at_level("DEBUG"):
         null_enhancements = fetcher.get_many_abstracts_cycling_apis(test_dois)
+    assert (
+        "No abstracts found in CROSSREF_BATCH with query type batched_single."
+        in caplog.text
+    )
+    assert "No abstracts found in SCOPUS_BATCH with query type batch." in caplog.text
     assert f"0 abstracts retrieved of {len(test_dois)} requested" in caplog.text
 
     assert len(null_enhancements) == len(test_dois)
