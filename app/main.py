@@ -30,7 +30,7 @@ from app.utils import get_doi_from_reference
 settings = get_settings()
 abstract_collector_auth = auth_strategy_robot(settings=settings)
 
-TITLE: Final[str] = "Fetch Abstracts Robot (FAR)"
+TITLE: Final[str] = settings.robot_title
 app = FastAPI(title=TITLE)
 
 client = DestinyClient(
@@ -63,7 +63,7 @@ async def root() -> dict[str, str]:
         dict[str, str]: A simple message.
 
     """
-    return {"message": "I am the Fetch Abstracts Robot (FAR)."}
+    return {"message": f"I am the {TITLE}."}
 
 
 @app.get("/health")

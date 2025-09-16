@@ -27,7 +27,7 @@ class BatchEnhancementGenerationError(Exception):
 def generate_abstract_enhancement_single_request(
     abstract_fetcher: AbstractFetcher,
     reference: Reference,
-    app_title: str = "Fetch Abstracts Robot (FAR)",
+    app_title: str,
 ) -> Enhancement:
     """
     Generate an abstract enhancement for a single reference.
@@ -72,7 +72,7 @@ def generate_abstract_enhancement_batch_request(
     references: list[Reference],
     enhancements_references_map: list[dict],
     available_api_configs: list[APIConfig],
-    app_title: str = "Fetch Abstracts Robot (FAR)",
+    app_title: str,
 ) -> bytes:
     """
     Generate a batch of abstract enhancements from a batch of references.
