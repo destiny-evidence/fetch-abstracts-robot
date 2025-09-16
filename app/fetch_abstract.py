@@ -82,9 +82,9 @@ def prepare_api_config(
                 target_config.init_api_key(settings=settings)
                 master_api_config[external_api_priority.name][api.name] = target_config
                 logger.info(f"successfully initialised API key for {api.name}.")
-            except APIKeyNotPresentError as e:
+            except APIKeyNotPresentError as missing_api_key_error:
                 logger.info(f"no API key for {api.name}. not populating config.")
-                logger.info(f"original error message: {e}.")
+                logger.info(f"original error message: {missing_api_key_error}.")
                 continue
 
     return master_api_config
@@ -379,11 +379,11 @@ class AbstractFetcher:
                     verbose=verbose,
                     **kwargs,
                 )
-            except requests.HTTPError as e:
+            except requests.HTTPError as http_error:
                 logger.error(
                     "encountered HTTPError on attempting to retrieve abstract. "
                     f"requested doi(s): {_chunk} "
-                    f"original error message: {e}"
+                    f"original error message: {http_error}"
                 )
                 continue
 
@@ -405,8 +405,8 @@ class AbstractFetcher:
                             ),
                         }
                     ]
-                except AbstractUnpackError as e:
-                    logger.error(e)
+                except AbstractUnpackError as abstract_unpack_error:
+                    logger.error(abstract_unpack_error)
                     continue
 
             elif api_config.query_type == "batch":
@@ -487,13 +487,13 @@ class AbstractFetcher:
                 logger.debug("`clean_abstract_string` is True, cleaning abstract.")
                 abstract_object = self.clean_abstract_string(abstract_object)
 
-        except KeyError as missing_key:
+        except KeyError as missing_key_error:
             error_message = (
                 "Key not found in response object with current unpack strategy.",
-                f"Key not found: {missing_key}",
+                f"Key not found: {missing_key_error}",
             )
 
-            raise AbstractUnpackError(error_message) from missing_key
+            raise AbstractUnpackError(error_message) from missing_key_error
         if not isinstance(abstract_object, str):
             abstract_not_string_error_message = "Expected abstract to be a string."
             raise AbstractUnpackError(abstract_not_string_error_message)
