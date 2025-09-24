@@ -13,6 +13,7 @@ from app.data_models.generic import (
     ExternalAPI,
     ExternalAPIPriority,
 )
+from tests.conftest import scopus_api_config_valid_batch
 
 
 def test_custom_exceptions():
@@ -70,24 +71,6 @@ def test_abstract_unpack_strategy_():
     ),
     [
         (
-            "scopus_api_config_valid_single",
-            {"X-API-Key": ""},
-            ExternalAPI.SCOPUS,
-            "https://api.example.com/",
-            {},
-            ExternalAPI.SCOPUS,
-            ["data", "abstract"],
-        ),
-        (
-            "crossref_api_config_valid_single",
-            {"Accept": "application/json"},
-            ExternalAPI.CROSSREF,
-            "https://api.example.com/",
-            {},
-            ExternalAPI.CROSSREF,
-            ["data", "abstract"],
-        ),
-        (
             "scopus_api_config_valid_batch",
             {"X-API-Key": ""},
             ExternalAPI.SCOPUS_BATCH,
@@ -126,14 +109,22 @@ def test_api_config_validator_success(
     assert api_config.unpack_strategy.strategy == expected_unpack_strategy
 
 
-def test_api_config_validator_failure(scopus_api_config_valid_single, monkeypatch):
+@pytest.mark.parametrize(
+    ("api_config_fixture"),
+    [
+        ("scopus_api_config_valid_batch"),
+        ("crossref_api_config_valid_batch"),
+    ],
+)
+def test_api_config_validator_failure(request, api_config_fixture, monkeypatch):
+    api_config = request.getfixturevalue(api_config_fixture)
     bad_fields = [
         ("headers", None),
         ("unpack_strategy", "not_a_strategy"),
         ("name", "not_an_enum"),
     ]
     for field, bad_value in bad_fields:
-        broken = scopus_api_config_valid_single.model_copy()
+        broken = api_config.model_copy()
         setattr(broken, field, bad_value)
         with pytest.raises(ValidationError):
             APIConfig.model_validate(broken.__dict__)
@@ -142,8 +133,8 @@ def test_api_config_validator_failure(scopus_api_config_valid_single, monkeypatc
 @pytest.mark.parametrize(
     ("api_config_fixture", "expected_key", "expected_value"),
     [
-        ("scopus_api_config_valid_single", "X-API-Key", "dummy_scopus_key"),
-        ("crossref_api_config_valid_single", None, None),
+        ("scopus_api_config_valid_batch", "X-API-Key", "dummy_scopus_key"),
+        ("crossref_api_config_valid_batch", None, None),
     ],
 )
 def test_api_config_init_api_key_success(
@@ -165,31 +156,14 @@ def test_api_config_init_api_key_missing(invalid_api_config):
     with pytest.raises(APIKeyNotPresentError):
         invalid_api_config.init_api_key(settings)
 
-
 @pytest.mark.parametrize(
-    "api_config_fixture",
+    ("api_config_fixture", "query"),
     [
-        "scopus_api_config_valid_single",
-        "crossref_api_config_valid_single",
+        ("scopus_api_config_valid_batch", ["test_DOI_1", "test_doi_2", "test_doi_3"]),
     ],
 )
-def test_api_config_populate_query_single(request, api_config_fixture):
+def test_api_config_populate_query_batch(request, api_config_fixture, query):
     api_config = request.getfixturevalue(api_config_fixture)
-    query = "test_query"
-    url = api_config.populate_query(query)["url"]
-    # This assumes populate_query appends the query string to the base URL
-    assert url == f"{api_config.url}{"test_query"}"
-
-
-@pytest.mark.parametrize(
-    "api_config_fixture",
-    [
-        "scopus_api_config_valid_batch",
-    ],
-)
-def test_api_config_populate_query_batch(request, api_config_fixture):
-    api_config = request.getfixturevalue(api_config_fixture)
-    query = ["test_DOI_1", "test_doi_2", "test_doi_3"]
     expected_query = " OR ".join([f"DOI({q})" for q in query])
     request_params = api_config.populate_query(query)
     # This assumes populate_query appends the query string to the base URL
@@ -198,14 +172,15 @@ def test_api_config_populate_query_batch(request, api_config_fixture):
 
 
 @pytest.mark.parametrize(
-    "api_config_fixture",
+    ("api_config_fixture", "query"),
     [
-        "crossref_api_config_valid_batch",
+        ("crossref_api_config_valid_batch", ["test_DOI"]),
+
     ],
 )
-def test_api_config_populate_query_batched_single(request, api_config_fixture):
+def test_api_config_populate_query_batched_single(request, api_config_fixture, query):
     api_config = request.getfixturevalue(api_config_fixture)
-    query = "test_DOI"
+    expected_extracted_query = query[0]
     url = api_config.populate_query(query)["url"]
     # This assumes populate_query appends the query string to the base URL
-    assert url == f"{api_config.url}{query}"
+    assert url == f"{api_config.url}{expected_extracted_query}"

@@ -29,8 +29,6 @@ class ExternalAPI(StrEnum):
     implementation of retrieving their output.
     """
 
-    SCOPUS = "scopus"
-    CROSSREF = "crossref"
     CROSSREF_BATCH = "crossref_batch"
     SCOPUS_BATCH = "scopus_batch"
 
@@ -38,11 +36,10 @@ class ExternalAPI(StrEnum):
 class QueryType(StrEnum):
     """
     Exhaustive list of permitted query types,
-    e.g. `single`, `batched_single` or `batch`.
+    e.g. `batched_single` or `batch`.
 
     """
 
-    SINGLE = "single"
     BATCH = "batch"
     BATCHED_SINGLE = "batched_single"
 
@@ -55,14 +52,6 @@ class ExternalAPIPriority(BaseModel):
         ..., description="mapping of `ExternalAPIs` to their priority rank."
     )
 
-
-external_api_priority_single = ExternalAPIPriority(
-    name="single",
-    priorities={
-        ExternalAPI.CROSSREF: 1,
-        ExternalAPI.SCOPUS: 2,
-    },
-)
 
 external_api_priority_batch = ExternalAPIPriority(
     name="batch",
@@ -121,8 +110,8 @@ class APIConfig(BaseModel):
         description="Dict key in `headers` where we should insert our API key."
     )
     query_type: QueryType = Field(
-        default=QueryType.SINGLE,
-        description="Type of query; i.e. single, batched_single or batch.",
+        default=QueryType.BATCHED_SINGLE,
+        description="Type of query; i.e. batched_single or batch.",
     )
     query_params: dict = Field(
         default={},
@@ -174,7 +163,8 @@ class APIConfig(BaseModel):
     @staticmethod
     def build_query_single(doi: str, url: str) -> str:
         """
-        Build a query string for QueryType.Single.
+        Build a query string for single reference as part
+        of QueryType.BATCHED_SINGLE.
 
         Args:
             doi (str): a doi string
@@ -239,17 +229,6 @@ class APIConfig(BaseModel):
                    abstract given target query and APIConfig.
 
         """
-        if self.query_type == QueryType.SINGLE:
-            if not isinstance(query, str):
-                error_msg = "query_type `single` requires a `str` type query."
-                raise TypeError(error_msg)
-            url = self.build_query_single(doi=query, url=self.url.encoded_string())
-            return {
-                "url": url,
-                "query_params": self.query_params,
-                "headers": self.headers,
-            }
-
         if self.query_type == QueryType.BATCH:
             if not isinstance(query, list):
                 error_msg = "query_type `batch` requires a `list` type query."
@@ -262,10 +241,18 @@ class APIConfig(BaseModel):
             return {"url": self.url, "query_params": params, "headers": self.headers}
 
         if self.query_type == QueryType.BATCHED_SINGLE:
-            if not isinstance(query, str):
-                error_msg = "query_type `single` requires a `str` type query."
+            if isinstance(query, list):
+                if len(query) != 1:
+                    error_msg = (
+                        "query_type `batched_single` requires a `str` type query, "
+                        "or a single-item list."
+                    )
+                    raise TypeError(error_msg)
+            extracted_query = query[0] if isinstance(query, list) else query
+            if not isinstance(extracted_query, str):
+                error_msg = f"Unable to parse query from initial query {query}."
                 raise TypeError(error_msg)
-            url = self.build_query_single(doi=query, url=self.url.encoded_string())
+            url = self.build_query_single(doi=extracted_query, url=self.url.encoded_string())
             return {
                 "url": url,
                 "query_params": self.query_params,

@@ -22,10 +22,6 @@ SCOPUS_HEADERS = {
     "X-ELS-Insttoken": "",
 }
 
-SCOPUS_UNPACK_STRATEGY = AbstractUnpackStrategy(
-    source="scopus",
-    strategy=["abstracts-retrieval-response", "coredata", "dc:description"],
-)
 SCOPUS_BATCH_UNPACK_STRATEGY = AbstractUnpackStrategy(
     source="scopus_batch",
     doi_strategy=["search-results", "entry", "prism:doi"],
@@ -80,18 +76,6 @@ class ScopusAPIConfig(APIConfig):
         self.headers[self.api_inst_token_placement] = (
             inst_token.get_secret_value() if inst_token else ""
         )
-
-
-scopus_api_config = ScopusAPIConfig(
-    name="scopus",
-    url=SCOPUS_URL,
-    require_api_key=True,
-    api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
-    api_key_placement="X-ELS-APIKey",  # pragma: allowlist secret
-    query_params=SCOPUS_QUERY_PARAMS,
-    headers=SCOPUS_HEADERS,
-    unpack_strategy=SCOPUS_UNPACK_STRATEGY,
-)
 
 scopus_batch_api_config = ScopusAPIConfig(
     name="scopus_batch",

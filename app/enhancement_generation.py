@@ -13,59 +13,13 @@ from destiny_sdk.robots import (
 )
 from destiny_sdk.visibility import Visibility
 from loguru import logger
-from requests import HTTPError
 
-from app.data_models.generic import AbstractNotFoundError, APIConfig
-from app.fetch_abstract import AbstractFetcher
-from app.utils import get_doi_from_reference, get_version_number
+from app.data_models.generic import APIConfig
+from app.utils import get_version_number
 
 
 class BatchEnhancementGenerationError(Exception):
     """Custom exception for errors during batch enhancement generation."""
-
-
-def generate_abstract_enhancement_single_request(
-    abstract_fetcher: AbstractFetcher,
-    reference: Reference,
-    app_title: str,
-) -> Enhancement:
-    """
-    Generate an abstract enhancement for a single reference.
-
-    Args:
-        abstract_fetcher (AbstractFetcher): The abstract fetcher instance.
-        reference (Reference): The reference object containing metadata.
-        app_title (str): The title of the application.
-
-    Returns:
-        Enhancement: The generated abstract enhancement.
-
-    Raises:
-        AbstractNotFoundError: If no abstract is found for the given reference.
-        HTTPError: If there is an HTTP error during the API call.
-
-    """
-    doi = get_doi_from_reference(reference=reference)
-    try:
-        enhancement_dict = abstract_fetcher.get_one_abstract_cycling_apis(doi=doi)
-        abstract = enhancement_dict.get("abstract", None)
-    except AbstractNotFoundError:
-        logger.error(f"Abstract not found for DOI: {doi}")
-        raise
-    except HTTPError as http_error:
-        logger.error(f"HTTP error occurred: {http_error}")
-        raise
-    return Enhancement(
-        reference_id=reference.id,
-        source=app_title,
-        visibility=Visibility.PUBLIC,
-        robot_version=get_version_number(),
-        content_version=f"{uuid.uuid4()}",
-        content=AbstractContentEnhancement(
-            process=AbstractProcessType.CLOSED_API,
-            abstract=abstract,
-        ),
-    )
 
 
 def generate_abstract_enhancement_batch_request(

@@ -20,13 +20,6 @@ def external_api_priorities() -> dict[str, ExternalAPIPriority]:
 
     """
     return {
-        "single": ExternalAPIPriority(
-            name="single",
-            priorities={
-                ExternalAPI.CROSSREF: 1,
-                ExternalAPI.SCOPUS: 2,
-            },
-        ),
         "batch": ExternalAPIPriority(
             name="batch",
             priorities={
@@ -47,16 +40,16 @@ def invalid_api_config() -> APIConfig:
 
     """
     return APIConfig(
-        name=ExternalAPI.SCOPUS,
+        name=ExternalAPI.SCOPUS_BATCH,
         url="http://fake-api.com",
         require_api_key=True,
         api_key_env_var_name="FAKE_API_KEY",  # pragma: allowlist secret
         api_key_placement="api_key_placement",  # pragma: allowlist secret
-        query_type=QueryType.SINGLE,
+        query_type=QueryType.BATCHED_SINGLE,
         query_params={"param1": "value1"},
         headers={"Authorization": "Bearer fake_token", "api_key_placement": ""},
         unpack_strategy=AbstractUnpackStrategy(
-            source=ExternalAPI.SCOPUS,
+            source=ExternalAPI.SCOPUS_BATCH,
             strategy=["data", "abstract"],
         ),
     )
