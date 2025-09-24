@@ -1,4 +1,4 @@
-"""tests for src/app/config.py."""
+"""tests for app/config.py."""
 
 from app.config import Settings
 

@@ -36,11 +36,12 @@ def test_scopus_api_config_creation_success_no_inst_token(
         "Inst token for scopus is not present in settings" in message
         for message in caplog.text.splitlines()
     )
-
-    assert (
-        config.headers[config.api_key_placement]
-        == test_settings.elsevier_scopus_key.get_secret_value()
+    test_scopus_api_key = (
+        test_settings.elsevier_scopus_key.get_secret_value()
+        if test_settings.elsevier_scopus_key
+        else None
     )
+    assert config.headers[config.api_key_placement] == test_scopus_api_key
     assert config.headers[config.api_inst_token_placement] == ""
 
 
@@ -86,11 +87,15 @@ def test_scopus_api_config_with_valid_keys(test_settings: Settings):
 
     config.init_api_key(test_settings)
 
-    assert (
-        config.headers["X-API-Key"]
-        == test_settings.elsevier_scopus_key.get_secret_value()
+    test_scopus_api_key = (
+        test_settings.elsevier_scopus_key.get_secret_value()
+        if test_settings.elsevier_scopus_key
+        else None
     )
-    assert (
-        config.headers["X-Inst-Token"]
-        == test_settings.elsevier_scopus_inst_token.get_secret_value()
+    assert config.headers["X-API-Key"] == test_scopus_api_key
+    test_scopus_inst_token = (
+        test_settings.elsevier_scopus_inst_token.get_secret_value()
+        if test_settings.elsevier_scopus_inst_token
+        else None
     )
+    assert config.headers["X-Inst-Token"] == test_scopus_inst_token

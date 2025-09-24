@@ -15,7 +15,7 @@ RUN sh /uv-installer.sh && rm /uv-installer.sh
 ENV PATH="/root/.local/bin/:$PATH"
 
 COPY pyproject.toml uv.lock README.md ./
-COPY src/ ./src/
+COPY app/ ./app/
 
 RUN uv sync --locked
 
@@ -25,10 +25,10 @@ FROM base AS final
 COPY --from=builder /app/.venv /app/.venv
 
 # Copy source code
-COPY --from=builder /app/src /app/src
+COPY --from=builder /app/app /app/app
 
 # Ensure virtual environment is in PATH
 ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8001
-ENTRYPOINT ["fastapi", "run", "src/app/main.py", "--port", "8001"]
+ENTRYPOINT ["fastapi", "run", "app/main.py", "--port", "8001"]

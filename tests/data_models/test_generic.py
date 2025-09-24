@@ -1,4 +1,4 @@
-"""tests for generic data models in src/app/data_models/generic.py."""
+"""tests for generic data models in app/data_models/generic.py."""
 
 import pytest
 from pydantic import ValidationError
@@ -170,14 +170,42 @@ def test_api_config_init_api_key_missing(invalid_api_config):
     "api_config_fixture",
     [
         "scopus_api_config_valid_single",
-        "scopus_api_config_valid_batch",
         "crossref_api_config_valid_single",
-        "crossref_api_config_valid_batch",
     ],
 )
-def test_api_config_populate_query(request, api_config_fixture):
+def test_api_config_populate_query_single(request, api_config_fixture):
     api_config = request.getfixturevalue(api_config_fixture)
     query = "test_query"
     url = api_config.populate_query(query)["url"]
     # This assumes populate_query appends the query string to the base URL
     assert url == f"{api_config.url}{"test_query"}"
+
+
+@pytest.mark.parametrize(
+    "api_config_fixture",
+    [
+        "scopus_api_config_valid_batch",
+    ],
+)
+def test_api_config_populate_query_batch(request, api_config_fixture):
+    api_config = request.getfixturevalue(api_config_fixture)
+    query = ["test_DOI_1", "test_doi_2", "test_doi_3"]
+    expected_query = " OR ".join([f"DOI({q})" for q in query])
+    request_params = api_config.populate_query(query)
+    # This assumes populate_query appends the query string to the base URL
+    assert request_params["query_params"]["query"] == expected_query
+    assert str(request_params["url"]) == f"{api_config.url}"
+
+
+@pytest.mark.parametrize(
+    "api_config_fixture",
+    [
+        "crossref_api_config_valid_batch",
+    ],
+)
+def test_api_config_populate_query_batched_single(request, api_config_fixture):
+    api_config = request.getfixturevalue(api_config_fixture)
+    query = "test_DOI"
+    url = api_config.populate_query(query)["url"]
+    # This assumes populate_query appends the query string to the base URL
+    assert url == f"{api_config.url}{query}"

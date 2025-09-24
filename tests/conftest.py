@@ -1,9 +1,11 @@
 # ruff: noqa: E501, S106
+import logging
 from collections.abc import Generator
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from loguru import logger
 
 from app.config import Settings
 from app.data_models.generic import (
@@ -13,7 +15,6 @@ from app.data_models.generic import (
     QueryType,
 )
 from app.data_models.scopus import ScopusAPIConfig
-from app.logger import logger
 
 pytest_plugins = [
     "tests.fixtures.generic",
@@ -86,6 +87,7 @@ def scopus_api_config_valid_batch():
         require_api_key=True,
         api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
         api_key_placement="X-API-Key",  # pragma: allowlist secret
+        query_type=QueryType.BATCH,
         query_params={},
         headers={"X-API-Key": ""},
         unpack_strategy=AbstractUnpackStrategy(
@@ -138,21 +140,11 @@ def test_settings(set_test_environment_variables) -> Settings:
 
 
 @pytest.fixture
-def caplog(
-    caplog: pytest.LogCaptureFixture,
-) -> Generator[pytest.LogCaptureFixture, None, None]:
-    """
-    Fixture to capture log messages **from loguru** during tests.
+def caplog(caplog):
+    class PropogateHandler(logging.Handler):
+        def emit(self, record) -> None:
+            logging.getLogger(record.name).handle(record)
 
-    See https://github.com/Delgan/loguru/issues/59#issuecomment-1150084462
-
-    Args:
-        caplog (pytest.LogCaptureFixture): The log capture fixture.
-
-    Yields:
-        Generator[pytest.LogCaptureFixture, None, None]: The log capture fixture.
-
-    """
-    handler_id = logger.add(caplog.handler, format="{message}", level="WARNING")
+    handler_id = logger.add(PropogateHandler(), format="{message}")
     yield caplog
     logger.remove(handler_id)

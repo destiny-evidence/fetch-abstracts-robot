@@ -26,6 +26,10 @@ from app.data_models.generic import (
 from app.utils import InvalidDOIError, validate_doi
 
 
+class FetchAbstractError(Exception):
+    """Custom exception for errors occurring during abstract fetching."""
+
+
 def prepare_api_config(
     api_configs: list[APIConfig],
     settings: Settings,
@@ -78,9 +82,9 @@ def prepare_api_config(
                 target_config.init_api_key(settings=settings)
                 master_api_config[external_api_priority.name][api.name] = target_config
                 logger.info(f"successfully initialised API key for {api.name}.")
-            except APIKeyNotPresentError as e:
+            except APIKeyNotPresentError as missing_api_key_error:
                 logger.info(f"no API key for {api.name}. not populating config.")
-                logger.info(f"original error message: {e}.")
+                logger.info(f"original error message: {missing_api_key_error}.")
                 continue
 
     return master_api_config
@@ -156,17 +160,23 @@ class AbstractFetcher:
 
         """
         logger.info(f"seeking abstract for doi: {doi}")
+        enhancement_dict: dict[str, str] | None = {}
         for api in self.master_api_config["single"]:
             logger.info(f"attempting retrieval using api {api}.")
-            doi_abstract_dict = self.fetch_one_abstract(
-                doi=doi, api_config=self.master_api_config["single"][api]
-            )
-            if doi_abstract_dict:
+            try:
+                enhancement_dict = self.fetch_one_abstract(
+                    doi=doi, api_config=self.master_api_config["single"][api]
+                )
+            except FetchAbstractError:
+                logger.error(f"Error fetching abstract from {api}.")
+                continue
+            if enhancement_dict:
                 found_message = f"abstract retrieval through {api} was successful."
                 logger.info(found_message)
+                enhancement_dict["source"] = api
                 if verbose:
-                    logger.debug(f"abstract text: {doi_abstract_dict['abstract']}")
-                return doi_abstract_dict
+                    logger.debug(f"abstract text: {enhancement_dict.get('abstract')}")
+                return enhancement_dict
             not_found_message = f"Abstract retrieval through {api} was unsuccessful."
             logger.info(not_found_message)
 
@@ -189,6 +199,7 @@ class AbstractFetcher:
 
         """
         dois = [self.process_doi(x) for x in dois]
+        references_provided = len(dois)
         retrieved_abstracts = []
         for api in self.master_api_config["batch"]:
             api_count = 0
@@ -200,26 +211,38 @@ class AbstractFetcher:
             retrieved_responses = self.fetch_many_abstracts(
                 dois=dois, api_config=api_config, chunk=chunk, verbose=verbose
             )
-            if not retrieved_responses:
-                error_message = f"""No abstracts found in {api} with\
-                query type {api_config.query_type.value}.
-                """
-                logger.error(error_message)
-                raise AbstractNotFoundError(error_message)
-            for response in retrieved_responses:
-                for abstract in response:
-                    retrieved_abstracts.append(abstract)
-                    logger.debug(f"doi to remove: {abstract['doi']}.")
-                    dois.remove(self.process_doi(abstract["doi"]))
-                    logger.info(
-                        f'retrieved abstract for doi {abstract["doi"]}. '
+            if retrieved_responses:
+                for response in retrieved_responses:
+                    for enhancement_dict in response:
+                        enhancement_dict["source"] = api
+                        retrieved_abstracts.append(enhancement_dict)
+                        logger.debug(f"doi to remove: {enhancement_dict.get("doi")}.")
+                    dois.remove(self.process_doi(enhancement_dict.get("doi")))
+                    logger.debug(
+                        f'retrieved abstract for doi {enhancement_dict.get("doi")}. '
                         "removing from master list."
                     )
                     api_count += 1
+            else:
+                error_message = (
+                    f"No abstracts found in {api} with"
+                    f" query type {api_config.query_type.value}."
+                )
+                logger.error(error_message)
 
-            logger.info(f"found {api_count} abstracts for api {api}.")
+            logger.debug(f"found {api_count} abstracts for api {api}.")
             logger.info(f"found {len(retrieved_abstracts)} total.")
             logger.info(f"remaining dois to collect: {len(dois)}")
+
+        logger.info(
+            f"{len(retrieved_abstracts)} abstracts"
+            f" retrieved of {references_provided} requested."
+        )
+        logger.info(f"{len(dois)} abstracts not retrieved.")
+        abstracts_not_found = [
+            {"doi": doi, "abstract": None, "source": None} for doi in dois
+        ]
+        retrieved_abstracts.extend(abstracts_not_found)
 
         return retrieved_abstracts
 
@@ -281,12 +304,14 @@ class AbstractFetcher:
                 headers=api_config.headers,
                 verbose=True,
             )
-        except requests.HTTPError as e:
-            logger.error(
-                "encountered HTTPError on attempting to retrieve abstract. "
-                f"original error message: {e}"
+        except requests.HTTPError as http_error:
+            error_message = (
+                f"Error fetching abstract for {doi=}"
+                f" with API {api_config.name}. "
+                f"Original error: {http_error}"
             )
-            raise
+            logger.error(error_message)
+            raise FetchAbstractError(error_message) from http_error
 
         try:
             return {
@@ -296,9 +321,11 @@ class AbstractFetcher:
                 ),
             }
         except AbstractUnpackError as abstract_unpack_error:
-            error_message = f"""Error unpacking abstract for {doi=}\
-            with API {api_config.name}."""
-            error_message += f"\nOriginal error: {abstract_unpack_error}"
+            error_message = (
+                f"Error unpacking abstract for {doi=}"
+                f" with API {api_config.name}. "
+                f"Original error: {abstract_unpack_error}"
+            )
             logger.error(error_message)
             return None
 
@@ -352,11 +379,11 @@ class AbstractFetcher:
                     verbose=verbose,
                     **kwargs,
                 )
-            except requests.HTTPError as e:
+            except requests.HTTPError as http_error:
                 logger.error(
                     "encountered HTTPError on attempting to retrieve abstract. "
                     f"requested doi(s): {_chunk} "
-                    f"original error message: {e}"
+                    f"original error message: {http_error}"
                 )
                 continue
 
@@ -378,8 +405,8 @@ class AbstractFetcher:
                             ),
                         }
                     ]
-                except AbstractUnpackError as e:
-                    logger.error(e)
+                except AbstractUnpackError as abstract_unpack_error:
+                    logger.error(abstract_unpack_error)
                     continue
 
             elif api_config.query_type == "batch":
@@ -460,13 +487,13 @@ class AbstractFetcher:
                 logger.debug("`clean_abstract_string` is True, cleaning abstract.")
                 abstract_object = self.clean_abstract_string(abstract_object)
 
-        except KeyError as e:
+        except KeyError as missing_key_error:
             error_message = (
                 "Key not found in response object with current unpack strategy.",
-                f"Original error message: {e}",
+                f"Key not found: {missing_key_error}",
             )
 
-            raise AbstractUnpackError(error_message) from e
+            raise AbstractUnpackError(error_message) from missing_key_error
         if not isinstance(abstract_object, str):
             abstract_not_string_error_message = "Expected abstract to be a string."
             raise AbstractUnpackError(abstract_not_string_error_message)
@@ -581,7 +608,7 @@ class AbstractFetcher:
                         logger.debug(f"entry {entry_idx}: cleaning abstract string.")
                         abstract = self.clean_abstract_string(str(abstract))
                     out.append({"doi": doi, "abstract": abstract})
-                    logger.info(f"xtracted abstract for DOI: {doi}")
+                    logger.info(f"Extracted abstract for DOI: {doi}")
 
                 else:
                     logger.warning(

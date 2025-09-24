@@ -1,4 +1,4 @@
-"""tests for the core fetch_abstract module in src/app/fetch_abstract.py."""
+"""tests for the core fetch_abstract module in app/fetch_abstract.py."""
 
 from unittest.mock import MagicMock, patch
 
@@ -7,7 +7,7 @@ import requests
 
 from app.config import get_settings
 from app.data_models.generic import AbstractNotFoundError, AbstractUnpackError
-from app.fetch_abstract import AbstractFetcher, prepare_api_config
+from app.fetch_abstract import AbstractFetcher, FetchAbstractError, prepare_api_config
 from app.utils import InvalidDOIError
 
 
@@ -442,7 +442,7 @@ def test_fetch_one_abstract_http_error(scopus_api_config_valid_single):
     with (
         patch("app.fetch_abstract.validate_doi", return_value=True),
         patch.object(fetcher, "fetch", side_effect=requests.HTTPError("fail")),
-        pytest.raises(requests.HTTPError),
+        pytest.raises(FetchAbstractError),
     ):
         fetcher.fetch_one_abstract("10.1000/xyz123", scopus_api_config_valid_single)
 
@@ -474,9 +474,14 @@ def test_get_one_abstract_cycling_apis_success(
             [crossref_api_config_valid_single, scopus_api_config_valid_single], settings
         )
     )
-    with patch.object(fetcher, "fetch_one_abstract", return_value="abstract text"):
+    mocked_return_object = {
+        "doi": "10.1000/xyz123",
+        "abstract": "abstract text",
+        "source": "test",
+    }
+    with patch.object(fetcher, "fetch_one_abstract", return_value=mocked_return_object):
         result = fetcher.get_one_abstract_cycling_apis("10.1000/xyz123")
-        assert result == "abstract text"
+        assert result.get("abstract") == "abstract text"
 
 
 def test_get_one_abstract_cycling_apis_not_found(
@@ -535,8 +540,8 @@ def test_get_many_abstracts_cycling_apis_success(
         assert result == [item for sublist in test_response_objects for item in sublist]
 
 
-def test_get_many_abstracts_cycling_apis_not_found(
-    crossref_api_config_valid_batch, scopus_api_config_valid_batch
+def test_get_many_abstracts_cycling_apis_no_abstracts_found(
+    caplog, mocker, crossref_api_config_valid_batch, scopus_api_config_valid_batch
 ):
     settings = get_settings()
     fetcher = AbstractFetcher(
@@ -544,8 +549,17 @@ def test_get_many_abstracts_cycling_apis_not_found(
             [crossref_api_config_valid_batch, scopus_api_config_valid_batch], settings
         )
     )
-    with (
-        patch.object(fetcher, "fetch_many_abstracts", return_value=None),
-        pytest.raises(AbstractNotFoundError),
-    ):
-        fetcher.get_many_abstracts_cycling_apis(["10.1000/xyz123"])
+    test_dois = ["10.1000/xyz123", "10.1000/xyz124", "10.1000/xyz125"]
+    mocker.patch.object(fetcher, "fetch_many_abstracts", return_value=None)
+    with caplog.at_level("DEBUG"):
+        null_enhancements = fetcher.get_many_abstracts_cycling_apis(test_dois)
+    assert (
+        "No abstracts found in CROSSREF_BATCH with query type batched_single."
+        in caplog.text
+    )
+    assert "No abstracts found in SCOPUS_BATCH with query type batch." in caplog.text
+    assert f"0 abstracts retrieved of {len(test_dois)} requested" in caplog.text
+
+    assert len(null_enhancements) == len(test_dois)
+    assert all(item["abstract"] is None for item in null_enhancements)
+    assert all(item["source"] is None for item in null_enhancements)

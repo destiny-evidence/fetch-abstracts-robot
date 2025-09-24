@@ -58,7 +58,7 @@ plugins:
           options:
             docstring_style: google
             show_submodules: true
-          paths: [src]
+          paths: [.]
   - include-markdown:
       opening_tag: "{!"
       closing_tag: "!}"

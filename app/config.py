@@ -32,7 +32,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
-
+    robot_title: str = Field(
+        default="Fetch Abstracts Robot (FAR)",
+        description="The title of the robot.",
+    )
     robot_secret: str | None = Field(
         default=None,
         description="Secret needed for communicating with destiny repo.",

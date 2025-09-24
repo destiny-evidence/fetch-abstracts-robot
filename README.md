@@ -111,7 +111,7 @@ fastapi dev --port 8001
 
 Authentication between the Toy Robot and Destiny Repository uses HMAC authentication, where a request signature is encrypted with the robot's secret key and set as a header. To simplify this process, the destiny_sdk provides both a client for communicating with destiny repository that handles adding signatures, and a service auth that can be used to validate incoming requests.
 
-In Toy Robot the client is inititalised in `src/app/main.py` and used for sending requests, the service auth is initialised in `src/app/auth.py` and then used as a dependency on the app endpoints in `src/app/main.py`.
+In Toy Robot the client is inititalised in `app/main.py` and used for sending requests, the service auth is initialised in `app/auth.py` and then used as a dependency on the app endpoints in `app/main.py`.
 
 ### Configuring Authentication
 

@@ -1,10 +1,15 @@
 """Misc/Utility functions for our abstract fetcher robot."""
 
-import toml
+from importlib.metadata import PackageNotFoundError, version
+
 from destiny_sdk.identifiers import DOIIdentifier, ExternalIdentifierType
 from destiny_sdk.references import Reference
 from loguru import logger
 from pydantic import ValidationError
+
+
+class VersionInfoNotFoundError(Exception):
+    """Custom exception to throw when version info is not found."""
 
 
 class InvalidDOIError(Exception):
@@ -54,30 +59,23 @@ def get_doi_from_reference(reference: Reference) -> str:
     raise MissingDOIError(error_message)
 
 
-def get_version_number_from_pyproject(
-    pyproject_toml_file: str = "pyproject.toml",
-    section: str = "project",
-    key: str = "version",
-) -> str:
+def get_version_number(package_name: str = "fetch-abstracts-robot") -> str:
     """
-    Retrieve the version number from a pyproject.toml file.
+    Retrieve the version number of an installed package.
 
     Args:
-        pyproject_toml_file (str): Path to the pyproject.toml file.
-        section (str): Section in the TOML file (dot-separated).
-        key (str): Key to retrieve (default: "version").
+        package_name (str): The name of the package to retrieve the version for.
 
     Returns:
         str: The version string.
 
-    raises:
-        KeyError: If the section or key is not found.
-        FileNotFoundError: If the file does not exist.
+    Raises:
+        PackageNotFoundError: If the package is not found.
 
     """
-    data = toml.load(pyproject_toml_file)
-    # Traverse the section path (e.g., "project")
-    section_dict = data
-    for part in section.split("."):
-        section_dict = section_dict[part]
-    return section_dict[key]
+    try:
+        return version(package_name)
+    except PackageNotFoundError as package_error:
+        error_message = f"Package not found: {package_name}"
+        logger.error(error_message)
+        raise VersionInfoNotFoundError(error_message) from package_error
