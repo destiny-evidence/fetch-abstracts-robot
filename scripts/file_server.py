@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 app = FastAPI()
 
 BASE_DIR = Path(__file__).parent.resolve()
-TARGET_FILE = BASE_DIR / "three_reference_jsonl.jsonl"
+TARGET_FILE = BASE_DIR / "test_data" / "three_reference_jsonl.jsonl"
 
 
 @app.get("/three_reference_jsonl.jsonl")

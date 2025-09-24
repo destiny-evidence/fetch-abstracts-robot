@@ -25,15 +25,18 @@ def load_data(file_path: Path) -> list[dict] | dict:
     return data_to_return
 
 
-def load_request_single_reference() -> dict:
+def load_request_single_reference(data_directory: Path) -> dict:
     """
     Load test data for a single reference.
+
+    Args:
+        data_directory (Path): The directory containing the reference JSONL file.
 
     Returns:
         dict: A dictionary representing the single reference.
 
     """
-    reference_jsonl_file = Path("./contrived_destiny_reference_test.jsonl")
+    reference_jsonl_file = data_directory / "contrived_destiny_reference_test.jsonl"
     reference_jsonl = load_data(reference_jsonl_file)
 
     reference = Reference.from_jsonl(reference_jsonl)
@@ -45,16 +48,19 @@ def load_request_single_reference() -> dict:
     return json.loads(rob_req.model_dump_json())
 
 
-def generate_batch_reference_request() -> dict:
+def generate_batch_reference_request(data_directory: Path) -> dict:
     """
     Load test data for a single reference.
+
+    Args:
+        data_directory (Path): The directory containing the reference JSONL file.
 
     Returns:
         dict: A dictionary representing the single reference.
 
     """
-    file_path = Path("./three_reference_jsonl.jsonl").resolve()
-    result_path = Path("./three_reference_results.jsonl").resolve()
+    file_path = (data_directory / "three_reference_jsonl.jsonl").resolve()
+    result_path = (data_directory / "three_reference_results.jsonl").resolve()
 
     port = 8003
     request = {
@@ -67,16 +73,19 @@ def generate_batch_reference_request() -> dict:
     return json.loads(robot_request.model_dump_json())
 
 
-def load_request_single_reference_with_crossref_abstract() -> dict:
+def load_request_single_reference_with_crossref_abstract(data_directory: Path) -> dict:
     """
     Load test data for a single reference.
+
+    Args:
+        data_directory (Path): The directory containing the reference JSONL file.
 
     Returns:
         dict: A dictionary representing the single reference.
 
     """
-    reference_json_file = Path(
-        "./staging_deployment_response_with_abstract_in_crossref.json"
+    reference_json_file = (
+        data_directory / "staging_deployment_response_with_abstract_in_crossref.json"
     )
     with reference_json_file.open("r") as infile:
         reference_json = json.load(infile)
@@ -147,23 +156,41 @@ def request_enhancement_batch_references(jsonable_request: dict, url: str) -> Re
     return response
 
 
-def run_single_reference_enhancement() -> None:
-    jsonable_request = load_request_single_reference_with_crossref_abstract()
+def run_single_reference_enhancement(data_directory: Path) -> None:
+    """
+    Run enhancement for a single reference.
+
+    Args:
+        data_directory (Path): The directory containing the reference JSONL file.
+
+    """
+    jsonable_request = load_request_single_reference_with_crossref_abstract(
+        data_directory
+    )
     url = "http://localhost:8001/abstract/enhancement/single"
     response = request_enhancement_single_reference(jsonable_request, url)
     logger.success(response)
 
 
-def run_batch_reference_enhancement() -> None:
-    jsonable_request = generate_batch_reference_request()
+def run_batch_reference_enhancement(data_directory: Path) -> None:
+    """
+    Run enhancement for a batch of references.
+
+    Args:
+        data_directory (Path): The directory containing the reference JSONL file.
+
+    """
+    jsonable_request = generate_batch_reference_request(data_directory)
     url = "http://localhost:8001/abstract/enhancement/batch"
     response = request_enhancement_batch_references(jsonable_request, url)
     logger.success(response)
 
 
 def main() -> None:
-    # run_single_reference_enhancement()
-    run_batch_reference_enhancement()
+    """Run the main pipeline for reference enhancement."""
+    data_directory = Path(__file__).parent.resolve() / "test_data"
+    data_directory.mkdir(exist_ok=True)
+    run_batch_reference_enhancement(data_directory)
 
 
 if __name__ == "__main__":
