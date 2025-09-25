@@ -114,26 +114,35 @@ class AbstractFetcher:
     @staticmethod
     def process_doi(doi: DOIIdentifier | str) -> str:
         """
-        Process a DOI.
+        Validate a DOI and return the DOI string in lowercase.
 
         Args:
-            doi (DOIIdentifier | str): Target _doi_
+            doi (DOIIdentifier | str): DOI to process.
 
         Returns:
-            str: processed doi.
+            str: Validated DOI string in lowercase.
 
         """
-        doi = DOIIdentifier(identifier=doi).identifier
-        return str(doi).lower()
+        if isinstance(doi, DOIIdentifier):
+            return doi.identifier.lower()
+        try:
+            doi_string = validate_doi(doi)
+            return doi_string.lower()
+        except InvalidDOIError as invalid_doi_error:
+            logger.error(
+                f"Invalid DOI {doi} provided."
+                f"Original error message: {invalid_doi_error}"
+            )
+            raise
 
     def get_many_abstracts_cycling_apis(
-        self, dois: list[str], *, verbose: bool = False
+        self, input_dois: list[str], *, verbose: bool = False
     ) -> list[dict]:
         """
         Get many abstracts from a list of DOIs, cycling APIs in order of priority.
 
         Args:
-            dois (list[str]): list of DOI strings.
+            input_dois (list[str]): Input list of DOIs, as strings.
             verbose (bool, optional): whether to provide very verbose logging for debug.
                                       Defaults to False.
 
@@ -141,7 +150,18 @@ class AbstractFetcher:
             list[dict]: a list of dicts of abstracts and DOIs.
 
         """
-        dois = [self.process_doi(x) for x in dois]
+        dois = []
+        for doi in input_dois:
+            try:
+                doi_string = self.process_doi(doi)
+                dois.append(doi_string)
+            except InvalidDOIError as invalid_doi_error:
+                logger.error(f"Invalid DOI found: {invalid_doi_error}")
+                continue
+        input_dois = [doi.lower() for doi in input_dois if doi not in dois]
+
+        invalid_doi_response = [{"doi": doi, "abstract": None, "source": None} for doi in input_dois]
+
         references_provided = len(dois)
         retrieved_abstracts = []
         for api in self.master_api_config["batch"]:
@@ -150,41 +170,48 @@ class AbstractFetcher:
             api_config: APIConfig = self.master_api_config["batch"][api]
             if api_config.query_type == "batched_single":
                 chunk = False
-
+            dois_to_process = dois.copy()
             retrieved_responses = self.fetch_many_abstracts(
-                dois=dois, api_config=api_config, chunk=chunk, verbose=verbose
+                dois=dois_to_process, api_config=api_config, chunk=chunk, verbose=verbose
             )
-            if retrieved_responses:
-                for response in retrieved_responses:
-                    for enhancement_dict in response:
-                        enhancement_dict["source"] = api
-                        retrieved_abstracts.append(enhancement_dict)
-                        logger.debug(f"doi to remove: {enhancement_dict.get("doi")}.")
-                    dois.remove(self.process_doi(enhancement_dict.get("doi")))
+            found_responses = False
+            for response in retrieved_responses:
+                found_responses = True
+                doi_to_remove = None
+                for enhancement_dict in response:
+                    enhancement_dict["source"] = api
+                    retrieved_abstracts.append(enhancement_dict)
+                    logger.debug(f"doi to remove: {enhancement_dict.get("doi")}.")
+                    doi_to_remove = enhancement_dict.get("doi")
+                if doi_to_remove:
+                    dois.remove(self.process_doi(doi_to_remove))
                     logger.debug(
-                        f'retrieved abstract for doi {enhancement_dict.get("doi")}. '
+                        f'retrieved abstract for doi {doi_to_remove}. '
                         "removing from master list."
                     )
                     api_count += 1
-            else:
+            if not found_responses:
                 error_message = (
                     f"No abstracts found in {api} with"
                     f" query type {api_config.query_type.value}."
                 )
                 logger.error(error_message)
 
-            logger.debug(f"found {api_count} abstracts for api {api}.")
-            logger.info(f"found {len(retrieved_abstracts)} total.")
-            logger.info(f"remaining dois to collect: {len(dois)}")
+            logger.debug(f"Found {api_count} abstracts for api {api}.")
+            logger.info(f"Found {len(retrieved_abstracts)} total from valid DOIs.")
+            logger.info(f"Remaining valid DOIs to collect abstracts: {len(dois)}")
 
         logger.info(
             f"{len(retrieved_abstracts)} abstracts"
-            f" retrieved of {references_provided} requested."
+            f" retrieved of {references_provided} valid DOIs requested."
         )
-        logger.info(f"{len(dois)} abstracts not retrieved.")
+        logger.info(f"{len(input_dois)} invalid DOIs provided.")
+        if len(dois) > 0:
+            logger.info(f"Abstracts not retrieved for {len(dois)} valid DOIs.")
         abstracts_not_found = [
             {"doi": doi, "abstract": None, "source": None} for doi in dois
         ]
+        retrieved_abstracts.extend(invalid_doi_response)
         retrieved_abstracts.extend(abstracts_not_found)
 
         return retrieved_abstracts
@@ -234,19 +261,18 @@ class AbstractFetcher:
             dois (list[str]): List of DOIs to fetch abstracts for.
             api_config (APIConfig): API configuration object containing
                                     the API details and unpack strategy.
+            doi_batch_size (int, optional): Number of DOIs to batch together
+                                        in a single request. Defaults to 15.
+            chunk (bool, optional): Whether to chunk the DOIs into batches.
+                                    Defaults to False.
+            verbose (bool, optional): Whether to provide very verbose logging for debug.
+                                      Defaults to False.
+            **kwargs: Additional keyword arguments to pass to the `fetch` method.
 
         """
-        logger.debug(f"n incoming dois: {len(dois)}")
-        logger.debug(f"query type: {api_config.query_type.value}")
+        logger.debug(f"{len(dois)} incoming dois")
+        logger.debug(f"Query type: {api_config.query_type.value}")
 
-        for doi in dois:
-            try:
-                validate_doi(doi)
-            except InvalidDOIError as invalid_doi_error:
-                logger.error(
-                    f"Invalid DOI {doi} provided."
-                    f"Original error message: {invalid_doi_error}"
-                )
         if chunk:
             # batching as we don't want to make our URL longer than 2000 chars.
             chunked_dois = [
@@ -256,12 +282,11 @@ class AbstractFetcher:
             dois = chunked_dois  # type: ignore[no-redef, assignment]
             logger.debug(
                 (
-                    f"chunked into sub-lists of {len(dois)} ",
-                    f"of {doi_batch_size} each.",
+                    f"Chunked into {len(dois)} sublists of max {doi_batch_size} each.",
                 )
             )
         for i, _chunk in enumerate(dois):
-            logger.debug(f"sending get request for chunk {i} out of {len(dois)}")
+            logger.debug(f"sending get request for chunk {i+1} out of {len(dois)}")
             query_result = api_config.populate_query(query=_chunk)
 
             url = query_result.get("url", "")
@@ -278,28 +303,28 @@ class AbstractFetcher:
                 )
             except requests.HTTPError as http_error:
                 logger.error(
-                    "encountered HTTPError on attempting to retrieve abstract. "
+                    "Encountered HTTPError on attempting to retrieve abstract. "
                     f"requested doi(s): {_chunk} "
                     f"original error message: {http_error}"
                 )
+                yield [
+                    {"doi": doi, "abstract": None} for doi in _chunk
+                ]
                 continue
-
             if api_config.query_type == "batched_single":
                 logger.debug("yield for batched_single")
                 try:
-                    logger.debug(
-                        self.unpack_one_abstract(
+                    unpacked_abstract = self.unpack_one_abstract(
                             response_obj=response,
                             strategy=api_config.unpack_strategy,
                         )
+                    logger.debug(
+                        unpacked_abstract
                     )
                     yield [
                         {
                             "doi": _chunk,
-                            "abstract": self.unpack_one_abstract(
-                                response_obj=response,
-                                strategy=api_config.unpack_strategy,
-                            ),
+                            "abstract": unpacked_abstract,
                         }
                     ]
                 except AbstractUnpackError as abstract_unpack_error:
@@ -310,7 +335,7 @@ class AbstractFetcher:
                 logger.debug("yield for batch")
                 yield self.unpack_many_abstracts(
                     response, strategy=api_config.unpack_strategy
-                )  # @harryjmoss not sure if this will work yet?
+                )
 
     @staticmethod
     def clean_abstract_string(abstract_string: str) -> str:
@@ -485,7 +510,7 @@ class AbstractFetcher:
         logger.debug(f"number of batches to process: {len(batches)}")
 
         for batch_idx, batch in enumerate(batches):
-            logger.debug(f"processing batch {batch_idx}")
+            logger.debug(f"processing batch {batch_idx+1} of {len(batches)}")
             entries = self._traverse(batch, shared_prefix)
 
             if not isinstance(entries, list):

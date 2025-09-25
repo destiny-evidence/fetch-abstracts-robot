@@ -12,7 +12,7 @@ CROSSREF_HEADERS = {
     "Accept": "application/vnd.crossref-api-message+json",
 }
 CROSSREF_UNPACK_STRATEGY = AbstractUnpackStrategy(
-    source="crossref",
+    source="crossref_batch",
     clean_abstract_string=True,
     strategy=["message", "abstract"],
 )

@@ -13,7 +13,7 @@ def test_scopus_api_config_creation_success_no_inst_token(
     test_settings: Settings, caplog
 ):
     config = ScopusAPIConfig(
-        name="scopus",
+        name="scopus_batch",
         url="https://a-test-url",
         require_api_key=True,
         api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
@@ -33,7 +33,7 @@ def test_scopus_api_config_creation_success_no_inst_token(
         config.init_api_key(test_settings)
 
     assert any(
-        "Inst token for scopus is not present in settings" in message
+        f"Inst token for {config.name.value} is not present in settings" in message
         for message in caplog.text.splitlines()
     )
     test_scopus_api_key = (
@@ -47,7 +47,7 @@ def test_scopus_api_config_creation_success_no_inst_token(
 
 def test_scopus_api_config_no_api_key(test_settings: Settings):
     config = ScopusAPIConfig(
-        name="scopus",
+        name="scopus_batch",
         url="https://a-test-url",
         require_api_key=True,
         api_key_env_var_name="nonexistent_key",  # pragma: allowlist secret
@@ -64,12 +64,12 @@ def test_scopus_api_config_no_api_key(test_settings: Settings):
     with pytest.raises(APIKeyNotPresentError) as excinfo:
         config.init_api_key(test_settings)
 
-    assert "API key for scopus is not present in settings." in str(excinfo.value)
+    assert f"API key for {config.name.value} is not present in settings." in str(excinfo.value)
 
 
 def test_scopus_api_config_with_valid_keys(test_settings: Settings):
     config = ScopusAPIConfig(
-        name="scopus",
+        name="scopus_batch",
         url="https://a-test-url",
         require_api_key=True,
         api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret

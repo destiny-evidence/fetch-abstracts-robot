@@ -16,7 +16,7 @@ from loguru import logger
 from app.auth import auth_strategy_robot
 from app.config import get_settings
 from app.data_models.crossref import crossref_batch_api_config
-from app.data_models.scopus import scopus_api_config, scopus_batch_api_config
+from app.data_models.scopus import scopus_batch_api_config
 from app.enhancement_generation import (
     BatchEnhancementGenerationError,
     generate_abstract_enhancement_batch_request,
@@ -123,7 +123,8 @@ def create_abstract_enhancement(
             )
             logger.error(error_message)
             client.send_robot_result(
-                RobotResult(request_id=request.id, error=batch_error)
+                RobotResult(request_id=request.id, error=RobotError(message=str(batch_error))
+                )
             )
             return
     logger.info("Generated enhancements. Uploading to storage.")

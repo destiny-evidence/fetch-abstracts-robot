@@ -13,7 +13,6 @@ from app.data_models.generic import (
     ExternalAPI,
     ExternalAPIPriority,
 )
-from tests.conftest import scopus_api_config_valid_batch
 
 
 def test_custom_exceptions():
@@ -29,11 +28,9 @@ def test_custom_exceptions():
 
 
 def test_external_api_enum():
-    assert ExternalAPI.SCOPUS == "scopus"
-    assert ExternalAPI.CROSSREF == "crossref"
+    assert ExternalAPI.SCOPUS_BATCH == "scopus_batch"
+    assert ExternalAPI.CROSSREF_BATCH == "crossref_batch"
     assert set(ExternalAPI) == {
-        ExternalAPI.SCOPUS,
-        ExternalAPI.CROSSREF,
         ExternalAPI.CROSSREF_BATCH,
         ExternalAPI.SCOPUS_BATCH,
     }
@@ -43,19 +40,19 @@ def test_external_api_priority_model():
     model = ExternalAPIPriority(
         name="test_priority",
         priorities={
-            ExternalAPI.CROSSREF: 1,
-            ExternalAPI.SCOPUS: 2,
+            ExternalAPI.CROSSREF_BATCH: 1,
+            ExternalAPI.SCOPUS_BATCH: 2,
         },
     )
-    assert model.priorities[ExternalAPI.CROSSREF] == 1
-    assert model.priorities[ExternalAPI.SCOPUS] == 2
+    assert model.priorities[ExternalAPI.CROSSREF_BATCH] == 1
+    assert model.priorities[ExternalAPI.SCOPUS_BATCH] == 2
 
 
 def test_abstract_unpack_strategy_():
     my_strategy = AbstractUnpackStrategy(
-        source=ExternalAPI.SCOPUS, strategy=["abstracts", "abstractText"]
+        source=ExternalAPI.SCOPUS_BATCH, strategy=["abstracts", "abstractText"]
     )
-    assert my_strategy.source == ExternalAPI.SCOPUS
+    assert my_strategy.source == ExternalAPI.SCOPUS_BATCH
     assert my_strategy.strategy == ["abstracts", "abstractText"]
 
 
@@ -86,7 +83,7 @@ def test_abstract_unpack_strategy_():
             "https://api.example.com/",
             {},
             ExternalAPI.CROSSREF_BATCH,
-            ["message", "items", "abstract"],
+            ["message", "abstract"],
         ),
     ],
 )
