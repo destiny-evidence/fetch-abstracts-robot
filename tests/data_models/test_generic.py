@@ -153,6 +153,7 @@ def test_api_config_init_api_key_missing(invalid_api_config):
     with pytest.raises(APIKeyNotPresentError):
         invalid_api_config.init_api_key(settings)
 
+
 @pytest.mark.parametrize(
     ("api_config_fixture", "query"),
     [
@@ -172,7 +173,6 @@ def test_api_config_populate_query_batch(request, api_config_fixture, query):
     ("api_config_fixture", "query"),
     [
         ("crossref_api_config_valid_batch", ["test_DOI"]),
-
     ],
 )
 def test_api_config_populate_query_batched_single(request, api_config_fixture, query):

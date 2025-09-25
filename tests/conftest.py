@@ -60,6 +60,7 @@ def test_client(set_test_environment_variables) -> Generator[TestClient, None, N
     yield client
     client.close()
 
+
 @pytest.fixture
 def scopus_api_config_valid_batch():
     return ScopusAPIConfig(
@@ -80,6 +81,7 @@ def scopus_api_config_valid_batch():
         api_inst_token_placement="X-Inst-Token",  # pragma: allowlist secret
     )
 
+
 @pytest.fixture
 def crossref_api_config_valid_batch():
     return APIConfig(
@@ -96,6 +98,7 @@ def crossref_api_config_valid_batch():
             doi_strategy=["message", "DOI"],
         ),
     )
+
 
 @pytest.fixture
 def test_settings(set_test_environment_variables) -> Settings:

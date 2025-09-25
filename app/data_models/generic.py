@@ -241,18 +241,20 @@ class APIConfig(BaseModel):
             return {"url": self.url, "query_params": params, "headers": self.headers}
 
         if self.query_type == QueryType.BATCHED_SINGLE:
-            if isinstance(query, list):
-                if len(query) != 1:
-                    error_msg = (
-                        "query_type `batched_single` requires a `str` type query, "
-                        "or a single-item list."
-                    )
-                    raise TypeError(error_msg)
+            is_multi_item_list = isinstance(query, list) and len(query) > 1
+            if is_multi_item_list:
+                error_msg = (
+                    "query_type `batched_single` requires a `str` type query, "
+                    "or a single-item list."
+                )
+                raise TypeError(error_msg)
             extracted_query = query[0] if isinstance(query, list) else query
             if not isinstance(extracted_query, str):
                 error_msg = f"Unable to parse query from initial query {query}."
                 raise TypeError(error_msg)
-            url = self.build_query_single(doi=extracted_query, url=self.url.encoded_string())
+            url = self.build_query_single(
+                doi=extracted_query, url=self.url.encoded_string()
+            )
             return {
                 "url": url,
                 "query_params": self.query_params,

@@ -79,7 +79,8 @@ def create_abstract_enhancement(
     """
     Create abstract enhancements with efficient memory usage.
 
-    This operates on a batch of references as a default, but that could be a batch of one.
+    This operates on a batch of references as a default,
+    but that could be a batch of one.
 
     This leverages the `get_many_abstracts_cycling_apis` method,
     rather than strictly looping over individual requests (although
@@ -123,7 +124,8 @@ def create_abstract_enhancement(
             )
             logger.error(error_message)
             client.send_robot_result(
-                RobotResult(request_id=request.id, error=RobotError(message=str(batch_error))
+                RobotResult(
+                    request_id=request.id, error=RobotError(message=str(batch_error))
                 )
             )
             return
@@ -145,6 +147,7 @@ def create_abstract_enhancement(
         RobotResult(request_id=request.id, storage_url=request.result_storage_url)
     )
     logger.success(f"Enhancements successfully processed for {request.id}.")
+
 
 @app.post(
     "/abstract/enhancement/batch/",

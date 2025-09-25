@@ -7,14 +7,18 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from pytest_httpx import HTTPXMock, IteratorStream
 from pytest_mock import MockerFixture
+
 from app.main import app
 
 client = TestClient(app)
 
-def mock_reference_file_stream(httpx_mock: HTTPXMock, reference_ids: list[uuid.UUID], dois: list[str]):
+
+def mock_reference_file_stream(
+    httpx_mock: HTTPXMock, reference_ids: list[uuid.UUID], dois: list[str]
+):
     """Mock a stream for a file containing references."""
     stream_response = []
-    for reference_id, doi in zip(reference_ids, dois):
+    for reference_id, doi in zip(reference_ids, dois, strict=False):
         reference = destiny_sdk.references.Reference(
             id=reference_id,
             identifiers=[destiny_sdk.identifiers.DOIIdentifier(identifier=doi)],
@@ -82,22 +86,28 @@ def test_create_abstract_enhancement_happy_path(
     expected_external_api_response = {
         "message": {"abstract": "This is a test abstract."}
     }
-    mocker.patch("app.fetch_abstract.requests.get",
-                 return_value=mocker.Mock(
-                     status_code=200, json=lambda: expected_external_api_response
-                 )
-            )
+    mocker.patch(
+        "app.fetch_abstract.requests.get",
+        return_value=mocker.Mock(
+            status_code=200, json=lambda: expected_external_api_response
+        ),
+    )
     response = client.post("/abstract/enhancement/batch/", json=request_body)
 
-    assert response.status_code == status.HTTP_202_ACCEPTED, "Expect that request is accepted."
-    
+    assert (
+        response.status_code == status.HTTP_202_ACCEPTED
+    ), "Expect that request is accepted."
+
     callback_requests = httpx_mock.get_requests()
-    assert len(callback_requests) == 3, "Expect that the background task has been called."
+    assert (
+        len(callback_requests) == 3
+    ), "Expect that the background task has been called."
 
     put_request = callback_requests[1]
     generated_enhancements = put_request.content.decode("utf-8").strip().split("\n")
-    assert len(generated_enhancements) == 3, "Expect that we have 3 enhancements generated."
+    assert (
+        len(generated_enhancements) == 3
+    ), "Expect that we have 3 enhancements generated."
 
     for enhancement in generated_enhancements:
         destiny_sdk.enhancements.Enhancement.from_jsonl(enhancement)
-

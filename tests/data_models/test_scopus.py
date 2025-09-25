@@ -64,7 +64,9 @@ def test_scopus_api_config_no_api_key(test_settings: Settings):
     with pytest.raises(APIKeyNotPresentError) as excinfo:
         config.init_api_key(test_settings)
 
-    assert f"API key for {config.name.value} is not present in settings." in str(excinfo.value)
+    assert f"API key for {config.name.value} is not present in settings." in str(
+        excinfo.value
+    )
 
 
 def test_scopus_api_config_with_valid_keys(test_settings: Settings):

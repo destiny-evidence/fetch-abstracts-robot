@@ -30,6 +30,7 @@ def validate_doi(doi_string: str) -> str:
 
     Returns:
         str: The validated DOI string.
+
     """
     try:
         return DOIIdentifier(

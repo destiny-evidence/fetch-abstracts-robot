@@ -106,9 +106,7 @@ class AbstractFetcher:
         self.master_api_config = master_api_config  # type: dict
         self.timeout = timeout
 
-        logger.info(
-            "Available external APIs in descending order of priority:"
-        )
+        logger.info("Available external APIs in descending order of priority:")
         logger.info(", ".join(master_api_config["batch"].keys()))
 
     @staticmethod
@@ -160,7 +158,9 @@ class AbstractFetcher:
                 continue
         input_dois = [doi.lower() for doi in input_dois if doi not in dois]
 
-        invalid_doi_response = [{"doi": doi, "abstract": None, "source": None} for doi in input_dois]
+        invalid_doi_response = [
+            {"doi": doi, "abstract": None, "source": None} for doi in input_dois
+        ]
 
         references_provided = len(dois)
         retrieved_abstracts = []
@@ -172,7 +172,10 @@ class AbstractFetcher:
                 chunk = False
             dois_to_process = dois.copy()
             retrieved_responses = self.fetch_many_abstracts(
-                dois=dois_to_process, api_config=api_config, chunk=chunk, verbose=verbose
+                dois=dois_to_process,
+                api_config=api_config,
+                chunk=chunk,
+                verbose=verbose,
             )
             found_responses = False
             for response in retrieved_responses:
@@ -186,7 +189,7 @@ class AbstractFetcher:
                 if doi_to_remove:
                     dois.remove(self.process_doi(doi_to_remove))
                     logger.debug(
-                        f'retrieved abstract for doi {doi_to_remove}. '
+                        f"retrieved abstract for doi {doi_to_remove}. "
                         "removing from master list."
                     )
                     api_count += 1
@@ -281,9 +284,7 @@ class AbstractFetcher:
             ]
             dois = chunked_dois  # type: ignore[no-redef, assignment]
             logger.debug(
-                (
-                    f"Chunked into {len(dois)} sublists of max {doi_batch_size} each.",
-                )
+                (f"Chunked into {len(dois)} sublists of max {doi_batch_size} each.",)
             )
         for i, _chunk in enumerate(dois):
             logger.debug(f"sending get request for chunk {i+1} out of {len(dois)}")
@@ -307,20 +308,16 @@ class AbstractFetcher:
                     f"requested doi(s): {_chunk} "
                     f"original error message: {http_error}"
                 )
-                yield [
-                    {"doi": doi, "abstract": None} for doi in _chunk
-                ]
+                yield [{"doi": doi, "abstract": None} for doi in _chunk]
                 continue
             if api_config.query_type == "batched_single":
                 logger.debug("yield for batched_single")
                 try:
                     unpacked_abstract = self.unpack_one_abstract(
-                            response_obj=response,
-                            strategy=api_config.unpack_strategy,
-                        )
-                    logger.debug(
-                        unpacked_abstract
+                        response_obj=response,
+                        strategy=api_config.unpack_strategy,
                     )
+                    logger.debug(unpacked_abstract)
                     yield [
                         {
                             "doi": _chunk,
@@ -414,8 +411,8 @@ class AbstractFetcher:
                 "Key not found in response object with current unpack strategy.",
                 f"Key not found: {missing_key_error}",
             )
-            # todo: this should no longer raise this error, but we need to handle
-            # the error by returning None or similar for the destiny repository.
+            # TODO @harryjmoss: this should no longer raise this error, potentially
+            # https://github.com/destiny-evidence/fetch-abstracts-robot/issues/35
             raise AbstractUnpackError(error_message) from missing_key_error
         if not isinstance(abstract_object, str):
             abstract_not_string_error_message = "Expected abstract to be a string."

@@ -6,13 +6,11 @@ import pytest
 import requests
 
 from app.config import get_settings
-from app.data_models.generic import AbstractNotFoundError, AbstractUnpackError
-from app.fetch_abstract import AbstractFetcher, FetchAbstractError, prepare_api_config
-from app.utils import InvalidDOIError
+from app.data_models.generic import AbstractUnpackError
+from app.fetch_abstract import AbstractFetcher, prepare_api_config
 
 
 def test_prepare_api_config_success(
-    
     scopus_api_config_valid_batch,
     crossref_api_config_valid_batch,
     external_api_priorities,
@@ -64,9 +62,7 @@ def test_abstract_fetcher_init_logs(request, api_config_fixture):
     api_config_batch = request.getfixturevalue(api_config_fixture["batch"])
     settings = get_settings()
     with patch("app.fetch_abstract.logger") as mock_logger:
-        master_api_config = prepare_api_config(
-            [api_config_batch], settings
-        )
+        master_api_config = prepare_api_config([api_config_batch], settings)
         fetcher = AbstractFetcher(master_api_config)
         mock_logger.info.assert_any_call(
             "Available external APIs in descending order of priority:"
@@ -91,9 +87,7 @@ def test_fetch_success(request, api_config_fixture):
     settings = get_settings()
     api_config_batch = request.getfixturevalue(api_config_fixture["batch"])
     fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config(
-            [api_config_batch], settings
-        )
+        master_api_config=prepare_api_config([api_config_batch], settings)
     )
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
@@ -119,9 +113,7 @@ def test_fetch_http_error(request, api_config_fixture):
     settings = get_settings()
     api_config_batch = request.getfixturevalue(api_config_fixture["batch"])
     fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config(
-            [api_config_batch], settings
-        )
+        master_api_config=prepare_api_config([api_config_batch], settings)
     )
     mock_response = MagicMock()
     mock_response.raise_for_status.side_effect = requests.HTTPError("fail")
@@ -138,7 +130,9 @@ def test_fetch_http_error(request, api_config_fixture):
         ("scopus_api_config_valid_batch"),
     ],
 )
-def test_unpack_many_abstracts_success_batch_input_of_one_item(request, api_config_fixture):
+def test_unpack_many_abstracts_success_batch_input_of_one_item(
+    request, api_config_fixture
+):
     """
     Test unpacking a single abstract from the API response using a batch-type strategy.
     This now accomodates single requests that are formed as a single-item batch.
@@ -147,18 +141,24 @@ def test_unpack_many_abstracts_success_batch_input_of_one_item(request, api_conf
     api_config = request.getfixturevalue(api_config_fixture)
     test_api_config = prepare_api_config([api_config], settings)
     external_api_name = api_config.name.value.upper()
-    test_api_config["batch"][external_api_name].unpack_strategy.strategy = ["data", "abstract"]
-    test_api_config["batch"][external_api_name].unpack_strategy.doi_strategy = ["data", "doi"]
-    fetcher = AbstractFetcher(
-        master_api_config=test_api_config
-    )
+    test_api_config["batch"][external_api_name].unpack_strategy.strategy = [
+        "data",
+        "abstract",
+    ]
+    test_api_config["batch"][external_api_name].unpack_strategy.doi_strategy = [
+        "data",
+        "doi",
+    ]
+    fetcher = AbstractFetcher(master_api_config=test_api_config)
     test_doi = "10.1000/xyz123"
     test_abstract = "This is the abstract."
     response_obj = {
-        "data": [{
-            "abstract": test_abstract,
-            "doi": test_doi,
-        }]
+        "data": [
+            {
+                "abstract": test_abstract,
+                "doi": test_doi,
+            }
+        ]
     }
     result = fetcher.unpack_many_abstracts(
         response_obj,
@@ -167,6 +167,7 @@ def test_unpack_many_abstracts_success_batch_input_of_one_item(request, api_conf
     assert len(result) == 1
     assert result[0]["doi"] == test_doi
     assert result[0]["abstract"] == test_abstract
+
 
 @pytest.mark.parametrize(
     "api_config_fixture",
@@ -184,11 +185,15 @@ def test_unpack_one_abstract_success_batched_single(request, api_config_fixture)
     api_config = request.getfixturevalue(api_config_fixture)
     test_api_config = prepare_api_config([api_config], settings)
     external_api_name = api_config.name.value.upper()
-    test_api_config["batch"][external_api_name].unpack_strategy.strategy = ["data", "abstract"]
-    test_api_config["batch"][external_api_name].unpack_strategy.doi_strategy = ["data", "doi"]
-    fetcher = AbstractFetcher(
-        master_api_config=test_api_config
-    )
+    test_api_config["batch"][external_api_name].unpack_strategy.strategy = [
+        "data",
+        "abstract",
+    ]
+    test_api_config["batch"][external_api_name].unpack_strategy.doi_strategy = [
+        "data",
+        "doi",
+    ]
+    fetcher = AbstractFetcher(master_api_config=test_api_config)
     response_obj = {"data": {"abstract": "This is the abstract."}}
     external_api_name = api_config.name.value.upper()
     result = fetcher.unpack_one_abstract(
@@ -244,19 +249,17 @@ def test_unpack_one_abstract_keyerror(request, api_config_fixture):
     fetcher = AbstractFetcher(
         master_api_config=prepare_api_config([api_config], settings)
     )
-    response_obj = {
-            "data": {
-                    "foo": "10.1000/xyz123",
-                    "bar": "A test abstract."
-                }
-        }
+    response_obj = {"data": {"foo": "10.1000/xyz123", "bar": "A test abstract."}}
     with pytest.raises(AbstractUnpackError):
-        fetcher.unpack_one_abstract(
-            response_obj,
-            strategy=fetcher.master_api_config["batch"][
-                api_config.name.value.upper()
-            ].unpack_strategy,
-        ), "Expect that we raise a KeyError wrapped in AbstractUnpackError."
+        (
+            fetcher.unpack_one_abstract(
+                response_obj,
+                strategy=fetcher.master_api_config["batch"][
+                    api_config.name.value.upper()
+                ].unpack_strategy,
+            ),
+            "Expect that we raise a KeyError wrapped in AbstractUnpackError.",
+        )
 
 
 def test_traverse_non_dict_returns_none():
@@ -338,20 +341,28 @@ def test_unpack_many_abstracts_with_cleaning(scopus_api_config_valid_batch):
     api_config = scopus_api_config_valid_batch.model_copy()
     api_config.unpack_strategy.clean_abstract_string = True
     fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config(
-            [api_config], settings
-        )
+        master_api_config=prepare_api_config([api_config], settings)
     )
     # Abstract contains tags, should be cleaned
     cleaned_abstracts = ["Clean me!", "Clean me for a second time!"]
     batch1 = {
         "search-results": {
-            "entry": [{"prism:doi": "10.1000/xyz123", "dc:description": f"<jats:p>{cleaned_abstracts[0]}</jats:p>"}]
+            "entry": [
+                {
+                    "prism:doi": "10.1000/xyz123",
+                    "dc:description": f"<jats:p>{cleaned_abstracts[0]}</jats:p>",
+                }
+            ]
         }
     }
     batch2 = {
         "search-results": {
-            "entry": [{"prism:doi": "10.1000/xyz124", "dc:description": f"<jats:p>{cleaned_abstracts[1]}</jats:p>"}]
+            "entry": [
+                {
+                    "prism:doi": "10.1000/xyz124",
+                    "dc:description": f"<jats:p>{cleaned_abstracts[1]}</jats:p>",
+                }
+            ]
         }
     }
     response_obj = [batch1, batch2]
@@ -420,12 +431,7 @@ def test_unpack_abstract_with_cleaning_crossref(crossref_api_config_valid_batch)
             [crossref_api_config_valid_batch], settings
         )
     )
-    response_obj = {
-        "message": {
-                "abstract": "<jats:p>Clean me!</jats:p>"
-            }
-        }
-
+    response_obj = {"message": {"abstract": "<jats:p>Clean me!</jats:p>"}}
 
     result = fetcher.unpack_one_abstract(
         response_obj,
@@ -435,7 +441,7 @@ def test_unpack_abstract_with_cleaning_crossref(crossref_api_config_valid_batch)
 
 
 def test_fetch_many_abstracts_scopus_success_multiple_dois(
-    scopus_api_config_valid_batch
+    scopus_api_config_valid_batch,
 ):
     """
     Scopus represents the pure batch request case, which we test here.
@@ -444,9 +450,7 @@ def test_fetch_many_abstracts_scopus_success_multiple_dois(
     """
     settings = get_settings()
     fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config(
-            [scopus_api_config_valid_batch], settings
-        )
+        master_api_config=prepare_api_config([scopus_api_config_valid_batch], settings)
     )
     dois = ["10.1000/xyz123", "10.1000/xyz124"]
     abstracts = ["Abstract 1", "Abstract 2"]
@@ -460,7 +464,7 @@ def test_fetch_many_abstracts_scopus_success_multiple_dois(
     }
     expected_output_data = [
         {"doi": doi, "abstract": abstract}
-        for doi, abstract in zip(dois, abstracts)
+        for doi, abstract in zip(dois, abstracts, strict=False)
     ]
     with (
         patch("app.fetch_abstract.validate_doi", return_value=True),
@@ -470,12 +474,14 @@ def test_fetch_many_abstracts_scopus_success_multiple_dois(
             return_value=mocked_fetch_response,
         ),
     ):
-        result = fetcher.fetch_many_abstracts(dois, scopus_api_config_valid_batch, chunk=True)
+        result = fetcher.fetch_many_abstracts(
+            dois, scopus_api_config_valid_batch, chunk=True
+        )
         assert next(result) == expected_output_data
 
 
 def test_fetch_many_abstracts_crossref_success_multiple_dois(
-    crossref_api_config_valid_batch
+    crossref_api_config_valid_batch,
 ):
     """
     Crossref represents the batched single request case, which we test here.
@@ -485,6 +491,7 @@ def test_fetch_many_abstracts_crossref_success_multiple_dois(
 
     Args:
         crossref_api_config_valid_batch (_type_): _description_
+
     """
     settings = get_settings()
     fetcher = AbstractFetcher(
@@ -494,16 +501,19 @@ def test_fetch_many_abstracts_crossref_success_multiple_dois(
     )
     dois = ["10.1000/xyz123", "10.1000/xyz124"]
     abstracts = ["Abstract 1", "Abstract 2"]
-    mocked_fetch_response = [{
-        "message": {
-            "DOI": doi,
-            "abstract": abstract,
-        }} for doi, abstract in zip(dois, abstracts)
+    mocked_fetch_response = [
+        {
+            "message": {
+                "DOI": doi,
+                "abstract": abstract,
+            }
+        }
+        for doi, abstract in zip(dois, abstracts, strict=False)
     ]
 
     expected_output_data = [
         [{"doi": doi, "abstract": abstract}]
-        for doi, abstract in zip(dois, abstracts)
+        for doi, abstract in zip(dois, abstracts, strict=False)
     ]
     with (
         patch("app.fetch_abstract.validate_doi", return_value=True),
@@ -519,9 +529,7 @@ def test_fetch_many_abstracts_crossref_success_multiple_dois(
 
 
 def test_get_many_abstracts_single_invalid_doi(caplog, scopus_api_config_valid_batch):
-    """
-    Test fetching abstracts with a single invalid DOI mixed in with valid DOIs.
-    """
+    """Test fetching abstracts with a single invalid DOI mixed in with valid DOIs."""
     settings = get_settings()
     fetcher = AbstractFetcher(
         master_api_config=prepare_api_config([scopus_api_config_valid_batch], settings)
@@ -543,18 +551,21 @@ def test_get_many_abstracts_single_invalid_doi(caplog, scopus_api_config_valid_b
     }
     with (
         patch.object(
-        fetcher,
-        "fetch",
-        return_value=mocked_fetch_response,
+            fetcher,
+            "fetch",
+            return_value=mocked_fetch_response,
         ),
         caplog.at_level("ERROR"),
     ):
         result = fetcher.get_many_abstracts_cycling_apis(dois)
         assert f"Invalid DOI {invalid_doi} provided" in caplog.text
         assert len(result) == 2, "Still expect the bad DOI to be represented in output."
-        assert valid_doi_response in result, "Expect valid DOI to be represented in output."
-        assert any(item["doi"] == invalid_doi and item["abstract"] is None for item in result)
-        
+        assert (
+            valid_doi_response in result
+        ), "Expect valid DOI to be represented in output."
+        assert any(
+            item["doi"] == invalid_doi and item["abstract"] is None for item in result
+        )
 
 
 def test_fetch_many_abstracts_http_error(caplog, scopus_api_config_valid_batch):
@@ -568,21 +579,34 @@ def test_fetch_many_abstracts_http_error(caplog, scopus_api_config_valid_batch):
         patch.object(fetcher, "fetch", side_effect=requests.HTTPError("fail")),
         caplog.at_level("ERROR"),
     ):
-        response = fetcher.fetch_many_abstracts(test_doi_list, scopus_api_config_valid_batch, chunk=True)
+        response = fetcher.fetch_many_abstracts(
+            test_doi_list, scopus_api_config_valid_batch, chunk=True
+        )
         output = next(response)
-        assert "Encountered HTTPError on attempting to retrieve abstract." in caplog.text
-        assert output == [{"doi": test_doi_list[0], "abstract": None}], "Expect that we return an appropriate result for the repository on HTTPErrors."
+        assert (
+            "Encountered HTTPError on attempting to retrieve abstract." in caplog.text
+        )
+        assert (
+            output == [{"doi": test_doi_list[0], "abstract": None}]
+        ), "Expect that we return an appropriate result for the repository on HTTPErrors."
 
-def test_fetch_many_abstracts_crossref_single_unpack_error(caplog, crossref_api_config_valid_batch):
+
+def test_fetch_many_abstracts_crossref_single_unpack_error(
+    caplog, crossref_api_config_valid_batch
+):
     settings = get_settings()
     fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config([crossref_api_config_valid_batch], settings)
+        master_api_config=prepare_api_config(
+            [crossref_api_config_valid_batch], settings
+        )
     )
     with (
         patch("app.fetch_abstract.validate_doi", return_value=True),
         patch.object(fetcher, "fetch", return_value={"data": {}}),
         patch.object(
-            fetcher, "unpack_one_abstract", side_effect=AbstractUnpackError("Test Abstract Unpack Failure")
+            fetcher,
+            "unpack_one_abstract",
+            side_effect=AbstractUnpackError("Test Abstract Unpack Failure"),
         ),
         caplog.at_level("ERROR"),
     ):
@@ -591,7 +615,10 @@ def test_fetch_many_abstracts_crossref_single_unpack_error(caplog, crossref_api_
         )
         results = list(result_generator)
         assert "Test Abstract Unpack Failure" in caplog.text
-        assert len(results) == 0, "Expect that we return no results on an unpack error for a single record."
+        assert (
+            len(results) == 0
+        ), "Expect that we return no results on an unpack error for a single record."
+
 
 @pytest.mark.parametrize(
     "api_config_fixture",
@@ -600,15 +627,11 @@ def test_fetch_many_abstracts_crossref_single_unpack_error(caplog, crossref_api_
         "crossref_api_config_valid_batch",
     ],
 )
-def test_get_many_abstracts_cycling_apis_success(
-    api_config_fixture, request
-):
+def test_get_many_abstracts_cycling_apis_success(api_config_fixture, request):
     api_config = request.getfixturevalue(api_config_fixture)
     settings = get_settings()
     fetcher = AbstractFetcher(
-        master_api_config=prepare_api_config(
-            [api_config], settings
-        )
+        master_api_config=prepare_api_config([api_config], settings)
     )
     test_doi_list = ["10.1000/xyz123", "10.1000/xyz124", "10.1000/xyz125"]
     test_abstract_list = ["abstract text 1", "abstract text 2", "abstract text 3"]
@@ -643,7 +666,9 @@ def test_get_many_abstracts_cycling_apis_no_abstracts_found(
         in caplog.text
     )
     assert "No abstracts found in SCOPUS_BATCH with query type batch." in caplog.text
-    assert f"0 abstracts retrieved of {len(test_dois)} valid DOIs requested" in caplog.text
+    assert (
+        f"0 abstracts retrieved of {len(test_dois)} valid DOIs requested" in caplog.text
+    )
 
     assert len(null_enhancements) == len(test_dois)
     assert all(item["abstract"] is None for item in null_enhancements)

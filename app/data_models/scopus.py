@@ -77,6 +77,7 @@ class ScopusAPIConfig(APIConfig):
             inst_token.get_secret_value() if inst_token else ""
         )
 
+
 scopus_batch_api_config = ScopusAPIConfig(
     name="scopus_batch",
     url=SCOPUS_BATCH_URL,
