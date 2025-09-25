@@ -4,13 +4,8 @@ import uuid
 
 import destiny_sdk
 from fastapi import status
-from fastapi.testclient import TestClient
 from pytest_httpx import HTTPXMock, IteratorStream
 from pytest_mock import MockerFixture
-
-from app.main import app
-
-client = TestClient(app)
 
 
 def mock_reference_file_stream(
@@ -52,22 +47,22 @@ def mock_enhancement_put(httpx_mock: HTTPXMock):
     httpx_mock.add_response(method="PUT", status_code=status.HTTP_200_OK)
 
 
-def test_root() -> None:
+def test_root(test_client) -> None:
     """Test the root endpoint."""
-    response = client.get("/")
+    response = test_client.get("/")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"message": "I am the Fetch Abstracts Robot (FAR)."}
 
 
-def test_health() -> None:
+def test_health(test_client) -> None:
     """Test the health endpoint."""
-    response = client.get("/health")
+    response = test_client.get("/health")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"status": "healthy"}
 
 
 def test_create_abstract_enhancement_happy_path(
-    httpx_mock: HTTPXMock, mocker: MockerFixture
+    httpx_mock: HTTPXMock, mocker: MockerFixture, test_client
 ) -> None:
     """Test that we can create an enhancement."""
     request_id = uuid.uuid4()
@@ -92,7 +87,7 @@ def test_create_abstract_enhancement_happy_path(
             status_code=200, json=lambda: expected_external_api_response
         ),
     )
-    response = client.post("/abstract/enhancement/batch/", json=request_body)
+    response = test_client.post("/abstract/enhancement/batch/", json=request_body)
 
     assert (
         response.status_code == status.HTTP_202_ACCEPTED

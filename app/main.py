@@ -15,8 +15,8 @@ from loguru import logger
 
 from app.auth import auth_strategy_robot
 from app.config import get_settings
-from app.data_models.crossref import crossref_batch_api_config
-from app.data_models.scopus import scopus_batch_api_config
+from app.data_models.crossref import get_crossref_batch_api_config
+from app.data_models.scopus import get_scopus_batch_api_config
 from app.enhancement_generation import (
     BatchEnhancementGenerationError,
     generate_abstract_enhancement_batch_request,
@@ -38,8 +38,8 @@ client = DestinyClient(
 
 # configurations for all APIs we can hit to get abstracts
 AVAILABLE_API_CONFIGS = [
-    crossref_batch_api_config,
-    scopus_batch_api_config,
+    get_crossref_batch_api_config(settings),
+    get_scopus_batch_api_config(),
 ]
 global_api_config = prepare_api_config(
     api_configs=AVAILABLE_API_CONFIGS, settings=settings

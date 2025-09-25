@@ -1,30 +1,40 @@
 """Config constants for CrossRef API; single & batch."""
 
-from app.config import get_settings
+from app.config import Settings
 from app.data_models.generic import AbstractUnpackStrategy, APIConfig, QueryType
 
-settings = get_settings()
 
-CROSSREF_URL = "https://api.crossref.org/works/"
-CROSSREF_QUERY_PARAMS = {"mailto": settings.mailto}  # type: dict
-CROSSREF_HEADERS = {
-    "User-Agent": "destiny-project-ucl",
-    "Accept": "application/vnd.crossref-api-message+json",
-}
-CROSSREF_UNPACK_STRATEGY = AbstractUnpackStrategy(
-    source="crossref_batch",
-    clean_abstract_string=True,
-    strategy=["message", "abstract"],
-)
+def get_crossref_batch_api_config(settings: Settings) -> APIConfig:
+    """
+    Define and return the CrossRef batch API configuration.
 
-crossref_batch_api_config = APIConfig(
-    name="crossref_batch",
-    url=CROSSREF_URL,
-    require_api_key=False,
-    api_key_env_var_name=None,
-    api_key_placement=None,
-    headers={},
-    query_type=QueryType.BATCHED_SINGLE,
-    query_params=CROSSREF_QUERY_PARAMS,
-    unpack_strategy=CROSSREF_UNPACK_STRATEGY,
-)
+    Args:
+        settings (Settings): The application settings containing configuration values.
+
+    Returns:
+        APIConfig: The configuration for the CrossRef batch API.
+
+    """
+    crossref_url = "https://api.crossref.org/works/"
+    crossref_query_params = {"mailto": settings.mailto}  # type: dict
+    crossref_headers = {
+        "User-Agent": "destiny-project-ucl",
+        "Accept": "application/vnd.crossref-api-message+json",
+    }
+    crossref_unpack_strategy = AbstractUnpackStrategy(
+        source="crossref_batch",
+        clean_abstract_string=True,
+        strategy=["message", "abstract"],
+    )
+
+    return APIConfig(
+        name="crossref_batch",
+        url=crossref_url,
+        require_api_key=False,
+        api_key_env_var_name=None,
+        api_key_placement=None,
+        headers=crossref_headers,
+        query_type=QueryType.BATCHED_SINGLE,
+        query_params=crossref_query_params,
+        unpack_strategy=crossref_unpack_strategy,
+    )
