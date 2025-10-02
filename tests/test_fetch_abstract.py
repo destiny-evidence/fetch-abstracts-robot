@@ -600,6 +600,7 @@ def test_fetch_many_abstracts_crossref_single_unpack_error(
             [crossref_api_config_valid_batch], settings
         )
     )
+    test_dois_list = ["10.1000/xyz123"]
     with (
         patch("app.fetch_abstract.validate_doi", return_value=True),
         patch.object(fetcher, "fetch", return_value={"data": {}}),
@@ -611,13 +612,13 @@ def test_fetch_many_abstracts_crossref_single_unpack_error(
         caplog.at_level("ERROR"),
     ):
         result_generator = fetcher.fetch_many_abstracts(
-            ["10.1000/xyz123"], crossref_api_config_valid_batch, chunk=True
+            test_dois_list, crossref_api_config_valid_batch, chunk=True
         )
-        results = list(result_generator)
+        results = next(result_generator)
         assert "Test Abstract Unpack Failure" in caplog.text
         assert (
-            len(results) == 0
-        ), "Expect that we return no results on an unpack error for a single record."
+            results == [{"doi": [test_dois_list[0]], "abstract": None}]
+        ), "Expect that we return a null abstract on an unpack error for a single record."
 
 
 @pytest.mark.parametrize(

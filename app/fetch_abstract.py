@@ -309,7 +309,6 @@ class AbstractFetcher:
                     f"original error message: {http_error}"
                 )
                 yield [{"doi": doi, "abstract": None} for doi in _chunk]
-                continue
             if api_config.query_type == "batched_single":
                 logger.debug("yield for batched_single")
                 try:
@@ -326,7 +325,7 @@ class AbstractFetcher:
                     ]
                 except AbstractUnpackError as abstract_unpack_error:
                     logger.error(abstract_unpack_error)
-                    continue
+                    yield [{"doi": _chunk, "abstract": None}]
 
             elif api_config.query_type == "batch":
                 logger.debug("yield for batch")
@@ -411,8 +410,6 @@ class AbstractFetcher:
                 "Key not found in response object with current unpack strategy.",
                 f"Key not found: {missing_key_error}",
             )
-            # TODO @harryjmoss: this should no longer raise this error, potentially
-            # https://github.com/destiny-evidence/fetch-abstracts-robot/issues/35
             raise AbstractUnpackError(error_message) from missing_key_error
         if not isinstance(abstract_object, str):
             abstract_not_string_error_message = "Expected abstract to be a string."
