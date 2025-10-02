@@ -7,6 +7,7 @@ import pytest
 from destiny_sdk.references import Reference
 
 from app.utils import (
+    InvalidDOIError,
     MissingDOIError,
     VersionInfoNotFoundError,
     get_doi_from_reference,
@@ -45,11 +46,6 @@ class DummyReference:
         self.identifiers = identifiers
 
 
-def test_invalid_doi_error():
-    bad_doi = "bad_doi"
-    assert not validate_doi(bad_doi)
-
-
 def test_get_doi_from_reference_success():
     # Patch validate_doi to return True for the first identifier
     test_good_doi = "10.1000/xyz123"
@@ -86,9 +82,9 @@ def test_get_valid_doi_from_full_url_success(test_full_url_doi):
 )
 def test_get_invalid_doi_from_full_url_fails_properly(test_full_url_doi):
     """Test that we can extract a DOI from a full URL."""
-    assert not validate_doi(
-        test_full_url_doi
-    ), "Expect this list of invalid DOIs to be evaluated as invalid."
+    with pytest.raises(InvalidDOIError) as expected_error:
+        validate_doi(test_full_url_doi)
+    assert f"Invalid DOI: {test_full_url_doi}" in str(expected_error.value)
 
 
 def test_get_doi_from_reference_missing_doi_error():
@@ -109,15 +105,20 @@ def test_get_doi_from_reference_missing_doi_error():
     assert error_message in str(expected_error.value)
 
 
-def test_validate_doi_false_for_non_string():
-    assert not validate_doi(12345)
-    assert not validate_doi(None)
-    assert not validate_doi(["10.1000/xyz123"])
+@pytest.mark.parametrize("non_string", [12345, None, ["10.1000/xyz123"]])
+def test_validate_doi_false_for_non_string(non_string):
+    with pytest.raises(InvalidDOIError) as expected_error:
+        validate_doi(non_string)
+    assert f"Invalid DOI {non_string}" in str(expected_error.value)
 
 
-def test_validate_doi_false_for_string():
-    assert not validate_doi("foo")
-    assert not validate_doi("10.000/bar")
+@pytest.mark.parametrize(
+    "invalid_doi_string", ["bad_doi", "foo", "10.000/bar", "10./xyz", "10.1000/"]
+)
+def test_validate_doi_false_for_invalid_string(invalid_doi_string):
+    with pytest.raises(InvalidDOIError) as expected_error:
+        validate_doi(invalid_doi_string)
+    assert f"Invalid DOI: {invalid_doi_string}" in str(expected_error.value)
 
 
 def test_validate_doi_success():

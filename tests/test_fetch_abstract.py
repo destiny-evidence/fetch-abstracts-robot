@@ -658,7 +658,7 @@ def test_get_many_abstracts_cycling_apis_no_abstracts_found(
         )
     )
     test_dois = ["10.1000/xyz123", "10.1000/xyz124", "10.1000/xyz125"]
-    mocker.patch.object(fetcher, "fetch_many_abstracts", return_value=None)
+    mocker.patch.object(fetcher, "fetch_many_abstracts", return_value=iter([]))
     with caplog.at_level("DEBUG"):
         null_enhancements = fetcher.get_many_abstracts_cycling_apis(test_dois)
     assert (
@@ -670,6 +670,6 @@ def test_get_many_abstracts_cycling_apis_no_abstracts_found(
         f"0 abstracts retrieved of {len(test_dois)} valid DOIs requested" in caplog.text
     )
 
-    assert len(null_enhancements) == len(test_dois)
+    assert len(list(null_enhancements)) == len(test_dois)
     assert all(item["abstract"] is None for item in null_enhancements)
     assert all(item["source"] is None for item in null_enhancements)

@@ -32,6 +32,10 @@ def validate_doi(doi_string: str) -> str:
         str: The validated DOI string.
 
     """
+    if not isinstance(doi_string, str):
+        error_message = f"Invalid DOI {doi_string}. DOI must be a string."
+        logger.error(error_message)
+        raise InvalidDOIError(error_message)
     try:
         return DOIIdentifier(
             identifier=doi_string, identifier_type=ExternalIdentifierType.DOI
