@@ -1,0 +1,1 @@
+"""Module for fetching full text content from various sources."""

@@ -33,6 +33,7 @@ class ExternalAPI(StrEnum):
     CROSSREF = "crossref"
     CROSSREF_BATCH = "crossref_batch"
     SCOPUS_BATCH = "scopus_batch"
+    SCOPUS_FULLTEXT = "scopus_fulltext"
 
 
 class QueryType(StrEnum):

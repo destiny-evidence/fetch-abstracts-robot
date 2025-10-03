@@ -12,85 +12,19 @@ from defusedxml.ElementTree import ParseError, fromstring
 from destiny_sdk.identifiers import DOIIdentifier
 from loguru import logger
 
-from app.config import Settings
 from app.data_models.generic import (
     AbstractNotFoundError,
     AbstractUnpackError,
     AbstractUnpackStrategy,
     APIConfig,
-    APIKeyNotPresentError,
-    ExternalAPIPriority,
-    external_api_priority_batch,
-    external_api_priority_single,
 )
 from app.utils import InvalidDOIError, validate_doi
-
+from app import Fetcher
 
 class FetchAbstractError(Exception):
     """Custom exception for errors occurring during abstract fetching."""
 
-
-def prepare_api_config(
-    api_configs: list[APIConfig],
-    settings: Settings,
-    external_api_priority_single: ExternalAPIPriority = external_api_priority_single,
-    external_api_priority_batch: ExternalAPIPriority = external_api_priority_batch,
-) -> dict[str, APIConfig]:
-    """
-    Prepare a dict of APIConfig objects, populated with API keys.
-
-    If API keys are not present for a given API,
-    this will be omitted from the overall API config.
-
-    NOTE: Right now, we can pass a list of APIConfigs.
-    An API config will only be allowed if it's in
-    the list of permitted APIs in generic.ExternalAPI.
-
-    Args:
-        api_configs (list[APIConfig]): list of APIConfig objects to prepare.
-        settings (Settings): application settings containing API keys.
-        external_api_priority_single (ExternalAPIPriority): priority for single queries.
-        external_api_priority_batch (ExternalAPIPriority): priority for batch queries.
-
-    Returns:
-        dict[str, APIConfig]: a dictionary mapping API names to their configurations.
-
-    """
-    master_api_config = {}  # type: dict
-    api_config_map = {config.name.value: config for config in api_configs}
-    logger.debug(
-        f"external_api_priority_single: {external_api_priority_single.priorities}"
-    )
-    logger.debug(
-        f"external_api_priority_batch: {external_api_priority_batch.priorities}"
-    )
-    logger.debug(f"supplied api candidates: {', '.join(api_config_map.keys())}")
-
-    for external_api_priority in [
-        external_api_priority_single,
-        external_api_priority_batch,
-    ]:
-        logger.debug(f"building api config for {external_api_priority}")
-        master_api_config[external_api_priority.name] = {}
-        for api in external_api_priority.priorities:
-            logger.debug(f"checking if {api.name} in list of available apis...")
-            if api not in api_config_map:
-                continue
-            target_config = api_config_map[api]
-            try:
-                logger.debug(f"trying to find & init api key for {api.name}")
-                target_config.init_api_key(settings=settings)
-                master_api_config[external_api_priority.name][api.name] = target_config
-                logger.info(f"successfully initialised API key for {api.name}.")
-            except APIKeyNotPresentError as missing_api_key_error:
-                logger.info(f"no API key for {api.name}. not populating config.")
-                logger.info(f"original error message: {missing_api_key_error}.")
-                continue
-
-    return master_api_config
-
-
-class AbstractFetcher:
+class AbstractFetcher(Fetcher):
     """
     Handles the fetching of abstracts from target APIs.
     Can fetch either a `single` abstract, or a `batch` of
@@ -110,6 +44,7 @@ class AbstractFetcher:
             timeout (int, optional): Network timeout. Defaults to 60.
 
         """
+        super().__init__(master_api_config=master_api_config, timeout=timeout)
         self.master_api_config = master_api_config  # type: dict
         self.timeout = timeout
 
