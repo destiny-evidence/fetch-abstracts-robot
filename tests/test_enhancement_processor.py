@@ -4,16 +4,16 @@ import uuid
 import pytest
 from destiny_sdk.references import Reference
 from destiny_sdk.robots import LinkedRobotError
-
 from enhancement_processor import (
-    BatchEnhancementGenerationError,
     AbstractEnhancementProcessor,
+    BatchEnhancementGenerationError,
 )
 
 test_processor = AbstractEnhancementProcessor(
     robot_version="9.9.9",
     source_name="Test Fetch Abstracts Robot",
 )
+
 
 def test_generate_abstract_enhancement_batch_request_success(
     mocker, test_settings, scopus_api_config_valid_batch

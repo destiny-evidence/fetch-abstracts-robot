@@ -2,6 +2,11 @@
 build-backend = "setuptools.build_meta"
 requires = ["setuptools>=45", "wheel"]
 
+[dependency-groups]
+test = [
+    "fastapi[standard]>=0.115.14",
+]
+
 [project]
 authors = [
     {email = "h.moss@ucl.ac.uk", name = "Harry Moss"},
@@ -133,8 +138,3 @@ extras = [
     "docs",
 ]
 gh.python."3.13" = ["py313"]
-
-[dependency-groups]
-test = [
-    "fastapi[standard]>=0.115.14",
-]

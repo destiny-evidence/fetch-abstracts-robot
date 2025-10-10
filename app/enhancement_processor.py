@@ -1,37 +1,8 @@
 """Generation functions for single and batch abstract enhancements."""
 
 import uuid
-import asyncio
-import contextlib
-import signal
-import sys
-from types import FrameType
-from typing import Final
-from typing import Final
-import asyncio
+
 import httpx
-from destiny_sdk.client import Client as DestinyClient
-from destiny_sdk.references import Reference
-from destiny_sdk.robots import (
-    RobotError,
-    RobotRequest,
-    RobotResult,
-    RobotEnhancementBatch,
-    RobotEnhancementBatchResult,
-)
-from fastapi import BackgroundTasks, Depends, FastAPI, Response, status
-from loguru import logger
-from types import FrameType
-from app.auth import auth_strategy_robot
-from app.config import get_settings
-from app.data_models.crossref import get_crossref_batch_api_config
-from app.data_models.scopus import get_scopus_batch_api_config
-from enhancement_processor import (
-    BatchEnhancementGenerationError,
-    AbstractEnhancementProcessor
-)
-from app.fetch_abstract import AbstractFetcher, prepare_api_config
-from app.utils import get_doi_from_reference, get_version_number
 from destiny_sdk.enhancements import (
     AbstractContentEnhancement,
     AbstractProcessType,
@@ -45,16 +16,9 @@ from destiny_sdk.robots import (
 from destiny_sdk.visibility import Visibility
 from loguru import logger
 
-import logging
-import random
-import uuid
-from typing import Final
-from uuid import UUID
-
-import httpx
-
 from app.data_models.generic import APIConfig
-from app.utils import get_version_number, get_doi_from_reference
+from app.fetch_abstract import AbstractFetcher
+from app.utils import get_doi_from_reference, get_version_number
 
 
 class BatchEnhancementGenerationError(Exception):
@@ -63,28 +27,30 @@ class BatchEnhancementGenerationError(Exception):
 
 class AbstractEnhancementProcessor:
     """Handles the processing of abstract enhancement requests."""
-    
-    def __init__(self,
-                 robot_version: str,
-                 source_name: str,
-                 global_api_config: dict[str, APIConfig],
-                 available_api_configs: list[APIConfig],
-        ) -> None:
+
+    def __init__(
+        self,
+        robot_version: str,
+        source_name: str,
+        global_api_config: dict[str, APIConfig],
+        available_api_configs: list[APIConfig],
+    ) -> None:
         """
         Initialize the processor with configuration.
-        
+
         Args:
             robot_version (str): The version of the robot.
-            source_name (str): The name of the source in the destiny repository. This is the app name.
+            source_name (str): The name of the `source` in the destiny repository.
+                In practical terms, this is the app name _of this app_.
             global_api_config (dict[str, APIConfig]): Global API configuration.
-            available_api_configs (list[APIConfig]): List of available API configurations.
+            available_api_configs (list[APIConfig]): List of API configurations.
+
         """
         self.robot_version = robot_version
         self.source_name = source_name
 
         self.abstract_fetcher = AbstractFetcher(global_api_config)
         self.available_api_configs = available_api_configs
-
 
     def create_abstract_enhancement(
         self,
@@ -105,11 +71,13 @@ class AbstractEnhancementProcessor:
 
         Returns:
             list[Enhancement]: The generated batch of enhancements.
-        """
 
+        """
         dois = [get_doi_from_reference(ref) for ref in references]
 
-        abstracts_dois_dict = self.abstract_fetcher.get_many_abstracts_cycling_apis(dois)
+        abstracts_dois_dict = self.abstract_fetcher.get_many_abstracts_cycling_apis(
+            dois
+        )
 
         enhancement_reference_map = [
             {
@@ -139,6 +107,7 @@ class AbstractEnhancementProcessor:
         return file_content
 
     def generate_abstract_enhancement_batch_request(
+        self,
         references: list[Reference],
         enhancements_references_map: list[dict],
         available_api_configs: list[APIConfig],
@@ -163,7 +132,8 @@ class AbstractEnhancementProcessor:
         enhancements_out = []
         version_number = get_version_number()
         enhancements_by_id = {
-            enhancement["id"]: enhancement for enhancement in enhancements_references_map
+            enhancement["id"]: enhancement
+            for enhancement in enhancements_references_map
         }
         successful_enhancements = 0
         for reference in references:
@@ -213,10 +183,10 @@ class AbstractEnhancementProcessor:
                     content=AbstractContentEnhancement(
                         process=AbstractProcessType.CLOSED_API,
                         abstract=enhancement["abstract"],
-                    )
+                    ),
                 )
             )
-            
+
             successful_enhancements += 1
         if successful_enhancements == 0:
             reference_ids_attempted = ", ".join([str(ref.id) for ref in references])
@@ -227,10 +197,8 @@ class AbstractEnhancementProcessor:
             logger.error(error_message)
             raise BatchEnhancementGenerationError(error_message)
         return enhancements_out
-    
-    async def download_references(
-            self, reference_storage_url: str
-    ) -> list[Reference]:
+
+    async def download_references(self, reference_storage_url: str) -> list[Reference]:
         """
         Download references from a given URL.
 
@@ -239,10 +207,10 @@ class AbstractEnhancementProcessor:
 
         Returns:
             list[Reference]: A list of Reference objects.
-        """
 
+        """
         references = []
-        async with(
+        async with (
             httpx.AsyncClient() as client,
             client.stream("GET", reference_storage_url) as response,
         ):
@@ -253,9 +221,9 @@ class AbstractEnhancementProcessor:
         return references
 
     async def upload_enhancements(
-            self,
-            enhancements: list[Enhancement],
-            result_storage_url: str,
+        self,
+        enhancements: list[Enhancement],
+        result_storage_url: str,
     ) -> None:
         """
         Upload enhancements to a given URL.
@@ -263,8 +231,8 @@ class AbstractEnhancementProcessor:
         Args:
             enhancements (list[Enhancement]): A list of Enhancement objects to upload.
             result_storage_url (str): The URL to upload enhancements to.
-        """
 
+        """
         file_content = b""
         for enhancement in enhancements:
             file_content += (enhancement.to_jsonl() + "\n").encode("utf-8")
@@ -281,18 +249,16 @@ class AbstractEnhancementProcessor:
             )
             response.raise_for_status()
 
-
-    async def process_batch(
-            self, batch: RobotEnhancementBatch
-    ) -> list[Enhancement]:
+    async def process_batch(self, batch: RobotEnhancementBatch) -> list[Enhancement]:
         """
         Process a batch by downloading references and creating enhancements.
 
         Args:
-            batch (RobotEnhancementBatch): The batch containing references and storage URLs.
+            batch (RobotEnhancementBatch): The batch of `Reference`s to enhance.
 
         Returns:
             list[Enhancement]: The list of generated enhancements.
+
         """
         logger.info("Processing robot enhancement batch %s", batch.id)
         references = await self.download_references(str(batch.reference_storage_url))
@@ -301,7 +267,7 @@ class AbstractEnhancementProcessor:
             references=references,
         )
 
-        enhancements = self.generate_abstract_enhancement_batch_request(
+        return self.generate_abstract_enhancement_batch_request(
             references=references,
             enhancements_references_map=[
                 {
@@ -314,4 +280,3 @@ class AbstractEnhancementProcessor:
             available_api_configs=[],
             app_title=self.source_name,
         )
-        return enhancements

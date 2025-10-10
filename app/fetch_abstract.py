@@ -256,7 +256,7 @@ class AbstractFetcher:
         chunk: bool = False,
         verbose: bool = False,
         **kwargs: dict,
-    ) -> Generator[list, None, None]:
+    ) -> Generator[list]:
         """
         Fetch many abstracts from a target API given a list of DOIs.
 

@@ -3,8 +3,6 @@ import logging
 from collections.abc import Generator
 
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
 from loguru import logger
 
 from app.config import Settings
@@ -21,23 +19,10 @@ pytest_plugins = [
 ]
 
 
-def get_app() -> FastAPI:
-    """
-    Return the FastAPI application instance for testing.
-
-    Returns:
-        FastAPI: The FastAPI application instance.
-
-    """
-    from app.main import app
-
-    return app
-
-
 @pytest.fixture(autouse=True)
 def set_test_environment_variables(
     monkeypatch: pytest.MonkeyPatch,
-) -> Generator[None, None, None]:
+) -> Generator[None]:
     """Configure the pytest environment."""
     monkeypatch.setenv("ENV", "local")
     monkeypatch.setenv("DESTINY_REPOSITORY_URL", "http://localhost:8001/enhancement/")
@@ -55,10 +40,10 @@ def set_test_environment_variables(
 
 
 @pytest.fixture
-def test_client(set_test_environment_variables) -> Generator[TestClient, None, None]:
-    client = TestClient(get_app())
-    yield client
-    client.close()
+def test_client(mocker, set_test_environment_variables):
+    with mocker.patch("destiny_sdk.client.Client") as mock_client:
+        mock_client.return_value = mocker.MagicMock()
+        yield mock_client.return_value
 
 
 @pytest.fixture
