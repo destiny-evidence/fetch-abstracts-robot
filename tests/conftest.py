@@ -62,24 +62,6 @@ def test_client(set_test_environment_variables) -> Generator[TestClient, None, N
 
 
 @pytest.fixture
-def scopus_api_config_valid_single():
-    return ScopusAPIConfig(
-        name=ExternalAPI.SCOPUS,
-        url="https://api.example.com/",
-        require_api_key=True,
-        api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
-        api_key_placement="X-API-Key",  # pragma: allowlist secret
-        query_params={},
-        headers={"X-API-Key": ""},
-        unpack_strategy=AbstractUnpackStrategy(
-            source=ExternalAPI.SCOPUS, strategy=["data", "abstract"]
-        ),
-        api_inst_token_env_var_name="elsevier_scopus_inst_token",  # pragma: allowlist secret
-        api_inst_token_placement="X-Inst-Token",  # pragma: allowlist secret
-    )
-
-
-@pytest.fixture
 def scopus_api_config_valid_batch():
     return ScopusAPIConfig(
         name=ExternalAPI.SCOPUS_BATCH,
@@ -101,22 +83,6 @@ def scopus_api_config_valid_batch():
 
 
 @pytest.fixture
-def crossref_api_config_valid_single():
-    return APIConfig(
-        name=ExternalAPI.CROSSREF,
-        url="https://api.example.com/",
-        require_api_key=False,
-        api_key_env_var_name=None,
-        api_key_placement=None,
-        unpack_strategy=AbstractUnpackStrategy(
-            source=ExternalAPI.CROSSREF,
-            clean_abstract_string=True,
-            strategy=["data", "abstract"],
-        ),
-    )
-
-
-@pytest.fixture
 def crossref_api_config_valid_batch():
     return APIConfig(
         name=ExternalAPI.CROSSREF_BATCH,
@@ -128,8 +94,8 @@ def crossref_api_config_valid_batch():
         unpack_strategy=AbstractUnpackStrategy(
             source=ExternalAPI.CROSSREF_BATCH,
             clean_abstract_string=True,
-            strategy=["message", "items", "abstract"],
-            doi_strategy=["message", "items", "DOI"],
+            strategy=["message", "abstract"],
+            doi_strategy=["message", "DOI"],
         ),
     )
 

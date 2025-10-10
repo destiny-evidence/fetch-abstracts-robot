@@ -22,10 +22,6 @@ SCOPUS_HEADERS = {
     "X-ELS-Insttoken": "",
 }
 
-SCOPUS_UNPACK_STRATEGY = AbstractUnpackStrategy(
-    source="scopus",
-    strategy=["abstracts-retrieval-response", "coredata", "dc:description"],
-)
 SCOPUS_BATCH_UNPACK_STRATEGY = AbstractUnpackStrategy(
     source="scopus_batch",
     doi_strategy=["search-results", "entry", "prism:doi"],
@@ -82,25 +78,22 @@ class ScopusAPIConfig(APIConfig):
         )
 
 
-scopus_api_config = ScopusAPIConfig(
-    name="scopus",
-    url=SCOPUS_URL,
-    require_api_key=True,
-    api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
-    api_key_placement="X-ELS-APIKey",  # pragma: allowlist secret
-    query_params=SCOPUS_QUERY_PARAMS,
-    headers=SCOPUS_HEADERS,
-    unpack_strategy=SCOPUS_UNPACK_STRATEGY,
-)
+def get_scopus_batch_api_config() -> ScopusAPIConfig:
+    """
+    Define and return the Scopus batch API configuration.
 
-scopus_batch_api_config = ScopusAPIConfig(
-    name="scopus_batch",
-    url=SCOPUS_BATCH_URL,
-    require_api_key=True,
-    api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
-    api_key_placement="X-ELS-APIKey",  # pragma: allowlist secret
-    query_type="batch",
-    query_params=SCOPUS_BATCH_QUERY_PARAMS,
-    headers=SCOPUS_HEADERS,
-    unpack_strategy=SCOPUS_BATCH_UNPACK_STRATEGY,
-)
+    Returns:
+        ScopusAPIConfig: The configuration for the Scopus batch API.
+
+    """
+    return ScopusAPIConfig(
+        name="scopus_batch",
+        url=SCOPUS_BATCH_URL,
+        require_api_key=True,
+        api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
+        api_key_placement="X-ELS-APIKey",  # pragma: allowlist secret
+        query_type="batch",
+        query_params=SCOPUS_BATCH_QUERY_PARAMS,
+        headers=SCOPUS_HEADERS,
+        unpack_strategy=SCOPUS_BATCH_UNPACK_STRATEGY,
+    )

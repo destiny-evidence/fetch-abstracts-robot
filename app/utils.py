@@ -20,25 +20,30 @@ class MissingDOIError(Exception):
     """Exception for when a reference doesn't contain a DOI."""
 
 
-def validate_doi(doi_string: str) -> bool:
+def validate_doi(doi_string: str) -> str:
     """
-    Validate a DOI string using a regular expression.
+    Validate a DOI string against the DESTINY DOI Identifier model
+    and return the cleaned, validated DOI string.
 
-    returns `True` if valid, `False` otherwise.
+    Args:
+        doi_string (str): The DOI string to validate.
+
+    Returns:
+        str: The validated DOI string.
+
     """
-    valid_doi = False
     if not isinstance(doi_string, str):
-        return valid_doi
+        error_message = f"Invalid DOI {doi_string}. DOI must be a string."
+        logger.error(error_message)
+        raise InvalidDOIError(error_message)
     try:
-        DOIIdentifier(
+        return DOIIdentifier(
             identifier=doi_string, identifier_type=ExternalIdentifierType.DOI
         ).remove_doi_url(doi_string)
-        valid_doi = True
-    except ValidationError:
-        error_message = "Invalid DOI: {doi_string}. Error: {invalid_doi_error}"
+    except ValidationError as invalid_doi_error:
+        error_message = f"Invalid DOI: {doi_string}. Error: {invalid_doi_error}"
         logger.error(error_message)
-        return valid_doi
-    return valid_doi
+        raise InvalidDOIError(error_message) from invalid_doi_error
 
 
 def get_doi_from_reference(reference: Reference) -> str:

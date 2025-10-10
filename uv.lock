@@ -212,7 +212,7 @@ wheels = [
 
 [[package]]
 name = "destiny-sdk"
-version = "0.2.0.post0"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cachetools" },
@@ -224,9 +224,9 @@ dependencies = [
     { name = "pytest-httpx" },
     { name = "python-jose" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f3/73/87ffcb8e60aa39cb52010a97cd8ddfbab55c80d502c1208ebd9e4d43afe7/destiny_sdk-0.2.0.post0.tar.gz", hash = "sha256:27354f6d6f0ee789a13a15f5c86a333165aceef04efee86cc50d4e5b93a2a4b1", size = 17445, upload-time = "2025-07-30T04:00:37.534Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/42/e2/f5ce34c24231656cbc6f45fd3135dc50d212209f29e865c379f541f01f5a/destiny_sdk-0.3.0.tar.gz", hash = "sha256:d6b11899f98c324d197cfcab40641a6e293d5232eb3fea6a2d5a23da5ca121e8", size = 47810, upload-time = "2025-08-28T04:42:03.524Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0b/e1/8cc72fad671d78ac7fee206f9fb3aa77e4a18062b0342aa2c7ba6cacb54f/destiny_sdk-0.2.0.post0-py3-none-any.whl", hash = "sha256:619f690e29ffb114ce89bec394f7d3c67a36a263cadd46c1106affffe86af7a0", size = 21199, upload-time = "2025-07-30T04:00:36.665Z" },
+    { url = "https://files.pythonhosted.org/packages/49/31/8ccd1f1fc7e27cffcb61f90b96e53469c0a97d37850b374f015ad8ff20b5/destiny_sdk-0.3.0-py3-none-any.whl", hash = "sha256:f165d38aa4925cb8df89346b1754d9eb8e2e2665283de100dea134d718269960", size = 22817, upload-time = "2025-08-28T04:42:02.446Z" },
 ]
 
 [[package]]
@@ -358,7 +358,7 @@ wheels = [
 
 [[package]]
 name = "fetch-abstracts-robot"
-version = "0.2.1"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "defusedxml" },
@@ -395,7 +395,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "defusedxml", specifier = ">=0.7.1" },
-    { name = "destiny-sdk", specifier = ">=0.2.0" },
+    { name = "destiny-sdk", specifier = ">=0.3.0" },
     { name = "detect-secrets", marker = "extra == 'dev'", specifier = ">=1.5.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.6" },
     { name = "loguru", specifier = ">=0.7.3" },
