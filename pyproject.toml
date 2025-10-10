@@ -133,3 +133,8 @@ extras = [
     "docs",
 ]
 gh.python."3.13" = ["py313"]
+
+[dependency-groups]
+test = [
+    "fastapi[standard]>=0.115.14",
+]
