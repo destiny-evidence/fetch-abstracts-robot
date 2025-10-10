@@ -5,11 +5,15 @@ import pytest
 from destiny_sdk.references import Reference
 from destiny_sdk.robots import LinkedRobotError
 
-from app.enhancement_generation import (
+from enhancement_processor import (
     BatchEnhancementGenerationError,
-    generate_abstract_enhancement_batch_request,
+    AbstractEnhancementProcessor,
 )
 
+test_processor = AbstractEnhancementProcessor(
+    robot_version="9.9.9",
+    source_name="Test Fetch Abstracts Robot",
+)
 
 def test_generate_abstract_enhancement_batch_request_success(
     mocker, test_settings, scopus_api_config_valid_batch
@@ -41,7 +45,7 @@ def test_generate_abstract_enhancement_batch_request_success(
     available_api_configs = [scopus_api_config_valid_batch]
     test_app_title = "A test app for batch requests."
 
-    result = generate_abstract_enhancement_batch_request(
+    result = test_processor.generate_abstract_enhancement_batch_request(
         references=test_two_references,
         enhancements_references_map=test_enhancement_references_map,
         available_api_configs=available_api_configs,
@@ -90,7 +94,7 @@ def test_generate_abstract_enhancement_batch_request_total_failure_empty_referen
     test_app_title = "A test app for batch requests."
 
     with pytest.raises(BatchEnhancementGenerationError) as excinfo:
-        generate_abstract_enhancement_batch_request(
+        test_processor.generate_abstract_enhancement_batch_request(
             references=test_two_references,
             enhancements_references_map=test_enhancement_references_map,
             available_api_configs=available_api_configs,
@@ -137,7 +141,7 @@ def test_generate_abstract_enhancement_batch_request_partial_success_empty_abstr
     available_api_configs = [scopus_api_config_valid_batch]
     test_app_title = "A test app for batch requests."
 
-    result = generate_abstract_enhancement_batch_request(
+    result = test_processor.generate_abstract_enhancement_batch_request(
         references=test_two_references,
         enhancements_references_map=test_enhancement_references_map,
         available_api_configs=available_api_configs,
@@ -184,7 +188,7 @@ def test_generate_abstract_enhancement_batch_request_appropriate_visibility(
     available_api_configs = [scopus_api_config_valid_batch]
     test_app_title = "A test app for batch requests."
 
-    result = generate_abstract_enhancement_batch_request(
+    result = test_processor.generate_abstract_enhancement_batch_request(
         references=test_two_references,
         enhancements_references_map=test_enhancement_references_map,
         available_api_configs=available_api_configs,
@@ -235,7 +239,7 @@ def test_generate_abstract_enhancement_batch_request_total_failure_no_abstracts_
     reference_ids_attempted = ", ".join([str(ref.id) for ref in test_two_references])
     expected_error_message = f"No successful enhancements generated for reference IDs {reference_ids_attempted}"
     with pytest.raises(BatchEnhancementGenerationError) as excinfo:
-        generate_abstract_enhancement_batch_request(
+        test_processor.generate_abstract_enhancement_batch_request(
             references=test_two_references,
             enhancements_references_map=test_enhancement_references_map,
             available_api_configs=available_api_configs,

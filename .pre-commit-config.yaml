@@ -31,7 +31,6 @@ repos:
           [
             pytest,
             pydantic,
-            fastapi,
             types-cachetools,
             types-requests,
             types-toml,
