@@ -91,7 +91,7 @@ class AbstractEnhancementProcessor:
         ]
 
         try:
-            file_content = self.generate_abstract_enhancement_batch_request(
+            abstract_enhancements = self.generate_abstract_enhancement_batch_request(
                 references=references,
                 enhancements_references_map=enhancement_reference_map,
                 available_api_configs=self.available_api_configs,
@@ -104,7 +104,7 @@ class AbstractEnhancementProcessor:
             )
             logger.error(error_message)
             raise
-        return file_content
+        return abstract_enhancements
 
     def generate_abstract_enhancement_batch_request(
         self,
@@ -263,20 +263,19 @@ class AbstractEnhancementProcessor:
         logger.info("Processing robot enhancement batch %s", batch.id)
         references = await self.download_references(str(batch.reference_storage_url))
 
-        self.create_abstract_enhancement(
-            references=references,
-        )
-
-        return self.generate_abstract_enhancement_batch_request(
-            references=references,
-            enhancements_references_map=[
-                {
-                    "id": ref.id,
-                    "abstract": f"This is a mocked abstract for {ref.id}.",
-                    "source": "crossref",
-                }
-                for ref in references
-            ],
-            available_api_configs=[],
-            app_title=self.source_name,
-        )
+        try:
+            generated_enhancements = self.create_abstract_enhancement(
+                references=references,
+            )
+            await self.upload_enhancements(
+                enhancements=generated_enhancements,
+                result_storage_url=str(batch.result_storage_url),
+            )
+        except BatchEnhancementGenerationError as full_batch_failure:
+            logger.error(
+                "Error generating enhancements for batch %s: %s",
+                batch.id,
+                full_batch_failure,
+            )
+            raise
+        return generated_enhancements
