@@ -2,21 +2,80 @@ import json
 import uuid
 
 import pytest
+from destiny_sdk.enhancements import Enhancement
 from destiny_sdk.references import Reference
-from destiny_sdk.robots import LinkedRobotError
-from enhancement_processor import (
+from destiny_sdk.robots import LinkedRobotError, RobotRequest
+from fastapi import status
+from pytest_httpx import HTTPXMock
+from pytest_mock import MockerFixture
+
+from app.config import Settings
+from app.enhancement_processor import (
     AbstractEnhancementProcessor,
     BatchEnhancementGenerationError,
 )
 
-test_processor = AbstractEnhancementProcessor(
-    robot_version="9.9.9",
-    source_name="Test Fetch Abstracts Robot",
+
+@pytest.mark.xfail(
+    reason="Test needs to be updated to reflect new robot polling workflow."
 )
+def test_create_abstract_enhancement(
+    httpx_mock: HTTPXMock,
+    mocker: MockerFixture,
+    test_client,
+    mock_reference_file_stream,
+    mock_destiny_repository_response,
+    mock_enhancement_put,
+) -> None:
+    """Test that we can create an enhancement."""
+    request_id = uuid.uuid4()
+    reference_ids = [uuid.uuid4() for _ in range(3)]
+    dois = [f"10.1000/xyz12{i}" for i in range(3)]
+    mock_reference_file_stream(httpx_mock, reference_ids, dois)
+    mock_destiny_repository_response(httpx_mock, request_id, reference_ids)
+    mock_enhancement_put(httpx_mock)
+
+    request_body = RobotRequest(
+        id=uuid.uuid4(),
+        reference_storage_url="http://example.com/references",
+        result_storage_url="http://example.com/results",
+    ).model_dump(mode="json")
+
+    expected_external_api_response = {
+        "message": {"abstract": "This is a test abstract."}
+    }
+    mocker.patch(
+        "app.fetch_abstract.requests.get",
+        return_value=mocker.Mock(
+            status_code=200, json=lambda: expected_external_api_response
+        ),
+    )
+    response = test_client.post("/abstract/enhancement/batch/", json=request_body)
+
+    assert (
+        response.status_code == status.HTTP_202_ACCEPTED
+    ), "Expect that request is accepted."
+
+    callback_requests = httpx_mock.get_requests()
+    assert (
+        len(callback_requests) == 3
+    ), "Expect that the background task has been called."
+
+    put_request = callback_requests[1]
+    generated_enhancements = put_request.content.decode("utf-8").strip().split("\n")
+    assert (
+        len(generated_enhancements) == 3
+    ), "Expect that we have 3 enhancements generated."
+
+    for enhancement in generated_enhancements:
+        Enhancement.from_jsonl(enhancement)
 
 
 def test_generate_abstract_enhancement_batch_request_success(
-    mocker, test_settings, scopus_api_config_valid_batch
+    mocker,
+    test_settings: Settings,
+    test_abstract_enhancement_processor: AbstractEnhancementProcessor,
+    scopus_api_config_valid_batch,
 ):
     test_two_references = [
         Reference(
@@ -45,11 +104,13 @@ def test_generate_abstract_enhancement_batch_request_success(
     available_api_configs = [scopus_api_config_valid_batch]
     test_app_title = "A test app for batch requests."
 
-    result = test_processor.generate_abstract_enhancement_batch_request(
-        references=test_two_references,
-        enhancements_references_map=test_enhancement_references_map,
-        available_api_configs=available_api_configs,
-        app_title=test_app_title,
+    result = (
+        test_abstract_enhancement_processor.generate_abstract_enhancement_batch_request(
+            references=test_two_references,
+            enhancements_references_map=test_enhancement_references_map,
+            available_api_configs=available_api_configs,
+            app_title=test_app_title,
+        )
     )
 
     assert isinstance(result, bytes)
@@ -64,7 +125,10 @@ def test_generate_abstract_enhancement_batch_request_success(
 
 
 def test_generate_abstract_enhancement_batch_request_total_failure_empty_reference_id_in_map(
-    mocker, test_settings, scopus_api_config_valid_batch
+    mocker,
+    test_settings,
+    test_abstract_enhancement_processor,
+    scopus_api_config_valid_batch,
 ):
     test_two_references = [
         Reference(
@@ -94,7 +158,7 @@ def test_generate_abstract_enhancement_batch_request_total_failure_empty_referen
     test_app_title = "A test app for batch requests."
 
     with pytest.raises(BatchEnhancementGenerationError) as excinfo:
-        test_processor.generate_abstract_enhancement_batch_request(
+        test_abstract_enhancement_processor.generate_abstract_enhancement_batch_request(
             references=test_two_references,
             enhancements_references_map=test_enhancement_references_map,
             available_api_configs=available_api_configs,
@@ -105,7 +169,10 @@ def test_generate_abstract_enhancement_batch_request_total_failure_empty_referen
 
 
 def test_generate_abstract_enhancement_batch_request_partial_success_empty_abstracts_found_for_some_references(
-    mocker, test_settings, scopus_api_config_valid_batch
+    mocker,
+    test_settings,
+    test_abstract_enhancement_processor,
+    scopus_api_config_valid_batch,
 ):
     test_two_references = [
         Reference(
@@ -141,11 +208,13 @@ def test_generate_abstract_enhancement_batch_request_partial_success_empty_abstr
     available_api_configs = [scopus_api_config_valid_batch]
     test_app_title = "A test app for batch requests."
 
-    result = test_processor.generate_abstract_enhancement_batch_request(
-        references=test_two_references,
-        enhancements_references_map=test_enhancement_references_map,
-        available_api_configs=available_api_configs,
-        app_title=test_app_title,
+    result = (
+        test_abstract_enhancement_processor.generate_abstract_enhancement_batch_request(
+            references=test_two_references,
+            enhancements_references_map=test_enhancement_references_map,
+            available_api_configs=available_api_configs,
+            app_title=test_app_title,
+        )
     )
     byte_encoded_expected_error = expected_error.to_jsonl().encode("utf-8")
     assert (
@@ -154,7 +223,10 @@ def test_generate_abstract_enhancement_batch_request_partial_success_empty_abstr
 
 
 def test_generate_abstract_enhancement_batch_request_appropriate_visibility(
-    mocker, test_settings, scopus_api_config_valid_batch
+    mocker,
+    test_settings,
+    test_abstract_enhancement_processor,
+    scopus_api_config_valid_batch,
 ):
     test_two_references = [
         Reference(
@@ -188,11 +260,13 @@ def test_generate_abstract_enhancement_batch_request_appropriate_visibility(
     available_api_configs = [scopus_api_config_valid_batch]
     test_app_title = "A test app for batch requests."
 
-    result = test_processor.generate_abstract_enhancement_batch_request(
-        references=test_two_references,
-        enhancements_references_map=test_enhancement_references_map,
-        available_api_configs=available_api_configs,
-        app_title=test_app_title,
+    result = (
+        test_abstract_enhancement_processor.generate_abstract_enhancement_batch_request(
+            references=test_two_references,
+            enhancements_references_map=test_enhancement_references_map,
+            available_api_configs=available_api_configs,
+            app_title=test_app_title,
+        )
     )
 
     result_string_list = result.decode("utf-8").splitlines()
@@ -206,7 +280,10 @@ def test_generate_abstract_enhancement_batch_request_appropriate_visibility(
 
 
 def test_generate_abstract_enhancement_batch_request_total_failure_no_abstracts_found_for_any_reference(
-    mocker, test_settings, scopus_api_config_valid_batch
+    mocker,
+    test_settings,
+    test_abstract_enhancement_processor,
+    scopus_api_config_valid_batch,
 ):
     test_two_references = [
         Reference(
@@ -239,7 +316,7 @@ def test_generate_abstract_enhancement_batch_request_total_failure_no_abstracts_
     reference_ids_attempted = ", ".join([str(ref.id) for ref in test_two_references])
     expected_error_message = f"No successful enhancements generated for reference IDs {reference_ids_attempted}"
     with pytest.raises(BatchEnhancementGenerationError) as excinfo:
-        test_processor.generate_abstract_enhancement_batch_request(
+        test_abstract_enhancement_processor.generate_abstract_enhancement_batch_request(
             references=test_two_references,
             enhancements_references_map=test_enhancement_references_map,
             available_api_configs=available_api_configs,

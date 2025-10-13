@@ -1,9 +1,13 @@
 # ruff: noqa: E501, S106
 import logging
+import uuid
 from collections.abc import Generator
 
+import destiny_sdk
 import pytest
+from fastapi import status
 from loguru import logger
+from pytest_httpx import HTTPXMock, IteratorStream
 
 from app.config import Settings
 from app.data_models.generic import (
@@ -13,6 +17,8 @@ from app.data_models.generic import (
     QueryType,
 )
 from app.data_models.scopus import ScopusAPIConfig
+from app.enhancement_processor import AbstractEnhancementProcessor
+from app.fetch_abstract import prepare_api_config
 
 pytest_plugins = [
     "tests.fixtures.generic",
@@ -41,9 +47,7 @@ def set_test_environment_variables(
 
 @pytest.fixture
 def test_client(mocker, set_test_environment_variables):
-    with mocker.patch("destiny_sdk.client.Client") as mock_client:
-        mock_client.return_value = mocker.MagicMock()
-        yield mock_client.return_value
+    return mocker.patch("destiny_sdk.client.Client", return_value=mocker.MagicMock())
 
 
 @pytest.fixture
@@ -86,6 +90,33 @@ def crossref_api_config_valid_batch():
 
 
 @pytest.fixture
+def test_global_api_config(
+    scopus_api_config_valid_batch, crossref_api_config_valid_batch, test_settings
+) -> dict[str, APIConfig]:
+    return prepare_api_config(
+        api_configs=[scopus_api_config_valid_batch, crossref_api_config_valid_batch],
+        settings=test_settings,
+    )
+
+
+@pytest.fixture
+def test_abstract_enhancement_processor(
+    scopus_api_config_valid_batch,
+    crossref_api_config_valid_batch,
+    test_global_api_config,
+) -> AbstractEnhancementProcessor:
+    return AbstractEnhancementProcessor(
+        robot_version="9.9.9",
+        source_name="Test Fetch Abstracts Robot",
+        global_api_config=test_global_api_config,
+        available_api_configs=[
+            scopus_api_config_valid_batch,
+            crossref_api_config_valid_batch,
+        ],
+    )
+
+
+@pytest.fixture
 def test_settings(set_test_environment_variables) -> Settings:
     return Settings()
 
@@ -99,3 +130,45 @@ def caplog(caplog):
     handler_id = logger.add(PropogateHandler(), format="{message}")
     yield caplog
     logger.remove(handler_id)
+
+
+@pytest.fixture
+def mock_reference_file_stream(
+    httpx_mock: HTTPXMock, reference_ids: list[uuid.UUID], dois: list[str]
+):
+    """Mock a stream for a file containing references."""
+    stream_response = []
+    for reference_id, doi in zip(reference_ids, dois, strict=False):
+        reference = destiny_sdk.references.Reference(
+            id=reference_id,
+            identifiers=[destiny_sdk.identifiers.DOIIdentifier(identifier=doi)],
+        )
+        stream_response.append(bytes(reference.to_jsonl() + "\n", "utf-8"))
+    httpx_mock.add_response(stream=IteratorStream(stream_response))
+
+
+@pytest.fixture
+def mock_destiny_repository_response(
+    httpx_mock: HTTPXMock, request_id: uuid.UUID, reference_ids: list[uuid.UUID]
+):
+    """Mock a successful enhancement post to destiny repository."""
+    create_enhancement_response = destiny_sdk.robots.EnhancementRequestRead(
+        id=request_id,
+        reference_ids=reference_ids,
+        enhancement_parameters={},
+        robot_id=uuid.uuid4(),
+        request_status=destiny_sdk.robots.EnhancementRequestStatus.COMPLETED,
+    )
+
+    # Mock out our callback
+    httpx_mock.add_response(
+        method="POST",
+        status_code=status.HTTP_200_OK,
+        json=create_enhancement_response.model_dump(mode="json"),
+    )
+
+
+@pytest.fixture
+def mock_enhancement_put(httpx_mock: HTTPXMock):
+    """Mock the putting of references to the results url."""
+    httpx_mock.add_response(method="PUT", status_code=status.HTTP_200_OK)

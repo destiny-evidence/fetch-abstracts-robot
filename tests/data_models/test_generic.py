@@ -135,12 +135,11 @@ def test_api_config_validator_failure(request, api_config_fixture, monkeypatch):
     ],
 )
 def test_api_config_init_api_key_success(
-    request, api_config_fixture, expected_key, expected_value, monkeypatch
+    request, api_config_fixture, expected_key, expected_value, test_settings
 ):
     api_config = request.getfixturevalue(api_config_fixture)
-    settings = get_settings()
 
-    api_config.init_api_key(settings)
+    api_config.init_api_key(test_settings)
     if expected_key:
         assert api_config.headers[expected_key] == expected_value
     else:
