@@ -1,4 +1,3 @@
-import json
 import uuid
 
 import pytest
@@ -113,14 +112,15 @@ def test_generate_abstract_enhancement_batch_request_success(
         )
     )
 
-    assert isinstance(result, bytes)
-    result_string = result.decode("utf-8")
+    assert len(result) == len(test_two_references)
+    assert all(isinstance(result_item, Enhancement) for result_item in result)
 
-    assert (
-        f"This is a mocked abstract for {test_two_references[0].id}." in result_string
-    )
-    assert (
-        f"This is a mocked abstract for {test_two_references[1].id}." in result_string
+    assert all(
+        (
+            f"This is a mocked abstract for {test_two_references[i].id}."
+            in result_item.content.abstract
+            for i, result_item in enumerate(result)
+        )
     )
 
 
@@ -216,9 +216,10 @@ def test_generate_abstract_enhancement_batch_request_partial_success_empty_abstr
             app_title=test_app_title,
         )
     )
-    byte_encoded_expected_error = expected_error.to_jsonl().encode("utf-8")
+    assert len(result) == len(test_two_references)
+    assert any(isinstance(result_item, Enhancement) for result_item in result)
     assert (
-        byte_encoded_expected_error in result
+        expected_error in result
     ), "Expect a LinkedRobotError for the missing abstract but normal enhancements otherwise."
 
 
@@ -269,13 +270,11 @@ def test_generate_abstract_enhancement_batch_request_appropriate_visibility(
         )
     )
 
-    result_string_list = result.decode("utf-8").splitlines()
-    results_split = [json.loads(line) for line in result_string_list]
     assert (
-        results_split[0]["visibility"].upper() == "RESTRICTED"
+        result[0].visibility.upper() == "RESTRICTED"
     ), "Expect RESTRICTED visibility for SCOPUS sourced abstract."
     assert (
-        results_split[1]["visibility"].upper() == "PUBLIC"
+        result[1].visibility.upper() == "PUBLIC"
     ), "Expect PUBLIC visibility for crossref sourced abstract."
 
 

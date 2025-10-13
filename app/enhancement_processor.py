@@ -112,7 +112,7 @@ class AbstractEnhancementProcessor:
         enhancements_references_map: list[dict],
         available_api_configs: list[APIConfig],
         app_title: str,
-    ) -> list[Enhancement]:
+    ) -> list[Enhancement | LinkedRobotError]:
         """
         Generate a batch of abstract enhancements from a batch of references.
 
