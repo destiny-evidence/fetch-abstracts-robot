@@ -1,10 +1,13 @@
 import uuid
 
 import pytest
-from destiny_sdk.enhancements import Enhancement
+from destiny_sdk.enhancements import (
+    AbstractContentEnhancement,
+    AbstractProcessType,
+    Enhancement,
+)
 from destiny_sdk.references import Reference
-from destiny_sdk.robots import LinkedRobotError, RobotRequest
-from fastapi import status
+from destiny_sdk.robots import LinkedRobotError, RobotEnhancementBatch
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
@@ -15,59 +18,220 @@ from app.enhancement_processor import (
 )
 
 
-@pytest.mark.xfail(
-    reason="Test needs to be updated to reflect new robot polling workflow."
-)
-def test_create_abstract_enhancement(
-    httpx_mock: HTTPXMock,
+def test_create_abstract_enhancement_success(
     mocker: MockerFixture,
-    test_client,
-    mock_reference_file_stream,
-    mock_destiny_repository_response,
-    mock_enhancement_put,
+    test_abstract_enhancement_processor: AbstractEnhancementProcessor,
+    test_references: list[Reference],
 ) -> None:
     """Test that we can create an enhancement."""
-    request_id = uuid.uuid4()
-    reference_ids = [uuid.uuid4() for _ in range(3)]
-    dois = [f"10.1000/xyz12{i}" for i in range(3)]
-    mock_reference_file_stream(httpx_mock, reference_ids, dois)
-    mock_destiny_repository_response(httpx_mock, request_id, reference_ids)
-    mock_enhancement_put(httpx_mock)
+    expected_generate_abstracts_response = [
+        Enhancement(
+            id=uuid.uuid4(),
+            reference_id=test_references[0].id,
+            content=AbstractContentEnhancement(
+                abstract="This is a test abstract.",
+                process=AbstractProcessType.CLOSED_API,
+            ),
+            source="crossref",
+            visibility="public",
+            robot_version="9.9.9",
+            content_version=str(uuid.uuid4()),
+        ),
+        Enhancement(
+            id=uuid.uuid4(),
+            reference_id=test_references[1].id,
+            content=AbstractContentEnhancement(
+                abstract="This is a test abstract.",
+                process=AbstractProcessType.CLOSED_API,
+            ),
+            source="scopus",
+            visibility="restricted",
+            robot_version="9.9.9",
+            content_version=str(uuid.uuid4()),
+        ),
+    ]
+    test_abstracts_dois_dict = [
+        {
+            "doi": test_references[0].identifiers[0].identifier,
+            "abstract": "This is test abstract 1.",
+        },
+        {
+            "doi": test_references[1].identifiers[0].identifier,
+            "abstract": "This is test abstract 2.",
+        },
+    ]
+    cycling_apis_mock = mocker.patch(
+        "app.fetch_abstract.AbstractFetcher.get_many_abstracts_cycling_apis",
+        return_value=test_abstracts_dois_dict,
+    )
 
-    request_body = RobotRequest(
+    enhancement_generation_mock = mocker.patch(
+        "app.enhancement_processor.AbstractEnhancementProcessor.generate_abstract_enhancement_batch_request",
+        return_value=expected_generate_abstracts_response,
+    )
+
+    result = test_abstract_enhancement_processor.create_abstract_enhancement(
+        test_references
+    )
+
+    assert isinstance(result, list)
+    assert len(result) == len(test_references)
+    assert all(isinstance(item, Enhancement) for item in result)
+
+    (
+        cycling_apis_mock.assert_called_once(),
+        "Expected cycling_apis_mock to be called once per batch of references.",
+    )
+    (
+        enhancement_generation_mock.assert_called_once(),
+        "Expected enhancement_generation_mock to be called once per batch of references.",
+    )
+
+
+def test_create_abstract_enhancement_batch_enhancement_generation_failure(
+    httpx_mock: HTTPXMock,
+    mocker: MockerFixture,
+    test_abstract_enhancement_processor: AbstractEnhancementProcessor,
+    test_references: list[Reference],
+) -> None:
+    """Test that we can create an enhancement."""
+    test_abstracts_dois_dict = [
+        {
+            "doi": test_references[0].identifiers[0].identifier,
+            "abstract": "This is test abstract 1.",
+        },
+        {
+            "doi": test_references[1].identifiers[0].identifier,
+            "abstract": "This is test abstract 2.",
+        },
+    ]
+    cycle_apis_mock = mocker.patch(
+        "app.fetch_abstract.AbstractFetcher.get_many_abstracts_cycling_apis",
+        return_value=test_abstracts_dois_dict,
+    )
+
+    enhancement_generation_mock = mocker.patch(
+        "app.enhancement_processor.AbstractEnhancementProcessor.generate_abstract_enhancement_batch_request",
+        side_effect=BatchEnhancementGenerationError("Test batch generation error."),
+    )
+
+    with pytest.raises(BatchEnhancementGenerationError) as error_info:
+        test_abstract_enhancement_processor.create_abstract_enhancement(test_references)
+    assert "Test batch generation error." in str(error_info.value)
+
+    cycle_apis_mock.assert_called_once()
+    enhancement_generation_mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_process_batch_success(
+    mocker: MockerFixture,
+    test_abstract_enhancement_processor: AbstractEnhancementProcessor,
+    test_references: list[Reference],
+):
+    expected_generate_abstracts_response = [
+        Enhancement(
+            id=uuid.uuid4(),
+            reference_id=test_references[0].id,
+            content=AbstractContentEnhancement(
+                abstract="This is a test abstract.",
+                process=AbstractProcessType.CLOSED_API,
+            ),
+            source="crossref",
+            visibility="public",
+            robot_version="9.9.9",
+            content_version=str(uuid.uuid4()),
+        ),
+        Enhancement(
+            id=uuid.uuid4(),
+            reference_id=test_references[1].id,
+            content=AbstractContentEnhancement(
+                abstract="This is a test abstract.",
+                process=AbstractProcessType.CLOSED_API,
+            ),
+            source="scopus",
+            visibility="restricted",
+            robot_version="9.9.9",
+            content_version=str(uuid.uuid4()),
+        ),
+    ]
+
+    test_robot_request = RobotEnhancementBatch(
         id=uuid.uuid4(),
         reference_storage_url="http://example.com/references",
         result_storage_url="http://example.com/results",
-    ).model_dump(mode="json")
-
-    expected_external_api_response = {
-        "message": {"abstract": "This is a test abstract."}
-    }
-    mocker.patch(
-        "app.fetch_abstract.requests.get",
-        return_value=mocker.Mock(
-            status_code=200, json=lambda: expected_external_api_response
-        ),
     )
-    response = test_client.post("/abstract/enhancement/batch/", json=request_body)
 
-    assert (
-        response.status_code == status.HTTP_202_ACCEPTED
-    ), "Expect that request is accepted."
+    download_references_mock = mocker.patch(
+        "app.enhancement_processor.AbstractEnhancementProcessor.download_references",
+        return_value=test_references,
+    )
 
-    callback_requests = httpx_mock.get_requests()
-    assert (
-        len(callback_requests) == 3
-    ), "Expect that the background task has been called."
+    create_abstract_enhancement_mock = mocker.patch(
+        "app.enhancement_processor.AbstractEnhancementProcessor.create_abstract_enhancement",
+        return_value=expected_generate_abstracts_response,
+    )
 
-    put_request = callback_requests[1]
-    generated_enhancements = put_request.content.decode("utf-8").strip().split("\n")
-    assert (
-        len(generated_enhancements) == 3
-    ), "Expect that we have 3 enhancements generated."
+    upload_enhancements_mock = mocker.patch(
+        "app.enhancement_processor.AbstractEnhancementProcessor.upload_enhancements",
+        return_value=None,
+    )
 
-    for enhancement in generated_enhancements:
-        Enhancement.from_jsonl(enhancement)
+    result = await test_abstract_enhancement_processor.process_batch(test_robot_request)
+
+    assert isinstance(result, list)
+    assert len(result) == len(test_references)
+    assert all(isinstance(item, Enhancement) for item in result)
+
+    download_references_mock.assert_called_once()
+    create_abstract_enhancement_mock.assert_called_once()
+    upload_enhancements_mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_process_batch_full_batch_failure(
+    mocker: MockerFixture,
+    test_abstract_enhancement_processor: AbstractEnhancementProcessor,
+    test_references: list[Reference],
+):
+    test_robot_request = RobotEnhancementBatch(
+        id=uuid.uuid4(),
+        reference_storage_url="http://example.com/references",
+        result_storage_url="http://example.com/results",
+    )
+
+    download_references_mock = mocker.patch(
+        "app.enhancement_processor.AbstractEnhancementProcessor.download_references",
+        return_value=test_references,
+    )
+
+    create_abstract_enhancement_mock = mocker.patch(
+        "app.enhancement_processor.AbstractEnhancementProcessor.create_abstract_enhancement",
+        side_effect=BatchEnhancementGenerationError("Test batch generation error."),
+    )
+
+    upload_enhancements_mock = mocker.patch(
+        "app.enhancement_processor.AbstractEnhancementProcessor.upload_enhancements",
+        return_value=None,
+    )
+
+    with pytest.raises(BatchEnhancementGenerationError) as error_info:
+        await test_abstract_enhancement_processor.process_batch(test_robot_request)
+
+    assert str(error_info.value) == "Test batch generation error."
+
+    (
+        download_references_mock.assert_called_once(),
+        "Expect that the references are downloaded via a single call.",
+    )
+    (
+        create_abstract_enhancement_mock.assert_called_once(),
+        "Expect that the abstract creation is attempted once for the batch.",
+    )
+    (
+        upload_enhancements_mock.assert_not_called(),
+        "Expect that no upload is attempted in this method if the batch generation fails.",
+    )
 
 
 def test_generate_abstract_enhancement_batch_request_success(

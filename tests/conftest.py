@@ -133,12 +133,30 @@ def caplog(caplog):
 
 
 @pytest.fixture
+def test_request_id() -> uuid.UUID:
+    """Create a test request ID."""
+    return uuid.uuid4()
+
+
+@pytest.fixture
+def test_reference_ids() -> list[uuid.UUID]:
+    """Create a list of test reference IDs."""
+    return [uuid.uuid4() for _ in range(2)]
+
+
+@pytest.fixture
+def test_dois() -> list[str]:
+    """Create a list of test DOIs."""
+    return ["10.1000/xyz123", "10.1000/xyz456"]
+
+
+@pytest.fixture
 def mock_reference_file_stream(
-    httpx_mock: HTTPXMock, reference_ids: list[uuid.UUID], dois: list[str]
+    httpx_mock: HTTPXMock, test_reference_ids: list[uuid.UUID], test_dois: list[str]
 ):
     """Mock a stream for a file containing references."""
     stream_response = []
-    for reference_id, doi in zip(reference_ids, dois, strict=False):
+    for reference_id, doi in zip(test_reference_ids, test_dois, strict=False):
         reference = destiny_sdk.references.Reference(
             id=reference_id,
             identifiers=[destiny_sdk.identifiers.DOIIdentifier(identifier=doi)],
@@ -149,12 +167,14 @@ def mock_reference_file_stream(
 
 @pytest.fixture
 def mock_destiny_repository_response(
-    httpx_mock: HTTPXMock, request_id: uuid.UUID, reference_ids: list[uuid.UUID]
+    httpx_mock: HTTPXMock,
+    test_request_id: uuid.UUID,
+    test_reference_ids: list[uuid.UUID],
 ):
     """Mock a successful enhancement post to destiny repository."""
     create_enhancement_response = destiny_sdk.robots.EnhancementRequestRead(
-        id=request_id,
-        reference_ids=reference_ids,
+        id=test_request_id,
+        reference_ids=test_reference_ids,
         enhancement_parameters={},
         robot_id=uuid.uuid4(),
         request_status=destiny_sdk.robots.EnhancementRequestStatus.COMPLETED,
@@ -172,3 +192,22 @@ def mock_destiny_repository_response(
 def mock_enhancement_put(httpx_mock: HTTPXMock):
     """Mock the putting of references to the results url."""
     httpx_mock.add_response(method="PUT", status_code=status.HTTP_200_OK)
+
+
+@pytest.fixture
+def test_references() -> list[destiny_sdk.references.Reference]:
+    """Create a list of test references."""
+    return [
+        destiny_sdk.references.Reference(
+            id=uuid.uuid4(),
+            identifiers=[
+                destiny_sdk.identifiers.DOIIdentifier(identifier="10.1000/xyz123")
+            ],
+        ),
+        destiny_sdk.references.Reference(
+            id=uuid.uuid4(),
+            identifiers=[
+                destiny_sdk.identifiers.DOIIdentifier(identifier="10.1000/xyz456")
+            ],
+        ),
+    ]
