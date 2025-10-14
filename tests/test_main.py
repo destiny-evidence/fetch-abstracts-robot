@@ -1,6 +1,5 @@
 """Test the main module."""
 
-import os
 import uuid
 from unittest.mock import patch
 
@@ -8,11 +7,6 @@ import destiny_sdk
 import httpx
 import pytest
 from pytest_httpx import HTTPXMock, IteratorStream
-
-# Set required environment variables for testing
-os.environ.setdefault("ROBOT_SECRET", "test_secret")
-os.environ.setdefault("ROBOT_ID", str(uuid.uuid4()))
-os.environ.setdefault("DESTINY_REPOSITORY_URL", "https://test.example.com")
 
 from app.enhancement_processor import AbstractEnhancementProcessor
 from app.main import process_robot_enhancement_batch
@@ -87,6 +81,7 @@ def test_generate_abstract_enhancement(
 async def test_process_robot_enhancement_batch_happy_path(
     mocker,
     httpx_mock: HTTPXMock,
+    test_abstract_enhancement_processor: AbstractEnhancementProcessor,
 ) -> None:
     """Test successful processing of a robot enhancement batch."""
     batch_id = uuid.uuid4()
@@ -128,22 +123,33 @@ async def test_process_robot_enhancement_batch_happy_path(
         "app.main.AbstractEnhancementProcessor.create_abstract_enhancement",
         return_value=test_generated_enhancements,
     )
+    test_fetch_many_abstracts_return_value = [
+        {"doi": doi, "abstract": abstract}
+        for doi, abstract in zip(dois, abstracts, strict=False)
+    ]
+    mocker.patch(
+        "app.fetch_abstract.AbstractFetcher.get_many_abstracts_cycling_apis",
+        return_value=test_fetch_many_abstracts_return_value,
+    )
 
     # Mock SDK result submission
-    with patch("app.main.client") as mock_client:
-        # Process the batch
-        await process_robot_enhancement_batch(batch)
+    with (
+        patch("app.main.DestinyClient") as mock_client,
+    ):
+        await process_robot_enhancement_batch(
+            mock_client, test_abstract_enhancement_processor, batch
+        )
 
-        # Verify SDK was called with success result
         mock_client.send_robot_enhancement_batch_result.assert_called_once()
         call_args = mock_client.send_robot_enhancement_batch_result.call_args[0][0]
-        assert call_args.request_id == batch_id
-        assert call_args.error is None
+        assert call_args.request_id == batch_id, "Request ID should match."
+        assert call_args.error is None, "There should be no error."
 
 
 @pytest.mark.asyncio
 async def test_process_robot_enhancement_batch_with_download_error(
     httpx_mock: HTTPXMock,
+    test_abstract_enhancement_processor: AbstractEnhancementProcessor,
 ) -> None:
     """Test handling of download errors during batch processing."""
     batch_id = uuid.uuid4()
@@ -157,10 +163,12 @@ async def test_process_robot_enhancement_batch_with_download_error(
     # Mock download failure
     httpx_mock.add_response(method="GET", status_code=404)
 
-    with patch("app.main.client") as mock_client:
+    with patch("app.main.DestinyClient") as mock_client:
         # Process should raise an exception due to HTTP error
         with pytest.raises(httpx.HTTPStatusError, match="404"):
-            await process_robot_enhancement_batch(batch)
+            await process_robot_enhancement_batch(
+                mock_client, test_abstract_enhancement_processor, batch
+            )
 
         # Verify error result was sent
         mock_client.send_robot_enhancement_batch_result.assert_called_once()

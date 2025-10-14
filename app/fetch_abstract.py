@@ -7,7 +7,7 @@ import re
 from collections.abc import Generator
 from xml.etree.ElementTree import Element
 
-import requests
+import httpx
 from defusedxml.ElementTree import ParseError, fromstring
 from destiny_sdk.identifiers import DOIIdentifier
 from loguru import logger
@@ -223,7 +223,8 @@ class AbstractFetcher:
         self, url: str, params: dict, headers: dict, *, verbose: bool = False
     ) -> dict:
         """Fetch a response from one of the APIs (generic)."""
-        response = requests.get(
+        client = httpx.Client(follow_redirects=True)
+        response = client.get(
             url=url, params=params, headers=headers, timeout=self.timeout
         )
         if verbose:
@@ -302,7 +303,7 @@ class AbstractFetcher:
                     verbose=verbose,
                     **kwargs,
                 )
-            except requests.HTTPError as http_error:
+            except httpx.HTTPError as http_error:
                 logger.error(
                     "Encountered HTTPError on attempting to retrieve abstract. "
                     f"requested doi(s): {_chunk} "

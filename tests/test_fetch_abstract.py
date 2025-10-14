@@ -2,8 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
-import requests
 
 from app.data_models.generic import AbstractUnpackError
 from app.fetch_abstract import AbstractFetcher, prepare_api_config
@@ -90,7 +90,7 @@ def test_fetch_success(request, api_config_fixture, test_settings):
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
     mock_response.json.return_value = {"foo": "bar"}
-    with patch("requests.get", return_value=mock_response) as mock_get:
+    with patch("httpx.Client.get", return_value=mock_response) as mock_get:
         result = fetcher.fetch("http://test", {}, {})
         assert result == {"foo": "bar"}
         mock_get.assert_called_once()
@@ -113,10 +113,10 @@ def test_fetch_http_error(request, api_config_fixture, test_settings):
         master_api_config=prepare_api_config([api_config_batch], test_settings)
     )
     mock_response = MagicMock()
-    mock_response.raise_for_status.side_effect = requests.HTTPError("fail")
+    mock_response.raise_for_status.side_effect = httpx.HTTPError("fail")
     with (
-        patch("requests.get", return_value=mock_response),
-        pytest.raises(requests.HTTPError),
+        patch("httpx.Client.get", return_value=mock_response),
+        pytest.raises(httpx.HTTPError),
     ):
         fetcher.fetch("http://test", {}, {})
 
@@ -592,7 +592,7 @@ def test_fetch_many_abstracts_http_error(
     test_doi_list = ["10.1000/xyz123"]
     with (
         patch("app.fetch_abstract.validate_doi", return_value=True),
-        patch.object(fetcher, "fetch", side_effect=requests.HTTPError("fail")),
+        patch.object(fetcher, "fetch", side_effect=httpx.HTTPError("fail")),
         caplog.at_level("ERROR"),
     ):
         response = fetcher.fetch_many_abstracts(

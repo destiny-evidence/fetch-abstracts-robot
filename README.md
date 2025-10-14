@@ -10,7 +10,7 @@ A **robot** is an extension/plugin to the _DESTINY_ repository, which, using _DE
 
 The **Fetch Abstracts Robot (FAR)** contains functionality for retrieving abstracts for target works by [_DOI_](https://en.wikipedia.org/wiki/Digital_object_identifier). Abstracts are retrieved from third-party APIs and transformed into generic enhancements to a target work. Third-party APIs are configured via an `APIConfig` class, with functionality for handling authentication, abstract unpacking (`AbstractUnpackStrategy`) and abstract (string) cleaning. There is functionality for batch and single abstract retrieval. The hierarchy of which API to hit first is then declared in an `ExternalAPIPriority` class.
 
-If further third-party APIs are to be added, simply instantiate such an `APIConfig`, and import and add it to `AVAILABLE_API_CONFIGS` in `main.py`.
+If further third-party APIs are to be added, simply instantiate such an `APIConfig`, and import and add it to `available_api_configs` in `main.py`.
 
 ## Setup
 
