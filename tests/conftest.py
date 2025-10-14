@@ -46,11 +46,6 @@ def set_test_environment_variables(
 
 
 @pytest.fixture
-def test_client(mocker, set_test_environment_variables):
-    return mocker.patch("destiny_sdk.client.Client", return_value=mocker.MagicMock())
-
-
-@pytest.fixture
 def scopus_api_config_valid_batch():
     return ScopusAPIConfig(
         name=ExternalAPI.SCOPUS_BATCH,
