@@ -4,8 +4,8 @@ from uuid import uuid4
 
 from destiny_sdk.references import Reference
 from destiny_sdk.robots import BatchRobotRequest, RobotRequest
+from httpx import Client, Response
 from loguru import logger
-from requests import Response, session
 
 
 def load_data(file_path: Path) -> list[dict] | dict:
@@ -128,12 +128,14 @@ def request_enhancement_single_reference(jsonable_request: dict, url: str) -> Re
         Response: The response object from the enhancement request.
 
     """
-    s = session()
-    s.headers.update({"Content-type": "application/json", "Accept": "application/json"})
-    logger.info(f"Requesting enhancement for single reference at {url}")
-    response = s.post(url, json=jsonable_request)
-    response.raise_for_status()
-    return response
+    with Client() as s:
+        s.headers.update(
+            {"Content-type": "application/json", "Accept": "application/json"}
+        )
+        logger.info(f"Requesting enhancement for single reference at {url}")
+        response = s.post(url, json=jsonable_request)
+        response.raise_for_status()
+        return response
 
 
 def request_enhancement_batch_references(jsonable_request: dict, url: str) -> Response:
@@ -148,11 +150,13 @@ def request_enhancement_batch_references(jsonable_request: dict, url: str) -> Re
         Response: The response object from the enhancement request.
 
     """
-    s = session()
-    s.headers.update({"Content-type": "application/json", "Accept": "application/json"})
-    logger.info(f"Requesting enhancement for batch references at {url}")
-    response = s.post(url, json=jsonable_request)
-    response.raise_for_status()
+    with Client() as s:
+        s.headers.update(
+            {"Content-type": "application/json", "Accept": "application/json"}
+        )
+        logger.info(f"Requesting enhancement for batch references at {url}")
+        response = s.post(url, json=jsonable_request)
+        response.raise_for_status()
     return response
 
 
