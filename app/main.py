@@ -65,10 +65,10 @@ async def process_robot_enhancement_batch(batch: RobotEnhancementBatch) -> None:
             RobotEnhancementBatchResult(request_id=batch.id)
         )
 
-        logger.info("Successfull processed robot enhancement batch %s", batch.id)
+        logger.info("Successfull processed robot enhancement batch {}", batch.id)
 
     except Exception as robot_enhancement_batch_process_error:
-        logger.exception("Error processing robot enhancement batch %s", batch.id)
+        logger.exception("Error processing robot enhancement batch {}", batch.id)
 
         client.send_robot_enhancement_batch_result(
             RobotEnhancementBatchResult(
@@ -95,21 +95,26 @@ async def poll_for_batches() -> None:
             )
 
             if batch is None:
-                logger.debug("No batches available")
+                logger.debug(
+                    "No batches available. Sleeping for {sleep_seconds} seconds.",
+                    sleep_seconds=settings.poll_interval_seconds,
+                )
                 await asyncio.sleep(settings.poll_interval_seconds)
                 continue
 
-            logger.info("Found batch %s to process", batch.id)
+            logger.info("Found batch {batch_id} to process", batch_id=batch.id)
 
             try:
                 await process_robot_enhancement_batch(batch)
 
             except Exception as process_batch_error:  # noqa: BLE001
                 logger.exception(
-                    "Error processing batch %s: %s", batch.id, process_batch_error
+                    "Error processing batch {batch_id}: {batch_error}",
+                    batch_id=batch.id,
+                    batch_error=process_batch_error,
                 )
         except Exception as poll_error:  # noqa: BLE001
-            logger.exception("Error polling for batches: %s", poll_error)
+            logger.exception("Error polling for batches: {}", poll_error)
         await asyncio.sleep(settings.poll_interval_seconds)
 
 
@@ -118,15 +123,15 @@ shutdown_event = asyncio.Event()
 
 def signal_handler(signum: int, _frame: FrameType | None) -> None:
     """Handle termination signals to gracefully shut down the application."""
-    logger.info("Received signal %s, initiating graceful shutdown...", signum)
+    logger.info("Received signal {}, initiating graceful shutdown...", signum)
     shutdown_event.set()
 
 
 async def main() -> None:
     """Run the polling robot."""
-    logger.info("Starting %s polling loop", TITLE)
-    logger.info("Polling interval: %d seconds", settings.poll_interval_seconds)
-    logger.info("Batch size: %d", settings.batch_size)
+    logger.info("Starting {} polling loop", TITLE)
+    logger.info("Polling interval: {} seconds", settings.poll_interval_seconds)
+    logger.info("Batch size: {}", settings.batch_size)
 
     # Register signal handlers for graceful shutdown
     signal.signal(signal.SIGINT, signal_handler)

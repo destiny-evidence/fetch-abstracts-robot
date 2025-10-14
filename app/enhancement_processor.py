@@ -260,7 +260,7 @@ class AbstractEnhancementProcessor:
             list[Enhancement]: The list of generated enhancements.
 
         """
-        logger.info("Processing robot enhancement batch %s", batch.id)
+        logger.info("Processing robot enhancement batch {}", batch.id)
         references = await self.download_references(str(batch.reference_storage_url))
 
         try:
@@ -273,7 +273,7 @@ class AbstractEnhancementProcessor:
             )
         except BatchEnhancementGenerationError as full_batch_failure:
             logger.error(
-                "Error generating enhancements for batch %s: %s",
+                "Error generating enhancements for batch {}: {}",
                 batch.id,
                 full_batch_failure,
             )
