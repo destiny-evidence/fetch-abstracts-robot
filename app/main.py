@@ -53,7 +53,7 @@ processor = AbstractEnhancementProcessor(
 
 async def process_robot_enhancement_batch(batch: RobotEnhancementBatch) -> None:
     """
-    Process a single robot enhancement batch by creating abstract enhancements.
+    Process a robot enhancement batch by creating abstract enhancements.
 
     Args:
         batch (RobotEnhancementBatch): The batch of enhancements to process.
