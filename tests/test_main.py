@@ -89,23 +89,6 @@ async def test_process_robot_enhancement_batch_happy_path(
     dois = [f"10.1000/{i}" for i in range(3)]
     abstracts = [f"This is abstract {i}." for i in range(3)]
 
-    test_generated_enhancements = [
-        destiny_sdk.enhancements.Enhancement(
-            reference_id=ref_id,
-            source="Test Robot",
-            visibility=destiny_sdk.visibility.Visibility.HIDDEN,
-            robot_version="9.9.9",
-            content_version=f"{uuid.uuid4()}",
-            content=destiny_sdk.enhancements.AbstractContentEnhancement(
-                process=destiny_sdk.enhancements.AbstractProcessType.CLOSED_API,
-                abstract=abstract,
-            ),
-        )
-        for i, (ref_id, abstract) in enumerate(
-            zip(reference_ids, abstracts, strict=False)
-        )
-    ]
-
     # Mock the batch data
     batch = destiny_sdk.robots.RobotEnhancementBatch(
         id=batch_id,
@@ -119,10 +102,6 @@ async def test_process_robot_enhancement_batch_happy_path(
     # Mock result upload
     httpx_mock.add_response(method="PUT", status_code=200)
 
-    mocker.patch(
-        "app.main.AbstractEnhancementProcessor.create_abstract_enhancement",
-        return_value=test_generated_enhancements,
-    )
     test_fetch_many_abstracts_return_value = [
         {"doi": doi, "abstract": abstract}
         for doi, abstract in zip(dois, abstracts, strict=False)
