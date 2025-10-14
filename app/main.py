@@ -67,7 +67,7 @@ async def process_robot_enhancement_batch(batch: RobotEnhancementBatch) -> None:
 
         logger.info("Successfull processed robot enhancement batch %s", batch.id)
 
-    except Exception:
+    except Exception as robot_enhancement_batch_process_error:
         logger.exception("Error processing robot enhancement batch %s", batch.id)
 
         client.send_robot_enhancement_batch_result(
@@ -76,7 +76,7 @@ async def process_robot_enhancement_batch(batch: RobotEnhancementBatch) -> None:
                 error=RobotError(
                     message=(
                         "Failed to process request:"
-                        " {robot_enhancement_batch_process_error!s}"
+                        f"{robot_enhancement_batch_process_error!s}"
                     ),
                 ),
             )
