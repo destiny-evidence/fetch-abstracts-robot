@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
+from pydantic import AnyUrl
 
 from app.data_models.generic import AbstractUnpackError
 from app.fetch_abstract import AbstractFetcher, prepare_api_config
@@ -90,8 +91,10 @@ def test_fetch_success(request, api_config_fixture, test_settings):
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
     mock_response.json.return_value = {"foo": "bar"}
+
+    test_url = AnyUrl("http://test")
     with patch("httpx.Client.get", return_value=mock_response) as mock_get:
-        result = fetcher.fetch("http://test", {}, {})
+        result = fetcher.fetch(test_url, {}, {})
         assert result == {"foo": "bar"}
         mock_get.assert_called_once()
 
@@ -114,11 +117,12 @@ def test_fetch_http_error(request, api_config_fixture, test_settings):
     )
     mock_response = MagicMock()
     mock_response.raise_for_status.side_effect = httpx.HTTPError("fail")
+    test_url = AnyUrl("http://test")
     with (
         patch("httpx.Client.get", return_value=mock_response),
         pytest.raises(httpx.HTTPError),
     ):
-        fetcher.fetch("http://test", {}, {})
+        fetcher.fetch(test_url, {}, {})
 
 
 @pytest.mark.parametrize(

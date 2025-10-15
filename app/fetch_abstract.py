@@ -11,6 +11,7 @@ import httpx
 from defusedxml.ElementTree import ParseError, fromstring
 from destiny_sdk.identifiers import DOIIdentifier
 from loguru import logger
+from pydantic import AnyUrl
 
 from app.config import Settings
 from app.data_models.generic import (
@@ -220,12 +221,28 @@ class AbstractFetcher:
         return retrieved_abstracts
 
     def fetch(
-        self, url: str, params: dict, headers: dict, *, verbose: bool = False
+        self, url: AnyUrl, params: dict, headers: dict, *, verbose: bool = False
     ) -> dict:
-        """Fetch a response from one of the APIs (generic)."""
+        """
+        Fetch a response from one of the APIs (generic).
+
+        Args:
+            url (AnyUrl): The URL to fetch from.
+            params (dict): Query parameters to include in the request.
+            headers (dict): Headers to include in the request.
+            verbose (bool, optional): Whether to provide very verbose logging for debug.
+                                      Defaults to False.
+
+        Returns:
+            dict: The JSON response from the API.
+
+        Raises:
+            httpx.HTTPStatusError: If an HTTP error occurs during the request.
+
+        """
         client = httpx.Client(follow_redirects=True)
         response = client.get(
-            url=url, params=params, headers=headers, timeout=self.timeout
+            url=str(url), params=params, headers=headers, timeout=self.timeout
         )
         if verbose:
             request_actual_headers = f"request headers: {response.request.headers}"
