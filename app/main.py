@@ -20,6 +20,7 @@ from app.config import Settings, get_settings
 from app.data_models.crossref import get_crossref_batch_api_config
 from app.data_models.scopus import get_scopus_batch_api_config
 from app.fetch_abstract import prepare_api_config
+from app.server import start_health_check_server
 from app.utils import get_version_number
 
 
@@ -110,6 +111,9 @@ def signal_handler(signum: int, _frame: FrameType | None) -> None:
 
 async def main() -> None:
     """Run the polling robot."""
+    health_check_task = asyncio.create_task(
+        start_health_check_server(host="0.0.0.0", port=8080)
+    )
     settings = get_settings()
 
     title: Final[str] = settings.robot_title
@@ -168,3 +172,8 @@ async def main() -> None:
     except Exception:  # noqa: BLE001
         logger.exception("Unexpected fatal error occurred:")
         sys.exit(1)
+
+    finally:
+        health_check_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await health_check_task

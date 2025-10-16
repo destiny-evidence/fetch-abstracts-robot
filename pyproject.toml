@@ -13,6 +13,7 @@ authors = [
     {email = "n.loynes@ucl.ac.uk", name = "Nik Loynes"},
 ]
 dependencies = [
+    "aiohttp>=3.13.0",
     "defusedxml>=0.7.1",
     "destiny-sdk >=0.4.0,<0.5.0",
     "httpx>=0.28.0,<0.29.0",
@@ -79,7 +80,9 @@ lint.ignore = [
     "FIX002", # implicit trust that TODOs are not trivial, or else they would be fixed
     "ISC001", # simplify implicit str concatenation (ruff-format recommended)
 ]
-lint.per-file-ignores = {"scripts*" = [
+lint.per-file-ignores = {"app/main.py" = [
+    "S104", # Possible binding to all interfaces
+], "scripts*" = [
     "ANN201", # Missing return type annotation for public function
     "D100", # Missing docstring in public module
     "D101", # Missing docstring in public module
