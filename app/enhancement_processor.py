@@ -73,8 +73,9 @@ class AbstractEnhancementProcessor:
             list[Enhancement]: The generated batch of enhancements.
 
         """
+        logger.debug(f"References passed in: {references}")
         dois = [get_doi_from_reference(ref) for ref in references]
-
+        logger.debug(f"DOIs extracted: {dois}")
         abstracts_dois_dict = self.abstract_fetcher.get_many_abstracts_cycling_apis(
             dois
         )
@@ -99,11 +100,11 @@ class AbstractEnhancementProcessor:
             )
         except BatchEnhancementGenerationError as batch_error:
             error_message = (
-                f"Failed to generate enhancement request: {batch_error}."
+                f"Error during generation of enhancement request: {batch_error}."
                 " Failing entire request."
             )
             logger.error(error_message)
-            raise
+            raise batch_error from batch_error
         return abstract_enhancements
 
     def generate_abstract_enhancement_batch_request(
@@ -262,7 +263,7 @@ class AbstractEnhancementProcessor:
         """
         logger.info("Processing robot enhancement batch {}", batch.id)
         references = await self.download_references(str(batch.reference_storage_url))
-
+        logger.debug(f"References: {references}")
         try:
             generated_enhancements = self.create_abstract_enhancement(
                 references=references,
@@ -272,8 +273,13 @@ class AbstractEnhancementProcessor:
                 result_storage_url=str(batch.result_storage_url),
             )
         except BatchEnhancementGenerationError as full_batch_failure:
+            error_message = (
+                "Full batch failure during enhancement generation for"
+                f" batch {batch.id}:"
+                f" {full_batch_failure}"
+            )
             logger.error(
-                "Error generating enhancements for batch {}: {}",
+                error_message,
                 batch.id,
                 full_batch_failure,
             )

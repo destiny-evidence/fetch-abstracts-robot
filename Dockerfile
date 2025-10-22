@@ -24,6 +24,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Reset the entrypoint, don't invoke `uv`
-ENTRYPOINT []
 
-CMD ["opentelemetry-instrument", "python", "run_robot.py"]
+ENTRYPOINT []
+EXPOSE 8001
+
+CMD ["python", "run_robot.py"]

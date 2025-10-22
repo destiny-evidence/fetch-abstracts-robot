@@ -19,6 +19,7 @@ from loguru import logger
 from app.config import Settings, get_settings
 from app.data_models.crossref import get_crossref_batch_api_config
 from app.data_models.scopus import get_scopus_batch_api_config
+from app.enhancement_processor import BatchEnhancementGenerationError
 from app.fetch_abstract import prepare_api_config
 from app.server import start_health_check_server
 from app.utils import get_version_number
@@ -45,10 +46,29 @@ async def process_robot_enhancement_batch(
             RobotEnhancementBatchResult(request_id=batch.id)
         )
 
-        logger.info("Successfull processed robot enhancement batch {}", batch.id)
+        logger.info("Successfully processed robot enhancement batch {}", batch.id)
+
+    except BatchEnhancementGenerationError as batch_enhancement_error:
+        logger.error(
+            "Batch enhancement generation error for batch {}: {}",
+            batch.id,
+            batch_enhancement_error,
+        )
+
+        client.send_robot_enhancement_batch_result(
+            RobotEnhancementBatchResult(
+                request_id=batch.id,
+                error=RobotError(message=str(batch_enhancement_error)),
+            )
+        )
 
     except Exception as robot_enhancement_batch_process_error:
-        logger.exception("Error processing robot enhancement batch {}", batch.id)
+        error_message = (
+            "Error processing robot enhancement batch"
+            f" {batch.id}:"
+            f" {robot_enhancement_batch_process_error!s}"
+        )
+        logger.error(error_message)
 
         client.send_robot_enhancement_batch_result(
             RobotEnhancementBatchResult(
@@ -90,13 +110,13 @@ async def poll_for_batches(
                 await process_robot_enhancement_batch(client, processor, batch)
 
             except Exception as process_batch_error:  # noqa: BLE001
-                logger.exception(
-                    "Error processing batch {batch_id}: {batch_error}",
+                logger.error(
+                    "During polling, error processing batch {batch_id}: {batch_error}",
                     batch_id=batch.id,
                     batch_error=process_batch_error,
                 )
         except Exception as poll_error:  # noqa: BLE001
-            logger.exception("Error polling for batches: {}", poll_error)
+            logger.error("Error polling for batches: {}", poll_error)
         await asyncio.sleep(settings.poll_interval_seconds)
 
 
@@ -112,7 +132,7 @@ def signal_handler(signum: int, _frame: FrameType | None) -> None:
 async def main() -> None:
     """Run the polling robot."""
     health_check_task = asyncio.create_task(
-        start_health_check_server(host="0.0.0.0", port=8080)
+        start_health_check_server(host="0.0.0.0", port=8001)
     )
     settings = get_settings()
 
@@ -170,7 +190,7 @@ async def main() -> None:
         sys.exit(0)
 
     except Exception:  # noqa: BLE001
-        logger.exception("Unexpected fatal error occurred:")
+        logger.critical("Unexpected fatal error occurred:")
         sys.exit(1)
 
     finally:

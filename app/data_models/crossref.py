@@ -19,7 +19,7 @@ def get_crossref_batch_api_config(settings: Settings) -> APIConfig:
     crossref_query_params = {"mailto": settings.mailto}  # type: dict
     crossref_headers = {
         "User-Agent": "destiny-project-ucl",
-        "Accept": "application/vnd.crossref-api-message+json",
+        "Accept": "application/json",
     }
     crossref_unpack_strategy = AbstractUnpackStrategy(
         source="crossref_batch",
