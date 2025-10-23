@@ -13,7 +13,7 @@ def test_get_settings(
         set_test_environment_variables (None): Fixture to test environment variables.
 
     """
-    expected_env = "local"
+    expected_env = "test"
     expected_destiny_repository_url = "http://localhost:8001/enhancement/"
     expected_robot_id = "e0aba318-eee9-4b4c-b503-7f72547063d8"
     expected_robot_secret = "dummy_secret"  # noqa: S105 # pragma: allowlist secret

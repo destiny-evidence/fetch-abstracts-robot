@@ -30,7 +30,7 @@ def set_test_environment_variables(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Generator[None]:
     """Configure the pytest environment."""
-    monkeypatch.setenv("ENV", "local")
+    monkeypatch.setenv("ENV", "test")
     monkeypatch.setenv("DESTINY_REPOSITORY_URL", "http://localhost:8001/enhancement/")
     monkeypatch.setenv("ROBOT_ID", "e0aba318-eee9-4b4c-b503-7f72547063d8")
     monkeypatch.setenv("ROBOT_SECRET", "dummy_secret")
