@@ -12,9 +12,6 @@ def set_up_logger() -> loguru._logger.Logger:
     """
     Set up the logger based on the application settings.
 
-    Args:
-            settings (Settings): The application settings.
-
     Returns:
             Logger: Configured loguru logger instance.
 
