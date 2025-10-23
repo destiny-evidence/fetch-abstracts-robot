@@ -1,34 +1,31 @@
-FROM python:3.13-slim-bookworm AS base
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
 
 WORKDIR /app
 
-FROM base AS builder
+# Enable bytecode compilation
+ENV UV_COMPILE_BYTECODE=1
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
-# Install uv
-ADD https://astral.sh/uv/install.sh /uv-installer.sh
+# Copy from the cache instead of linking since it's a mounted volume
+ENV UV_LINK_MODE=copy
 
-# Run uv installer and remove it
-RUN sh /uv-installer.sh && rm /uv-installer.sh
+# Install the project's dependencies using the lockfile and settings
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project --no-dev
 
-# Ensure the installed binary is on the `PATH`
-ENV PATH="/root/.local/bin/:$PATH"
+# Then, add the rest of the project source code and install it
+# Installing separately from its dependencies allows optimal layer caching
+COPY . /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-dev
 
-COPY pyproject.toml uv.lock README.md ./
-COPY app/ ./app/
-
-RUN uv sync --locked
-
-FROM base AS final
-
-# Copy the entire virtual environment from builder stage
-COPY --from=builder /app/.venv /app/.venv
-
-# Copy source code
-COPY --from=builder /app/app /app/app
-
-# Ensure virtual environment is in PATH
+# Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
+# Reset the entrypoint, don't invoke `uv`
+
+ENTRYPOINT []
 EXPOSE 8001
-ENTRYPOINT ["fastapi", "run", "app/main.py", "--port", "8001"]
+
+CMD ["python", "run_robot.py"]

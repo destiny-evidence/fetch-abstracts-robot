@@ -11,6 +11,16 @@ variable "robot_secret" {
   sensitive   = true
 }
 
+variable "elsevier_scopus_key" {
+  description = "The Elsevier Scopus API key the robot will use to authenticate with the Scopus API."
+  sensitive   = true
+}
+
+variable "elsevier_scopus_inst_token" {
+  description = "The Elsevier Scopus institutional token the robot will use to authenticate with the Scopus API."
+  sensitive   = true
+}
+
 variable "destiny_repository_url" {
   description = "Url to configure the robot to post callbacks to."
 }
@@ -52,4 +62,14 @@ variable "environment_description" {
 variable "region_friendly_name" {
   description = "Friendly name of the region the robot is deployed to."
   default     = "Sweden Central"
+}
+
+variable "poll_interval_seconds" {
+  description = "Interval in seconds between polling the Scopus API for new abstracts."
+  default     = "3600"
+}
+
+variable "batch_size" {
+  description = "Number of abstracts to fetch in each batch."
+  default     = "10"
 }

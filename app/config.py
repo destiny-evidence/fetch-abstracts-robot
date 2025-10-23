@@ -56,6 +56,16 @@ class Settings(BaseSettings):
         description="The environment the robot is deployed in.",
     )
 
+    poll_interval_seconds: int = Field(
+        default=30,
+        description=("How often to poll for new robot enhancement batches (seconds)"),
+    )
+
+    batch_size: int = Field(
+        default=2,
+        description=("The number of references to include per enhancement batch"),
+    )
+
     # API keys for abstract retrieval
     elsevier_scopus_key: SecretStr | None = Field(
         default=None, description="api key for elsevier scopus api."
