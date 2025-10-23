@@ -363,9 +363,9 @@ class AbstractFetcher:
                         f"Error unpacking abstract for DOI {_chunk} "
                         f"using API {api_config.name.value}"
                         f": {abstract_unpack_error}"
-                        " It is likely that no abstract is present."
                     )
                     logger.warning(error_message)
+                    logger.warning("It is likely that no abstract is present.")
                     yield [{"doi": _chunk, "abstract": None}]
 
             elif api_config.query_type == "batch":

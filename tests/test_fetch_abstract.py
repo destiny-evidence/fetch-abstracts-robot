@@ -628,7 +628,7 @@ def test_fetch_many_abstracts_crossref_single_unpack_error(
             "unpack_one_abstract",
             side_effect=AbstractUnpackError("Test Abstract Unpack Failure"),
         ),
-        caplog.at_level("ERROR"),
+        caplog.at_level("WARNING"),
     ):
         result_generator = fetcher.fetch_many_abstracts(
             test_dois_list, crossref_api_config_valid_batch, chunk=True
