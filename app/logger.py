@@ -5,10 +5,10 @@ import sys
 import loguru
 from loguru import logger
 
-from app.config import Environment, Settings, get_settings
+from app.config import Environment, get_settings
 
 
-def set_up_logger(settings: Settings) -> loguru._logger.Logger:
+def set_up_logger() -> loguru._logger.Logger:
     """
     Set up the logger based on the application settings.
 
@@ -19,6 +19,7 @@ def set_up_logger(settings: Settings) -> loguru._logger.Logger:
             Logger: Configured loguru logger instance.
 
     """
+    settings = get_settings()
     logger.remove(0)
 
     if settings.env in {Environment.PRODUCTION, Environment.STAGING}:
@@ -31,4 +32,4 @@ def set_up_logger(settings: Settings) -> loguru._logger.Logger:
     return logger
 
 
-customised_logger = set_up_logger(get_settings())
+__all__ = ["logger"]

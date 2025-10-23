@@ -20,7 +20,7 @@ from app.data_models.crossref import get_crossref_batch_api_config
 from app.data_models.scopus import get_scopus_batch_api_config
 from app.enhancement_processor import BatchEnhancementGenerationError
 from app.fetch_abstract import prepare_api_config
-from app.logger import customised_logger as logger
+from app.logger import logger, set_up_logger
 from app.server import start_health_check_server
 from app.utils import get_version_number
 
@@ -131,6 +131,7 @@ def signal_handler(signum: int, _frame: FrameType | None) -> None:
 
 async def main() -> None:
     """Run the polling robot."""
+    set_up_logger()
     health_check_task = asyncio.create_task(
         start_health_check_server(host="0.0.0.0", port=8001)
     )
