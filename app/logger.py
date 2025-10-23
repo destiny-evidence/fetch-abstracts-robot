@@ -11,11 +11,7 @@ settings = get_settings()
 logger.remove(0)
 
 if settings.env in {Environment.PRODUCTION, Environment.STAGING}:
-    logger.add(
-        sys.stdout,
-        level="INFO",
-    )
-    logger.add(sys.stderr, level="WARNING")
+    logger.add(sys.stderr, level="INFO")
 
 else:
     logger.add("app.log", level="DEBUG", rotation="500 mb")

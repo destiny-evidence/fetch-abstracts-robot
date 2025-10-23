@@ -97,7 +97,7 @@ async def poll_for_batches(
             )
 
             if batch is None:
-                logger.debug(
+                logger.info(
                     "No batches available. Sleeping for {sleep_seconds} seconds.",
                     sleep_seconds=settings.poll_interval_seconds,
                 )
