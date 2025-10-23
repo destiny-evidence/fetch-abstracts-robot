@@ -14,13 +14,13 @@ from destiny_sdk.robots import (
     RobotError,
 )
 from enhancement_processor import AbstractEnhancementProcessor
-from loguru import logger
 
 from app.config import Settings, get_settings
 from app.data_models.crossref import get_crossref_batch_api_config
 from app.data_models.scopus import get_scopus_batch_api_config
 from app.enhancement_processor import BatchEnhancementGenerationError
 from app.fetch_abstract import prepare_api_config
+from app.logger import customised_logger as logger
 from app.server import start_health_check_server
 from app.utils import get_version_number
 
@@ -46,7 +46,7 @@ async def process_robot_enhancement_batch(
             RobotEnhancementBatchResult(request_id=batch.id)
         )
 
-        logger.info("Successfully processed robot enhancement batch {}", batch.id)
+        logger.success("Successfully processed robot enhancement batch {}", batch.id)
 
     except BatchEnhancementGenerationError as batch_enhancement_error:
         logger.error(
