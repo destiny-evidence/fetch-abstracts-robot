@@ -49,13 +49,45 @@ module "container_app_fetch_abstracts_robot" {
     {
       name        = "ROBOT_SECRET"
       secret_name = "robot-secret"
-    }
+    },
+    {
+      name        = "ENV"
+      value = var.environment
+    },
+    {
+      name        = "ELSEVIER_SCOPUS_KEY"
+      secret_name = "elsevier-scopus-key" # pragma: allowlist secret
+    },
+    {
+      name        = "ELSEVIER_SCOPUS_INST_TOKEN"
+      secret_name = "elsevier-scopus-inst-token" # pragma: allowlist secret
+    },
+    {
+      name        = "MAILTO"
+      value = var.owner_email
+    },
+    {
+      name        = "POLL_INTERVAL_SECONDS"
+      value = var.poll_interval_seconds
+    },
+    {
+      name        = "BATCH_SIZE"
+      value = var.batch_size
+    },
   ]
 
   secrets = [
     {
       name  = "robot-secret",
       value = var.robot_secret
+    },
+    {
+      name  = "elsevier-scopus-key",
+      value = var.elsevier_scopus_key
+    },
+    {
+      name  = "elsevier-scopus-inst-token",
+      value = var.elsevier_scopus_inst_token
     }
   ]
 

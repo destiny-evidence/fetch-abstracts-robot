@@ -10,7 +10,7 @@ A **robot** is an extension/plugin to the _DESTINY_ repository, which, using _DE
 
 The **Fetch Abstracts Robot (FAR)** contains functionality for retrieving abstracts for target works by [_DOI_](https://en.wikipedia.org/wiki/Digital_object_identifier). Abstracts are retrieved from third-party APIs and transformed into generic enhancements to a target work. Third-party APIs are configured via an `APIConfig` class, with functionality for handling authentication, abstract unpacking (`AbstractUnpackStrategy`) and abstract (string) cleaning. There is functionality for batch and single abstract retrieval. The hierarchy of which API to hit first is then declared in an `ExternalAPIPriority` class.
 
-If further third-party APIs are to be added, simply instantiate such an `APIConfig`, and import and add it to `AVAILABLE_API_CONFIGS` in `main.py`.
+If further third-party APIs are to be added, simply instantiate such an `APIConfig`, and import and add it to `available_api_configs` in `main.py`.
 
 ## Setup
 
@@ -63,61 +63,56 @@ See `.pre-commit-config.yaml` for the list of pre-commit hooks and their configu
 
 ## Application
 
-Run the development server:
+Run the application locally with:
 
 ```sh
-fastapi dev --port 8001
+uv run run_robot.py
 ```
 
-## Implemented request flows
-
-### Single Enhancement Request Flow
-
-```mermaid
-    sequenceDiagram
-        participant Destiny Repository
-        participant Robot
-        Destiny Repository->>+Robot: POST /<robot_base_url>/single/ : destiny_sdk.robots.RobotRequest
-        Robot->>Robot: Create enhancement background job
-        Robot->>Destiny Repository: Response: 202 Accepted or Failure Status Code
-        alt Background Job Success
-            Robot->>Destiny Repository: POST /enhancement-requests/single-requests/ : destiny_sdk.robots.RobotResult(request_id, enhancement)
-        else Failure
-            Robot->>-Destiny Repository: POST /enhancement-requests/single-requests/ : destiny_sdk.robots.RobotResult(request_id, RobotError)
-        end
-```
+## Implemented request flow
 
 ### Batch Enhancement Request Flow
 
 ```mermaid
     sequenceDiagram
-        participant Destiny Repository
-        participant Robot
+        participant Data Repository
         participant Blob Storage
-        Destiny Repository->>+Robot: POST /<robot_base_url>/batch/ : destiny_sdk.robots.BatchRobotRequest
-        Robot->>Robot: Create batch enhancement background job
-        Robot->>Destiny Repository: Response: 202 Accepted or Failure Status Code
-        Robot->>Blob Storage: Download reference file provided in BatchRobotRequest
-        Robot->>Robot: Process batch
-        alt Background Job Success
-            Robot->>Blob Storage: Upload created enhancements
-            Robot->>Destiny Repository: POST /enhancement-requests/batch-requests/ : destiny_sdk.robots.BatchRobotResult(request_id, url_storage)
-        else Failure
-            Robot->>-Destiny Repository: POST /enhancement-requests/batch-requests/ : destiny_sdk.robots.BatchRobotResult(request_id, RobotError)
+        participant Robot
+        Note over Data Repository: Enhancement request is RECEIVED
+        Robot->>Data Repository: POST /robot-enhancement-batches/ : Poll for batches
+        Data Repository->>+Blob Storage: Store requested references and dependent data
+        Data Repository->>Robot: RobotEnhancementBatch (batch of references)
+        Note over Data Repository: Request status: PROCESSING
+        Blob Storage->>-Robot: GET reference_storage_url (download references)
+        Robot-->>Robot: Process references and create enhancements
+        alt More batches available
+            Robot->>Data Repository: POST /robot-enhancement-batches/ : Poll for next batch
+            Data Repository->>Robot: RobotEnhancementBatch (next batch)
+            Note over Robot: Process additional batches...
+        else No more batches
+            Robot->>Data Repository: POST /robot-enhancement-batches/ : Poll for batches
+            Data Repository->>Robot: HTTP 204 No Content
         end
+        alt Batch success
+            Robot->>+Blob Storage: PUT result_storage_url (upload enhancements)
+            Robot->>Data Repository: POST /robot-enhancement-batches/<batch_id>/results/ : RobotEnhancementBatchResult
+        else Batch failure
+            Robot->>Data Repository: POST /robot-enhancement-batches/<batch_id>/results/ : RobotEnhancementBatchResult(error)
+        end
+        Note over Robot: Repeat...
+        Blob Storage->>-Data Repository: Validate and import all enhancements
+        Note over Data Repository: Update request state to IMPORTING → INDEXING → COMPLETED
 ```
 
 ## Authentication Against Destiny Repository
 
-Authentication between the Toy Robot and Destiny Repository uses HMAC authentication, where a request signature is encrypted with the robot's secret key and set as a header. To simplify this process, the destiny_sdk provides both a client for communicating with destiny repository that handles adding signatures, and a service auth that can be used to validate incoming requests.
-
-In Toy Robot the client is inititalised in `app/main.py` and used for sending requests, the service auth is initialised in `app/auth.py` and then used as a dependency on the app endpoints in `app/main.py`.
+Authentication between the Fetch Abstracts Robot and Destiny Repository uses HMAC authentication, where a request signature is encrypted with the robot's secret key and set as a header. To simplify this process, the destiny_sdk provides a client for communicating with destiny repository that handles adding signatures. In Fetch Abstracts Robot the client is inititalised in app/main.py and used for sending requests.
 
 ### Configuring Authentication
 
 - If you are running the robot with a local instance of destiny repository that is not enforcing authentication, add `ENV=local` to your `.env` file. This will cause the robot to bypass authentication. This is to allow easy development only and the robot should not be deployed with `env=local`.
   - In this case you will need to set dummy values for the `ROBOT_ID` and the `ROBOT_SECRET`. For example `ROBOT_ID="9fa8b9bd-12b1-4450-affb-712face23390"` and `ROBOT_SECRET="dummy_secret"`
-- If you want to deploy the Toy Robot and use it with destiny repository, the robot will need to be registered with that deployment of destiny repository. The registration process will provide the robot_id and client_secret needed to configure authentication. You can check out the proceedure for registering a robot [in the DESTinY documentation](https://destiny-evidence.github.io/destiny-repository/procedures/robot-registration.html).
+- If you want to deploy the Robot and use it with destiny repository, the robot will need to be registered with that deployment of destiny repository. The registration process will provide the robot_id and client_secret needed to configure authentication. You can check out the proceedure for registering a robot [in the DESTinY documentation](https://destiny-evidence.github.io/destiny-repository/procedures/robot-registration.html).
 
 ## Container Image
 
@@ -129,7 +124,7 @@ docker buildx build --tag fetch-abstracts-robot .
 
 ### Manual push
 
-If you want to deploy the toy robot into Azure using the provided terraform infrastructure, you'll need to manually push the docker image to a container registry. We're using destiny-shared-infra for this.
+If you want to deploy the robot into Azure using the provided terraform infrastructure, you'll need to manually push the docker image to a container registry. We're using destiny-shared-infra for this.
 
 ```sh
 az login

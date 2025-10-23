@@ -7,10 +7,11 @@ import re
 from collections.abc import Generator
 from xml.etree.ElementTree import Element
 
-import requests
+import httpx
 from defusedxml.ElementTree import ParseError, fromstring
 from destiny_sdk.identifiers import DOIIdentifier
 from loguru import logger
+from pydantic import AnyUrl
 
 from app.config import Settings
 from app.data_models.generic import (
@@ -165,6 +166,10 @@ class AbstractFetcher:
         references_provided = len(dois)
         retrieved_abstracts = []
         for api in self.master_api_config["batch"]:
+            if len(dois) == 0:
+                logger.info("All abstracts retrieved, breaking API cycle.")
+                break
+            logger.info(f"Fetching abstracts from API: {api}")
             api_count = 0
             chunk = True
             api_config: APIConfig = self.master_api_config["batch"][api]
@@ -181,16 +186,23 @@ class AbstractFetcher:
             for response in retrieved_responses:
                 found_responses = True
                 doi_to_remove = None
+                logger.debug(f"Response: {response}")
                 for enhancement_dict in response:
                     enhancement_dict["source"] = api
-                    retrieved_abstracts.append(enhancement_dict)
-                    logger.debug(f"doi to remove: {enhancement_dict.get("doi")}.")
-                    doi_to_remove = enhancement_dict.get("doi")
+                    logger.debug(f"Enhancement dict: {enhancement_dict}")
+                    empty_abstract: bool = enhancement_dict.get("abstract") is None
+                    if not empty_abstract:
+                        retrieved_abstracts.append(enhancement_dict)
+                        logger.info(
+                            f"Abstract hit:{enhancement_dict.get("doi")} from {api=}."
+                        )
+                        logger.debug(f"doi to remove: {enhancement_dict.get("doi")}.")
+                        doi_to_remove = enhancement_dict.get("doi")
                 if doi_to_remove:
                     dois.remove(self.process_doi(doi_to_remove))
-                    logger.debug(
-                        f"retrieved abstract for doi {doi_to_remove}. "
-                        "removing from master list."
+                    logger.info(
+                        f"Retrieved abstract for doi {doi_to_remove} from {api=}. "
+                        "Removing from master list."
                     )
                     api_count += 1
             if not found_responses:
@@ -220,11 +232,28 @@ class AbstractFetcher:
         return retrieved_abstracts
 
     def fetch(
-        self, url: str, params: dict, headers: dict, *, verbose: bool = False
+        self, url: AnyUrl, params: dict, headers: dict, *, verbose: bool = False
     ) -> dict:
-        """Fetch a response from one of the APIs (generic)."""
-        response = requests.get(
-            url=url, params=params, headers=headers, timeout=self.timeout
+        """
+        Fetch a response from one of the APIs (generic).
+
+        Args:
+            url (AnyUrl): The URL to fetch from.
+            params (dict): Query parameters to include in the request.
+            headers (dict): Headers to include in the request.
+            verbose (bool, optional): Whether to provide very verbose logging for debug.
+                                      Defaults to False.
+
+        Returns:
+            dict: The JSON response from the API.
+
+        Raises:
+            httpx.HTTPStatusError: If an HTTP error occurs during the request.
+
+        """
+        client = httpx.Client(follow_redirects=True)
+        response = client.get(
+            url=str(url), params=params, headers=headers, timeout=self.timeout
         )
         if verbose:
             request_actual_headers = f"request headers: {response.request.headers}"
@@ -256,7 +285,7 @@ class AbstractFetcher:
         chunk: bool = False,
         verbose: bool = False,
         **kwargs: dict,
-    ) -> Generator[list, None, None]:
+    ) -> Generator[list]:
         """
         Fetch many abstracts from a target API given a list of DOIs.
 
@@ -287,9 +316,11 @@ class AbstractFetcher:
                 (f"Chunked into {len(dois)} sublists of max {doi_batch_size} each.",)
             )
         for i, _chunk in enumerate(dois):
-            logger.debug(f"sending get request for chunk {i+1} out of {len(dois)}")
+            logger.debug(f"Sending get request for chunk {i+1} out of {len(dois)}")
+            logger.debug(f"Chunk contains: {_chunk}")
             query_result = api_config.populate_query(query=_chunk)
 
+            logger.trace(f"Query result: {query_result}")
             url = query_result.get("url", "")
             params = query_result.get("query_params", {})
             headers = query_result.get("headers", {})
@@ -302,13 +333,17 @@ class AbstractFetcher:
                     verbose=verbose,
                     **kwargs,
                 )
-            except requests.HTTPError as http_error:
+            except httpx.HTTPError as http_error:
                 logger.error(
                     "Encountered HTTPError on attempting to retrieve abstract. "
                     f"requested doi(s): {_chunk} "
                     f"original error message: {http_error}"
                 )
-                yield [{"doi": doi, "abstract": None} for doi in _chunk]
+                if isinstance(_chunk, list):
+                    yielded_object = [{"doi": doi, "abstract": None} for doi in _chunk]
+                else:
+                    yielded_object = [{"doi": _chunk, "abstract": None}]
+                yield yielded_object
             if api_config.query_type == "batched_single":
                 logger.debug("yield for batched_single")
                 try:
@@ -324,7 +359,13 @@ class AbstractFetcher:
                         }
                     ]
                 except AbstractUnpackError as abstract_unpack_error:
-                    logger.error(abstract_unpack_error)
+                    error_message = (
+                        f"Error unpacking abstract for DOI {_chunk} "
+                        f"using API {api_config.name.value}"
+                        f": {abstract_unpack_error}"
+                    )
+                    logger.warning(error_message)
+                    logger.warning("It is likely that no abstract is present.")
                     yield [{"doi": _chunk, "abstract": None}]
 
             elif api_config.query_type == "batch":
@@ -513,12 +554,12 @@ class AbstractFetcher:
                 )
                 continue
 
-            logger.debug(f"batch {batch_idx}: found {len(entries)} entries.")
+            logger.debug(f"batch {batch_idx+1}: found {len(entries)} entries.")
             for entry_idx, entry in enumerate(entries):
-                logger.debug(f"processing entry {entry_idx} in batch {batch_idx}")
+                logger.debug(f"processing entry {entry_idx+1} in batch {batch_idx+1}")
                 doi = self._traverse(entry, doi_suffix)
                 abstract = self._traverse(entry, abstract_suffix)
-                logger.debug(f"entry {entry_idx}: DOI: {doi}, iabstract: {abstract}")
+                logger.debug(f"entry {entry_idx+1}: DOI: {doi}, abstract: {abstract}")
 
                 if doi and abstract:
                     if clean:
