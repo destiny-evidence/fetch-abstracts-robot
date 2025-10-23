@@ -359,7 +359,12 @@ class AbstractFetcher:
                         }
                     ]
                 except AbstractUnpackError as abstract_unpack_error:
-                    logger.error(abstract_unpack_error)
+                    error_message = (
+                        f"Error unpacking abstract for DOI {_chunk} "
+                        f" using API {api_config.name.value}"
+                        f": {abstract_unpack_error}"
+                    )
+                    logger.warning(error_message)
                     yield [{"doi": _chunk, "abstract": None}]
 
             elif api_config.query_type == "batch":
