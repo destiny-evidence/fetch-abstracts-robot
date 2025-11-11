@@ -15,6 +15,7 @@ from app.config import Settings
 from app.enhancement_processor import (
     AbstractEnhancementProcessor,
     BatchEnhancementGenerationError,
+    FullBatchFailureError,
 )
 
 
@@ -215,10 +216,10 @@ async def test_process_batch_full_batch_failure(
         return_value=None,
     )
 
-    with pytest.raises(BatchEnhancementGenerationError) as error_info:
+    with pytest.raises(FullBatchFailureError) as error_info:
         await test_abstract_enhancement_processor.process_batch(test_robot_request)
 
-    assert str(error_info.value) == "Test batch generation error."
+    assert "Test batch generation error." in str(error_info.value)
 
     (
         download_references_mock.assert_called_once(),

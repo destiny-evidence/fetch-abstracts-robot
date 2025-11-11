@@ -18,7 +18,7 @@ from enhancement_processor import AbstractEnhancementProcessor
 from app.config import Settings, get_settings
 from app.data_models.crossref import get_crossref_batch_api_config
 from app.data_models.scopus import get_scopus_batch_api_config
-from app.enhancement_processor import BatchEnhancementGenerationError
+from app.enhancement_processor import FullBatchFailureError
 from app.fetch_abstract import prepare_api_config
 from app.logger import logger, set_up_logger
 from app.server import start_health_check_server
@@ -48,7 +48,7 @@ async def process_robot_enhancement_batch(
 
         logger.success("Successfully processed robot enhancement batch {}", batch.id)
 
-    except BatchEnhancementGenerationError as batch_enhancement_error:
+    except FullBatchFailureError as batch_enhancement_error:
         logger.error(
             "Batch enhancement generation error for batch {}: {}",
             batch.id,
