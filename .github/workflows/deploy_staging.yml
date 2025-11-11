@@ -1,13 +1,16 @@
-name: Manual staging deployment of fetch-abstract-robot to Azure Container Apps
+name: Automatic staging deployment of fetch-abstract-robot to Azure Container Apps on successful PR merge.
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
 
 jobs:
   build-and-deploy-staging:
+    name: Deploy the Fetch Abstracts Robot to Staging
     runs-on: ubuntu-latest
     environment: staging
 
