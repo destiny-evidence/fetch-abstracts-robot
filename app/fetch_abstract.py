@@ -256,20 +256,26 @@ class AbstractFetcher:
             url=str(url), params=params, headers=headers, timeout=self.timeout
         )
         if verbose:
-            request_actual_headers = f"request headers: {response.request.headers}"
-            request_url = f"request url: {response.request.url}"
-            request_body = f"request body: {response.request.body!s}"
-            response_status_code = f"status code: {response.status_code}"
-            response_headers = f"headers: {response.headers}"
-            response_cookies = f"cookies: {response.cookies}"
+            try:
+                request_actual_headers = f"request headers: {response.request.headers}"
+                request_url = f"request url: {response.request.url}"
+                request_body = f"request body: {response.request.content!s}"
+                response_status_code = f"status code: {response.status_code}"
+                response_headers = f"headers: {response.headers}"
+                response_cookies = f"cookies: {response.cookies}"
 
-            logger.debug(request_actual_headers)
-            logger.debug(request_url)
-            logger.debug(request_body)
+                logger.debug(request_actual_headers)
+                logger.debug(request_url)
+                logger.debug(request_body)
 
-            logger.debug(response_status_code)
-            logger.debug(response_headers)
-            logger.debug(response_cookies)
+                logger.debug(response_status_code)
+                logger.debug(response_headers)
+                logger.debug(response_cookies)
+            except AttributeError as attribute_error:
+                logger.error(
+                    f"AttributeError when trying to log verbose httpx info: "
+                    f"{attribute_error}"
+                )
 
         response.raise_for_status()
 

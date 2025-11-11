@@ -25,6 +25,10 @@ class BatchEnhancementGenerationError(Exception):
     """Custom exception for errors during batch enhancement generation."""
 
 
+class FullBatchFailureError(Exception):
+    """Custom exception for complete failure of batch processing."""
+
+
 class AbstractEnhancementProcessor:
     """Handles the processing of abstract enhancement requests."""
 
@@ -283,5 +287,5 @@ class AbstractEnhancementProcessor:
                 batch.id,
                 full_batch_failure,
             )
-            raise
+            raise FullBatchFailureError(error_message) from full_batch_failure
         return generated_enhancements
