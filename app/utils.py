@@ -39,7 +39,7 @@ def validate_doi(doi_string: str) -> str:
     try:
         return DOIIdentifier(
             identifier=doi_string, identifier_type=ExternalIdentifierType.DOI
-        ).remove_doi_url(doi_string)
+        ).identifier
     except ValidationError as invalid_doi_error:
         error_message = f"Invalid DOI: {doi_string}. Error: {invalid_doi_error}"
         logger.error(error_message)
