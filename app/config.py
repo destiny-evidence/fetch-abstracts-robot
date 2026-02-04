@@ -3,7 +3,8 @@
 from enum import StrEnum
 from functools import lru_cache
 
-from pydantic import UUID4, EmailStr, Field, HttpUrl, SecretStr
+from destiny_sdk import UUID
+from pydantic import EmailStr, Field, HttpUrl, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -40,7 +41,7 @@ class Settings(BaseSettings):
         default=None,
         description="Secret needed for communicating with destiny repo.",
     )
-    robot_id: UUID4 | None = Field(
+    robot_id: UUID | None = Field(
         default=None,
         description="Client id needed for communicating with destiny repository.",
     )
