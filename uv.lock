@@ -657,7 +657,7 @@ provides-extras = ["dev", "docs", "test"]
 dev = [{ name = "msal", specifier = ">=1.34.0" }]
 test = [
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.14" },
-    { name = "pytest-asyncio", specifier = ">=1.1.0,<1.2.0" },
+    { name = "pytest-asyncio", specifier = ">=1.1.0" },
 ]
 
 [[package]]
