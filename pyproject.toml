@@ -40,7 +40,7 @@ docs = [
     "mkdocs-mermaid2-plugin>=1.2.1",
     "mkdocstrings",
     "mkdocstrings-python",
-    "tox>=4.27.0",
+    "tox==4.27.0",
 ]
 test = [
     "fastapi[standard]>=0.115.14",
