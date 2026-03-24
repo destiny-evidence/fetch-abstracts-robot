@@ -596,6 +596,7 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "detect-secrets" },
+    { name = "msal" },
     { name = "mypy" },
     { name = "pre-commit" },
     { name = "pytest" },
@@ -612,17 +613,10 @@ docs = [
     { name = "tox" },
 ]
 test = [
-    { name = "pytest-cov" },
-    { name = "pytest-mock" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "msal" },
-]
-test = [
     { name = "fastapi", extra = ["standard"] },
     { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
 ]
 
 [package.metadata]
@@ -631,6 +625,7 @@ requires-dist = [
     { name = "defusedxml", specifier = ">=0.7.1" },
     { name = "destiny-sdk", specifier = ">=0.11.1" },
     { name = "detect-secrets", marker = "extra == 'dev'", specifier = ">=1.5.0" },
+    { name = "fastapi", extras = ["standard"], marker = "extra == 'test'", specifier = ">=0.115.14" },
     { name = "httpx", specifier = ">=0.28.0,<0.29.0" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "mkdocs", marker = "extra == 'docs'" },
@@ -639,11 +634,13 @@ requires-dist = [
     { name = "mkdocs-mermaid2-plugin", marker = "extra == 'docs'", specifier = ">=1.2.1" },
     { name = "mkdocstrings", marker = "extra == 'docs'" },
     { name = "mkdocstrings-python", marker = "extra == 'docs'" },
+    { name = "msal", marker = "extra == 'dev'", specifier = ">=1.34.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.18.2" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.0,<3.0" },
     { name = "pydantic-settings", specifier = ">=2.7.1,<3" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.4" },
+    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=1.1.0" },
     { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=6.2.1" },
     { name = "pytest-httpx", marker = "extra == 'dev'", specifier = ">=0.35.0" },
     { name = "pytest-mock", marker = "extra == 'test'", specifier = ">=3.14.1" },
@@ -652,13 +649,6 @@ requires-dist = [
     { name = "tox", marker = "extra == 'docs'", specifier = ">=4.27.0" },
 ]
 provides-extras = ["dev", "docs", "test"]
-
-[package.metadata.requires-dev]
-dev = [{ name = "msal", specifier = ">=1.34.0" }]
-test = [
-    { name = "fastapi", extras = ["standard"], specifier = ">=0.115.14" },
-    { name = "pytest-asyncio", specifier = ">=1.1.0,<1.2.0" },
-]
 
 [[package]]
 name = "filelock"
