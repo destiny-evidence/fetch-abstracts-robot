@@ -40,6 +40,7 @@ docs = [
     "mkdocs-mermaid2-plugin>=1.2.1",
     "mkdocstrings",
     "mkdocstrings-python",
+    "pygments>=2.19.2",
 ]
 test = [
     "fastapi[standard]>=0.115.14",
@@ -117,3 +118,8 @@ spaces_indent_inline_array = 4
 trailing_comma_inline_array = true
 overrides."project.classifiers".inline_arrays = false
 overrides."tool.coverage.paths.source".inline_arrays = false
+
+[tool.uv]
+exclude-dependencies = [
+    "ecdsa", # Required until https://github.com/mpdavis/python-jose/issues/390 is resolved
+]
