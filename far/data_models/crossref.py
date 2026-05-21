@@ -1,7 +1,7 @@
 """Config constants for CrossRef API; single & batch."""
 
-from app.config import Settings
-from app.data_models.generic import AbstractUnpackStrategy, APIConfig, QueryType
+from far.config import Settings
+from far.data_models.generic import AbstractUnpackStrategy, APIConfig, QueryType
 
 
 def get_crossref_batch_api_config(settings: Settings) -> APIConfig:

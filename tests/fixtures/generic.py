@@ -1,6 +1,6 @@
 import pytest
 
-from app.data_models.generic import (
+from far.data_models.generic import (
     AbstractUnpackStrategy,
     APIConfig,
     ExternalAPI,

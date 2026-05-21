@@ -60,7 +60,7 @@ pythonpath = "."
 testpaths = ["tests"]
 
 [tool.ruff]
-extend-exclude = ["app/migrations/versions/*.py", "docs/*.py"]
+extend-exclude = ["docs/*.py", "far/migrations/versions/*.py"]
 fix = true
 force-exclude = true
 target-version = "py313"
@@ -75,9 +75,9 @@ lint.ignore = [
     "FIX002", # implicit trust that TODOs are not trivial, or else they would be fixed
     "ISC001", # simplify implicit str concatenation (ruff-format recommended)
 ]
-lint.per-file-ignores = {"app/fetch_abstract.py" = [
+lint.per-file-ignores = {"far/fetch_abstract.py" = [
     "PLR0915", # Too many statements
-], "app/main.py" = [
+], "far/main.py" = [
     "S104", # Possible binding to all interfaces
 ], "scripts*" = [
     "ANN201", # Missing return type annotation for public function
@@ -106,11 +106,9 @@ lint.select = ["ALL"]
 lint.mccabe.max-complexity = 18
 lint.pep8-naming.classmethod-decorators = ["classmethod"]
 
-[tool.setuptools.package-dir]
-"" = "app"
-
-[tool.setuptools.packages.find]
-where = ["app"]
+[tool.setuptools]
+package-dir = {"" = "."}
+packages = {find = {include = ["far*"]}}
 
 [tool.tomlsort]
 all = true

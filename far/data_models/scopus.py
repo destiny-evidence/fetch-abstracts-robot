@@ -3,8 +3,8 @@
 from loguru import logger
 from pydantic import Field
 
-from app.config import Settings
-from app.data_models.generic import (
+from far.config import Settings
+from far.data_models.generic import (
     AbstractUnpackStrategy,
     APIConfig,
     APIKeyNotPresentError,

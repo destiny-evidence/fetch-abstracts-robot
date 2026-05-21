@@ -9,16 +9,16 @@ from fastapi import status
 from loguru import logger
 from pytest_httpx import HTTPXMock, IteratorStream
 
-from app.config import Settings
-from app.data_models.generic import (
+from far.config import Settings
+from far.data_models.generic import (
     AbstractUnpackStrategy,
     APIConfig,
     ExternalAPI,
     QueryType,
 )
-from app.data_models.scopus import ScopusAPIConfig
-from app.enhancement_processor import AbstractEnhancementProcessor
-from app.fetch_abstract import prepare_api_config
+from far.data_models.scopus import ScopusAPIConfig
+from far.enhancement_processor import AbstractEnhancementProcessor
+from far.fetch_abstract import prepare_api_config
 
 pytest_plugins = [
     "tests.fixtures.generic",
