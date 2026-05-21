@@ -9,8 +9,10 @@ authors = [
 ]
 dependencies = [
     "aiohttp>=3.14.1",
+    "cyclopts>=4.12.0",
     "defusedxml>=0.7.1",
     "destiny-sdk>=0.13.0",
+    "ftfy>=6.3.1",
     "httpx>=0.28.0,<0.29.0",
     "loguru>=0.7.3",
     "pydantic-settings>=2.14.2,<3",
@@ -21,7 +23,7 @@ description = "Robot for adding abstract enhancements to items in the destiny re
 name = "fetch-abstracts-robot"
 readme = "README.md"
 requires-python = ">=3.13"
-version = "0.3.0"
+version = "0.4.0"
 
 [project.optional-dependencies]
 dev = [
@@ -48,6 +50,9 @@ test = [
     "pytest-cov>=6.2.1",
     "pytest-mock>=3.14.1",
 ]
+
+[project.scripts]
+fetch-abstracts = "far.local.run:app"
 
 [tool.mypy]
 explicit_package_bases = true
