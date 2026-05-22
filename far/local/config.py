@@ -35,7 +35,11 @@ def set_up_processor(
             ("crossref", get_crossref_batch_api_config(settings)),
             ("scopus", get_scopus_batch_api_config()),
         ]
-        if excluded_api_names is None or name not in excluded_api_names
+        if excluded_api_names is None
+        or not any(
+            name.lower() in excluded_api_name
+            for excluded_api_name in excluded_api_names
+        )
     ]
     if len(available_api_configs) == 0:
         logger.critical(

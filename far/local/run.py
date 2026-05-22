@@ -9,6 +9,7 @@ from loguru import logger
 
 from far.config import get_settings
 from far.data_models.generic import ExternalAPI
+from far.enhancement_processor import BatchEnhancementGenerationError
 from far.local.config import set_up_processor
 from far.local.utils import get_destiny_references
 from far.logger import set_up_logger
@@ -18,6 +19,10 @@ app = App(
     name="fetch-abstracts",
     version=get_version_number(),
 )
+
+
+class AbstractRetrievalError(Exception):
+    """Custom exception for errors during local abstract retrieval."""
 
 
 @app.default
@@ -43,11 +48,30 @@ def main(
     settings = get_settings()
     processor = set_up_processor(settings, exclude_api)
     output_directory.mkdir(parents=True, exist_ok=True)
+    output_file = output_directory / f"abstracts_{doi_list.stem}.json"
 
     references = get_destiny_references(doi_list)
-    enhancements = processor.create_abstract_enhancement(
-        references=references,
-    )
+
+    try:
+        enhancements = processor.create_abstract_enhancement(
+            references=references,
+        )
+    except BatchEnhancementGenerationError as no_abstracts_found_error:
+        error_message = (
+            "Error during abstract enhancement generation: "
+            f"{no_abstracts_found_error}"
+        )
+        logger.error(error_message)
+        with output_file.open("w") as file:
+            json_output = {
+                "abstracts": None,
+                "dois_with_abstracts": None,
+                "dois_without_abstracts": [
+                    reference.identifiers[0].identifier for reference in references
+                ],
+            }
+            file.write(json.dumps(json_output, indent=2))
+        raise AbstractRetrievalError(error_message) from no_abstracts_found_error
 
     abstract_ids = []
     for enhancement in enhancements:
@@ -89,8 +113,6 @@ def main(
 
     logger.info(f"DOIs with abstracts: {dois_with_abstracts}")
     logger.info(f"DOIs without abstracts: {dois_without_abstracts}")
-
-    output_file = output_directory / f"abstracts_{doi_list.stem}.json"
 
     with output_file.open("w") as file:
         json_output = {
