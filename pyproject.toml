@@ -43,7 +43,7 @@ docs = [
     "pygments>=2.19.2",
 ]
 test = [
-    "fastapi[standard]>=0.115.14",
+    "fastapi[standard]>=0.136.1",
     "pytest-asyncio>=1.1.0",
     "pytest-cov>=6.2.1",
     "pytest-mock>=3.14.1",
