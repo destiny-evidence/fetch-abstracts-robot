@@ -97,12 +97,11 @@ def main(
 
     dois_with_abstracts = []
     dois_without_abstracts = []
+    reference_ids_with_abstracts = {
+        abstract_id.get("far_reference_id") for abstract_id in abstract_ids
+    }
     for reference in references:
-        reference_doi = reference.identifiers[0].identifier
-
-        if str(reference.id) in [
-            abstract_id.get("far_reference_id") for abstract_id in abstract_ids
-        ]:
+        if str(reference.id) in reference_ids_with_abstracts:
             dois_with_abstracts.append(reference.identifiers[0].identifier)
         else:
             dois_without_abstracts.append(reference.identifiers[0].identifier)

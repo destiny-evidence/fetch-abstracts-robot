@@ -26,21 +26,16 @@ def set_up_processor(
         AbstractEnhancementProcessor: An instance of the abstract processor.
 
     """
-    excluded_api_names = (
-        [api.name.lower() for api in excluded_apis] if excluded_apis else []
-    )
-    available_api_configs: list[APIConfig] = [
-        config
-        for name, config in [
-            ("crossref", get_crossref_batch_api_config(settings)),
-            ("scopus", get_scopus_batch_api_config()),
-        ]
-        if excluded_api_names is None
-        or not any(
-            name.lower() in excluded_api_name
-            for excluded_api_name in excluded_api_names
-        )
+    excluded_api_set = set(excluded_apis or [])
+
+    api_configs: list[APIConfig] = [
+        get_crossref_batch_api_config(settings),
+        get_scopus_batch_api_config(),
     ]
+    available_api_configs: list[APIConfig] = [
+        config for config in api_configs if config.name not in excluded_api_set
+    ]
+
     if len(available_api_configs) == 0:
         logger.critical(
             "No APIs available after applying exclusions: {}", excluded_apis

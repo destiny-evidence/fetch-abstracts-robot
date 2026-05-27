@@ -51,10 +51,10 @@ The Fetch Abstracts Robot can be run locally as an application provided users br
 fetch-abstracts --doi-list doi-file
 ```
 
-where `doi-file` is a newline-separated file containing DOIs to retrieve abstracts for. For example:
+where `doi-file` is a newline-separated text file containing DOIs to retrieve abstracts for. This can have any extension, such as `.txt` or `.csv`. For example:
 
 ```sh
-fetch-abstracts --doi-list data/test_doi_list.csv
+fetch-abstracts --doi-list data/test_doi_list.txt
 ```
 
 For more options when running the robot locally, you can run

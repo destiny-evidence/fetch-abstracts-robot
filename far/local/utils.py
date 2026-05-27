@@ -27,7 +27,7 @@ def get_destiny_references(doi_input_file: Path) -> list[Reference]:
 
     """
     try:
-        with doi_input_file.open("r") as file:
+        with doi_input_file.open("r", encoding="utf-8") as file:
             doi_strings = [ftfy.fix_text(line.strip()) for line in file if line.strip()]
     except OSError as invalid_input_error:
         error_message = f"File error: {invalid_input_error}"
