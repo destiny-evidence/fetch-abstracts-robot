@@ -1,6 +1,5 @@
-"""tests for functions in app/utils.py."""
+"""tests for functions in far/utils.py."""
 
-from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
@@ -47,13 +46,11 @@ class DummyReference:
 
 
 def test_get_doi_from_reference_success():
-    # Patch validate_doi to return True for the first identifier
     test_good_doi = "10.1000/xyz123"
     dummy_id = DummyIdentifier(test_good_doi)
     dummy_ref = DummyReference([dummy_id])
 
-    with patch("far.utils.validate_doi", return_value=True):
-        assert get_doi_from_reference(dummy_ref) == test_good_doi
+    assert get_doi_from_reference(dummy_ref) == test_good_doi
 
 
 @pytest.mark.parametrize(

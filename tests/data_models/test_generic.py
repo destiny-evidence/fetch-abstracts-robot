@@ -1,4 +1,4 @@
-"""tests for generic data models in app/data_models/generic.py."""
+"""tests for generic data models in far/data_models/generic.py."""
 
 import pytest
 from pydantic import ValidationError

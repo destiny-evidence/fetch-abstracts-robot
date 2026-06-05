@@ -1,4 +1,4 @@
-"""tests for app/config.py."""
+"""tests for far/config.py."""
 
 from far.config import Settings
 
