@@ -46,6 +46,26 @@ def validate_doi(doi_string: str) -> str:
         raise InvalidDOIError(error_message) from invalid_doi_error
 
 
+def normalise_doi(doi: str) -> str | None:
+    """
+    Normalise a DOI string using the DESTINY SDK validator, then lowercase.
+
+    Returns None and logs a warning if the DOI is invalid.
+
+    Args:
+        doi (str): The DOI string to normalise.
+
+    Returns:
+        str | None: The normalised DOI string, or None if invalid.
+
+    """
+    try:
+        return validate_doi(doi).lower()
+    except InvalidDOIError:
+        logger.warning("Could not normalise DOI: {}", doi)
+        return None
+
+
 def get_doi_from_reference(reference: Reference) -> str:
     """
     Extract DOI from a Reference object.
