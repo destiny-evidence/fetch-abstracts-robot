@@ -2,7 +2,7 @@
 
 import destiny_sdk
 
-from app.config import Environment, Settings
+from far.config import Environment, Settings
 
 
 def auth_strategy_robot(settings: Settings) -> destiny_sdk.auth.HMACAuthMethod:

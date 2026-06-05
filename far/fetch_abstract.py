@@ -13,8 +13,8 @@ from destiny_sdk.identifiers import DOIIdentifier
 from loguru import logger
 from pydantic import AnyUrl
 
-from app.config import Settings
-from app.data_models.generic import (
+from far.config import Settings
+from far.data_models.generic import (
     AbstractUnpackError,
     AbstractUnpackStrategy,
     APIConfig,
@@ -22,7 +22,7 @@ from app.data_models.generic import (
     ExternalAPIPriority,
     external_api_priority_batch,
 )
-from app.utils import InvalidDOIError, validate_doi
+from far.utils import InvalidDOIError, validate_doi
 
 
 class FetchAbstractError(Exception):

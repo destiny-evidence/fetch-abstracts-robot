@@ -1,12 +1,12 @@
 # ruff: noqa: E501
 import pytest
 
-from app.config import Settings
-from app.data_models.generic import (
+from far.config import Settings
+from far.data_models.generic import (
     AbstractUnpackStrategy,
     APIKeyNotPresentError,
 )
-from app.data_models.scopus import ScopusAPIConfig
+from far.data_models.scopus import ScopusAPIConfig
 
 
 def test_scopus_api_config_creation_success_no_inst_token(

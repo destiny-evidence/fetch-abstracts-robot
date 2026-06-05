@@ -50,7 +50,7 @@ jobs:
         run: uv sync --locked --no-upgrade --all-extras
 
       - name: Run test with pytest
-        run: uv run pytest --cov=app --cov-report=xml
+        run: uv run pytest --cov=far --cov-report=xml
 
       - name: Code coverage reporting
         uses: irongut/CodeCoverageSummary@51cc3a756ddcd398d447c044c02cb6aa83fdae95 # v1.3.0

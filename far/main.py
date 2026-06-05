@@ -13,16 +13,18 @@ from destiny_sdk.robots import (
     RobotEnhancementBatchResult,
     RobotError,
 )
-from enhancement_processor import AbstractEnhancementProcessor
 
-from app.config import Settings, get_settings
-from app.data_models.crossref import get_crossref_batch_api_config
-from app.data_models.scopus import get_scopus_batch_api_config
-from app.enhancement_processor import FullBatchFailureError
-from app.fetch_abstract import prepare_api_config
-from app.logger import logger, set_up_logger
-from app.server import start_health_check_server
-from app.utils import get_version_number
+from far.config import Settings, get_settings
+from far.data_models.crossref import get_crossref_batch_api_config
+from far.data_models.scopus import get_scopus_batch_api_config
+from far.enhancement_processor import (
+    AbstractEnhancementProcessor,
+    FullBatchFailureError,
+)
+from far.fetch_abstract import prepare_api_config
+from far.logger import logger, set_up_logger
+from far.server import start_health_check_server
+from far.utils import get_version_number
 
 
 async def process_robot_enhancement_batch(

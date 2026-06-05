@@ -8,8 +8,8 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock, IteratorStream
 
-from app.enhancement_processor import AbstractEnhancementProcessor
-from app.main import process_robot_enhancement_batch
+from far.enhancement_processor import AbstractEnhancementProcessor
+from far.main import process_robot_enhancement_batch
 
 
 def test_generate_abstract_enhancement(
@@ -107,13 +107,13 @@ async def test_process_robot_enhancement_batch_happy_path(
         for doi, abstract in zip(dois, abstracts, strict=False)
     ]
     mocker.patch(
-        "app.fetch_abstract.AbstractFetcher.get_many_abstracts_cycling_apis",
+        "far.fetch_abstract.AbstractFetcher.get_many_abstracts_cycling_apis",
         return_value=test_fetch_many_abstracts_return_value,
     )
 
     # Mock SDK result submission
     with (
-        patch("app.main.DestinyClient") as mock_client,
+        patch("far.main.DestinyClient") as mock_client,
     ):
         await process_robot_enhancement_batch(
             mock_client, test_abstract_enhancement_processor, batch
@@ -142,7 +142,7 @@ async def test_process_robot_enhancement_batch_with_download_error(
     # Mock download failure
     httpx_mock.add_response(method="GET", status_code=404)
 
-    with patch("app.main.DestinyClient") as mock_client:
+    with patch("far.main.DestinyClient") as mock_client:
         # Process should raise an exception due to HTTP error
         with pytest.raises(httpx.HTTPStatusError, match="404"):
             await process_robot_enhancement_batch(

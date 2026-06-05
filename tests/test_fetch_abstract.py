@@ -1,4 +1,4 @@
-"""tests for the core fetch_abstract module in app/fetch_abstract.py."""
+"""tests for the core fetch_abstract module in far/fetch_abstract.py."""
 
 from unittest.mock import MagicMock, patch
 
@@ -6,8 +6,8 @@ import httpx
 import pytest
 from pydantic import AnyUrl
 
-from app.data_models.generic import AbstractUnpackError
-from app.fetch_abstract import AbstractFetcher, prepare_api_config
+from far.data_models.generic import AbstractUnpackError
+from far.fetch_abstract import AbstractFetcher, prepare_api_config
 
 
 def test_prepare_api_config_success(
@@ -61,7 +61,7 @@ def test_prepare_api_config_missing_key(
 )
 def test_abstract_fetcher_init_logs(request, api_config_fixture, test_settings):
     api_config_batch = request.getfixturevalue(api_config_fixture["batch"])
-    with patch("app.fetch_abstract.logger") as mock_logger:
+    with patch("far.fetch_abstract.logger") as mock_logger:
         master_api_config = prepare_api_config([api_config_batch], test_settings)
         fetcher = AbstractFetcher(master_api_config)
         mock_logger.info.assert_any_call(
@@ -482,7 +482,7 @@ def test_fetch_many_abstracts_scopus_success_multiple_dois(
         for doi, abstract in zip(dois, abstracts, strict=False)
     ]
     with (
-        patch("app.fetch_abstract.validate_doi", return_value=True),
+        patch("far.fetch_abstract.validate_doi", return_value=True),
         patch.object(
             fetcher,
             "fetch",
@@ -530,7 +530,7 @@ def test_fetch_many_abstracts_crossref_success_multiple_dois(
         for doi, abstract in zip(dois, abstracts, strict=False)
     ]
     with (
-        patch("app.fetch_abstract.validate_doi", return_value=True),
+        patch("far.fetch_abstract.validate_doi", return_value=True),
         patch.object(
             fetcher,
             "fetch",
@@ -595,7 +595,7 @@ def test_fetch_many_abstracts_http_error(
     )
     test_doi_list = ["10.1000/xyz123"]
     with (
-        patch("app.fetch_abstract.validate_doi", return_value=True),
+        patch("far.fetch_abstract.validate_doi", return_value=True),
         patch.object(fetcher, "fetch", side_effect=httpx.HTTPError("fail")),
         caplog.at_level("ERROR"),
     ):
@@ -621,7 +621,7 @@ def test_fetch_many_abstracts_crossref_single_unpack_error(
     )
     test_dois_list = ["10.1000/xyz123"]
     with (
-        patch("app.fetch_abstract.validate_doi", return_value=True),
+        patch("far.fetch_abstract.validate_doi", return_value=True),
         patch.object(fetcher, "fetch", return_value={"data": {}}),
         patch.object(
             fetcher,

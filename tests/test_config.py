@@ -1,6 +1,6 @@
-"""tests for app/config.py."""
+"""tests for far/config.py."""
 
-from app.config import Settings
+from far.config import Settings
 
 
 def test_get_settings(

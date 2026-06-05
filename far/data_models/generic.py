@@ -5,7 +5,7 @@ from enum import StrEnum
 from loguru import logger
 from pydantic import AnyUrl, BaseModel, Field, model_validator
 
-from app.config import Settings
+from far.config import Settings
 
 
 class APIKeyNotPresentError(Exception):

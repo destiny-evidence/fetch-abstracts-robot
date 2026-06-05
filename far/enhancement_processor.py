@@ -16,9 +16,9 @@ from destiny_sdk.robots import (
 from destiny_sdk.visibility import Visibility
 from loguru import logger
 
-from app.data_models.generic import APIConfig
-from app.fetch_abstract import AbstractFetcher
-from app.utils import get_doi_from_reference, get_version_number
+from far.data_models.generic import APIConfig
+from far.fetch_abstract import AbstractFetcher
+from far.utils import get_doi_from_reference, get_version_number
 
 
 class BatchEnhancementGenerationError(Exception):

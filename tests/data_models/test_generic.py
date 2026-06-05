@@ -1,10 +1,10 @@
-"""tests for generic data models in app/data_models/generic.py."""
+"""tests for generic data models in far/data_models/generic.py."""
 
 import pytest
 from pydantic import ValidationError
 
-from app.config import get_settings
-from app.data_models.generic import (
+from far.config import get_settings
+from far.data_models.generic import (
     AbstractNotFoundError,
     AbstractUnpackError,
     AbstractUnpackStrategy,
