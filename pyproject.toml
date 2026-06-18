@@ -121,4 +121,4 @@ overrides."tool.coverage.paths.source".inline_arrays = false
 exclude-dependencies = [
     "ecdsa", # Required until https://github.com/mpdavis/python-jose/issues/390 is resolved
 ]
-exclude-newer = "P1W"
+exclude-newer = "P5D"
