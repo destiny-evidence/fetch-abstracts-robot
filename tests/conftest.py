@@ -19,6 +19,7 @@ from far.data_models.generic import (
 from far.data_models.scopus import ScopusAPIConfig
 from far.enhancement_processor import AbstractEnhancementProcessor
 from far.fetch_abstract import prepare_api_config
+from far.providers.pubmed import fetch_abstract_by_doi
 
 pytest_plugins = [
     "tests.fixtures.generic",
@@ -85,11 +86,40 @@ def crossref_api_config_valid_batch():
 
 
 @pytest.fixture
+def pubmed_api_config_valid_batch():
+    return APIConfig(
+        name=ExternalAPI.PUBMED_BATCH,
+        url="https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+        require_api_key=False,
+        api_key_env_var_name=None,
+        api_key_placement=None,
+        query_type=QueryType.BATCHED_SINGLE,
+        query_params={
+            "db": "pubmed",
+            "retmode": "json",
+        },
+        headers={"Accept": "application/json"},
+        unpack_strategy=AbstractUnpackStrategy(
+            source=ExternalAPI.PUBMED_BATCH,
+            strategy=["unused"],
+        ),
+        provider_fetch_hook=fetch_abstract_by_doi,
+    )
+
+
+@pytest.fixture
 def test_global_api_config(
-    scopus_api_config_valid_batch, crossref_api_config_valid_batch, test_settings
+    scopus_api_config_valid_batch,
+    crossref_api_config_valid_batch,
+    pubmed_api_config_valid_batch,
+    test_settings,
 ) -> dict[str, APIConfig]:
     return prepare_api_config(
-        api_configs=[scopus_api_config_valid_batch, crossref_api_config_valid_batch],
+        api_configs=[
+            scopus_api_config_valid_batch,
+            crossref_api_config_valid_batch,
+            pubmed_api_config_valid_batch,
+        ],
         settings=test_settings,
     )
 
@@ -98,6 +128,7 @@ def test_global_api_config(
 def test_abstract_enhancement_processor(
     scopus_api_config_valid_batch,
     crossref_api_config_valid_batch,
+    pubmed_api_config_valid_batch,
     test_global_api_config,
 ) -> AbstractEnhancementProcessor:
     return AbstractEnhancementProcessor(
@@ -107,6 +138,7 @@ def test_abstract_enhancement_processor(
         available_api_configs=[
             scopus_api_config_valid_batch,
             crossref_api_config_valid_batch,
+            pubmed_api_config_valid_batch,
         ],
     )
 

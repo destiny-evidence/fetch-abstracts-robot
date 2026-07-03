@@ -16,6 +16,7 @@ from destiny_sdk.robots import (
 
 from far.config import Settings, get_settings
 from far.data_models.crossref import get_crossref_batch_api_config
+from far.data_models.pubmed import get_pubmed_batch_api_config
 from far.data_models.scopus import get_scopus_batch_api_config
 from far.enhancement_processor import (
     AbstractEnhancementProcessor,
@@ -150,6 +151,7 @@ async def main() -> None:
     # configurations for all APIs we can hit to get abstracts
     available_api_configs = [
         get_crossref_batch_api_config(settings),
+        get_pubmed_batch_api_config(settings),
         get_scopus_batch_api_config(),
     ]
     global_api_config = prepare_api_config(
