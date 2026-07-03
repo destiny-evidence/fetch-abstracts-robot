@@ -321,6 +321,18 @@ class AbstractFetcher:
         for i, _chunk in enumerate(dois):
             logger.debug(f"Sending get request for chunk {i + 1} out of {len(dois)}")
             logger.debug(f"Chunk contains: {_chunk}")
+
+            if api_config.provider_fetch_hook is not None:
+                doi_queries = _chunk if isinstance(_chunk, list) else [_chunk]
+                for doi_query in doi_queries:
+                    abstract = api_config.provider_fetch_hook(
+                        doi_query,
+                        api_config,
+                        self.timeout,
+                    )
+                    yield [{"doi": doi_query, "abstract": abstract}]
+                continue
+
             query_result = api_config.populate_query(query=_chunk)
 
             logger.trace(f"Query result: {query_result}")

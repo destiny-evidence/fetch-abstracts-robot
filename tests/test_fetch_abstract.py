@@ -8,17 +8,20 @@ from pydantic import AnyUrl
 
 from far.data_models.generic import AbstractUnpackError
 from far.fetch_abstract import AbstractFetcher, prepare_api_config
+from far.providers.pubmed import extract_abstract_from_xml
 
 
 def test_prepare_api_config_success(
     scopus_api_config_valid_batch,
     crossref_api_config_valid_batch,
+    pubmed_api_config_valid_batch,
     external_api_priorities,
     test_settings,
 ):
     configs = [
         scopus_api_config_valid_batch,
         crossref_api_config_valid_batch,
+        pubmed_api_config_valid_batch,
     ]
     result = prepare_api_config(
         configs,
@@ -26,7 +29,11 @@ def test_prepare_api_config_success(
         external_api_priority_batch=external_api_priorities["batch"],
     )
     batch_results = result["batch"]
-    assert set(batch_results.keys()) == {"CROSSREF_BATCH", "SCOPUS_BATCH"}
+    assert set(batch_results.keys()) == {
+        "CROSSREF_BATCH",
+        "PUBMED_BATCH",
+        "SCOPUS_BATCH",
+    }
     assert not batch_results["SCOPUS_BATCH"].unpack_strategy.clean_abstract_string
     assert batch_results["SCOPUS_BATCH"].headers["X-API-Key"] == "dummy_scopus_key"
     assert batch_results["SCOPUS_BATCH"].headers["X-Inst-Token"] == "dummy_inst_token"
@@ -57,6 +64,9 @@ def test_prepare_api_config_missing_key(
         {
             "batch": "crossref_api_config_valid_batch",
         },
+        {
+            "batch": "pubmed_api_config_valid_batch",
+        },
     ],
 )
 def test_abstract_fetcher_init_logs(request, api_config_fixture, test_settings):
@@ -80,6 +90,9 @@ def test_abstract_fetcher_init_logs(request, api_config_fixture, test_settings):
         },
         {
             "batch": "crossref_api_config_valid_batch",
+        },
+        {
+            "batch": "pubmed_api_config_valid_batch",
         },
     ],
 )
@@ -107,6 +120,9 @@ def test_fetch_success(request, api_config_fixture, test_settings):
         },
         {
             "batch": "crossref_api_config_valid_batch",
+        },
+        {
+            "batch": "pubmed_api_config_valid_batch",
         },
     ],
 )
@@ -416,6 +432,31 @@ def test_clean_abstract_string_removes_all_tags():
     raw = "<jats:p>This is a <b>test</b> abstract.</jats:p>"
     cleaned = AbstractFetcher.clean_abstract_string(raw)
     assert cleaned == "This is a test abstract."
+
+
+def test_extract_pubmed_abstract_from_xml_success():
+    xml = """
+        <PubmedArticleSet>
+            <PubmedArticle>
+                <MedlineCitation>
+                    <Article>
+                        <Abstract>
+                            <AbstractText>Part one.</AbstractText>
+                            <AbstractText Label=\"Methods\">Part two.</AbstractText>
+                        </Abstract>
+                    </Article>
+                </MedlineCitation>
+            </PubmedArticle>
+        </PubmedArticleSet>
+        """
+    result = extract_abstract_from_xml(xml)
+    assert result == "Part one.\nMethods: Part two."
+
+
+def test_extract_pubmed_abstract_from_xml_missing_abstract():
+    xml = "<PubmedArticleSet><PubmedArticle /></PubmedArticleSet>"
+    result = extract_abstract_from_xml(xml)
+    assert result is None
 
 
 def test_clean_abstract_string_fallback_regex():

@@ -1,11 +1,14 @@
 """Generic data models and validators for working with external APIs."""
 
+from collections.abc import Callable
 from enum import StrEnum
 
 from loguru import logger
 from pydantic import AnyUrl, BaseModel, Field, model_validator
 
 from far.config import Settings
+
+ProviderFetchHook = Callable[[str, "APIConfig", int], str | None]
 
 
 class APIKeyNotPresentError(Exception):
@@ -31,6 +34,7 @@ class ExternalAPI(StrEnum):
 
     CROSSREF_BATCH = "crossref_batch"
     SCOPUS_BATCH = "scopus_batch"
+    PUBMED_BATCH = "pubmed_batch"
 
 
 class QueryType(StrEnum):
@@ -57,7 +61,8 @@ external_api_priority_batch = ExternalAPIPriority(
     name="batch",
     priorities={
         ExternalAPI.CROSSREF_BATCH: 1,
-        ExternalAPI.SCOPUS_BATCH: 2,
+        ExternalAPI.PUBMED_BATCH: 2,
+        ExternalAPI.SCOPUS_BATCH: 3,
     },
 )
 
@@ -123,6 +128,13 @@ class APIConfig(BaseModel):
     )
     unpack_strategy: AbstractUnpackStrategy = Field(
         description="Unpack strategy to employ to get a plain-text abstract"
+    )
+    provider_fetch_hook: ProviderFetchHook | None = Field(
+        default=None,
+        description=(
+            "Optional provider-specific hook for retrieval strategies that "
+            "cannot be expressed as a single generic fetch + unpack call."
+        ),
     )
 
     @model_validator(mode="before")
