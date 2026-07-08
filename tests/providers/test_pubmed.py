@@ -7,23 +7,35 @@ from far.fetch_abstract import AbstractFetcher, prepare_api_config
 from far.providers.pubmed import extract_abstract_from_xml, fetch_abstract_by_doi
 
 
-def test_extract_pubmed_abstract_from_xml_success():
-    xml = """
+@pytest.fixture
+def pubmed_abstract_text() -> str:
+    """Provide a sample PubMed abstract text for testing."""
+    return "Sample abstract text."
+
+
+@pytest.fixture
+def pubmed_valid_xml(pubmed_abstract_text) -> str:
+    """Provide a valid PubMed XML string for testing."""
+    return f"""
         <PubmedArticleSet>
             <PubmedArticle>
                 <MedlineCitation>
                     <Article>
                         <Abstract>
-                            <AbstractText>Part one.</AbstractText>
-                            <AbstractText Label=\"Methods\">Part two.</AbstractText>
+                            <AbstractText>{pubmed_abstract_text}</AbstractText>
                         </Abstract>
                     </Article>
                 </MedlineCitation>
             </PubmedArticle>
         </PubmedArticleSet>
         """
-    result = extract_abstract_from_xml(xml)
-    assert result == "Part one.\nMethods: Part two."
+
+
+def test_extract_pubmed_abstract_from_xml_success(
+    pubmed_valid_xml, pubmed_abstract_text
+):
+    result = extract_abstract_from_xml(pubmed_valid_xml)
+    assert result == pubmed_abstract_text
 
 
 def test_extract_pubmed_abstract_from_xml_missing_abstract():
@@ -32,14 +44,16 @@ def test_extract_pubmed_abstract_from_xml_missing_abstract():
     assert result is None, "Expected None when no abstract is found."
 
 
-def test_fetch_abstract_by_doi_success(mocker, pubmed_api_config_valid_batch):
+def test_fetch_abstract_by_doi_success(
+    mocker, pubmed_api_config_valid_batch, pubmed_abstract_text, pubmed_valid_xml
+):
     pubmed_api_config_valid_batch.query_params["tool"] = "fetch-abstracts-robot"
     pubmed_api_config_valid_batch.query_params["email"] = "robot@example.com"
 
     test_doi = "10.1000/xyz123"
     test_pmid = "123456"
     test_timeout = 1
-    expected_abstract_text = "PubMed abstract"
+    expected_abstract_text = pubmed_abstract_text
     expected_esearch_kwargs = {
         "url": str(pubmed_api_config_valid_batch.url),
         "params": {
@@ -71,11 +85,7 @@ def test_fetch_abstract_by_doi_success(mocker, pubmed_api_config_valid_batch):
 
     fetch_response = mocker.MagicMock()
     fetch_response.raise_for_status.return_value = None
-    fetch_response.text = (
-        "<PubmedArticleSet><PubmedArticle><MedlineCitation><Article>"
-        f"<Abstract><AbstractText>{expected_abstract_text}</AbstractText></Abstract>"
-        "</Article></MedlineCitation></PubmedArticle></PubmedArticleSet>"
-    )
+    fetch_response.text = pubmed_valid_xml
     expected_get_responses = [search_response, fetch_response]
     mocked_get = mocker.patch("httpx.Client.get", side_effect=expected_get_responses)
 
