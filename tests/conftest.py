@@ -93,12 +93,10 @@ def pubmed_api_config_valid_batch():
         require_api_key=False,
         api_key_env_var_name=None,
         api_key_placement=None,
-        query_type=QueryType.BATCHED_SINGLE,
         query_params={
             "db": "pubmed",
             "retmode": "json",
         },
-        headers={"Accept": "application/json"},
         unpack_strategy=AbstractUnpackStrategy(
             source=ExternalAPI.PUBMED_BATCH,
             strategy=["unused"],

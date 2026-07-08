@@ -10,6 +10,78 @@ if TYPE_CHECKING:
     from far.data_models.generic import APIConfig
 
 
+def _make_search_request(
+    client: httpx.Client,
+    api_config: "APIConfig",
+    search_params: dict[str, str],
+    timeout: int,
+) -> list[str] | None:
+    """
+    Make a search request to the PubMed ESearch API.
+
+    Args:
+        client (httpx.Client): The HTTP client.
+        api_config (APIConfig): The API configuration.
+        search_params (dict[str, str]): The search parameters.
+        timeout (int): The timeout for the request.
+
+    Returns:
+        list[str] | None: A list of PubMed IDs or None if no results are found.
+
+    """
+    search_response = client.get(
+        url=str(api_config.url),
+        params=search_params,
+        headers=api_config.headers,
+        timeout=timeout,
+    )
+    search_response.raise_for_status()
+    pubmed_id_list = search_response.json().get("esearchresult", {}).get("idlist", [])
+    return pubmed_id_list if pubmed_id_list else None
+
+
+def _make_fetch_request(
+    pmid_list: list[str],
+    client: httpx.Client,
+    search_params: dict[str, str],
+    timeout: int,
+) -> str:
+    """
+    Make a fetch request to the PubMed EFetch API.
+
+    Args:
+        pmid_list (list[str]): PubMed IDs to fetch abstracts for.
+        client (httpx.Client): The HTTP client.
+        search_params (dict[str, str]): The search parameters.
+        timeout (int): The timeout for the request.
+
+    Returns:
+        str: The XML response potentially containing the abstract.
+
+    """
+    fetch_api_endpoint = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+
+    fetch_params: dict[str, str] = {
+        "db": "pubmed",
+        "id": pmid_list[0],
+        "retmode": "xml",
+    }
+    tool = search_params.get("tool")
+    if isinstance(tool, str) and tool.strip():
+        fetch_params["tool"] = tool
+    email = search_params.get("email")
+    if isinstance(email, str) and email.strip():
+        fetch_params["email"] = email
+    fetch_response = client.get(
+        url=fetch_api_endpoint,
+        params=fetch_params,
+        headers={"Accept": "application/xml"},
+        timeout=timeout,
+    )
+    fetch_response.raise_for_status()
+    return fetch_response.text
+
+
 def fetch_abstract_by_doi(
     doi: str,
     api_config: "APIConfig",
@@ -27,41 +99,20 @@ def fetch_abstract_by_doi(
         str | None: The retrieved abstract or None if the fetch fails.
 
     """
-    client = httpx.Client(follow_redirects=True)
-
     search_params = api_config.query_params.copy()
     search_params["term"] = f"{doi}[DOI]"
     try:
-        search_response = client.get(
-            url=str(api_config.url),
-            params=search_params,
-            headers=api_config.headers,
-            timeout=timeout,
-        )
-        search_response.raise_for_status()
-        idlist = search_response.json().get("esearchresult", {}).get("idlist", [])
-        if not idlist:
-            return None
-
-        fetch_params: dict[str, str] = {
-            "db": "pubmed",
-            "id": idlist[0],
-            "retmode": "xml",
-        }
-        tool = search_params.get("tool")
-        if isinstance(tool, str) and tool.strip():
-            fetch_params["tool"] = tool
-        email = search_params.get("email")
-        if isinstance(email, str) and email.strip():
-            fetch_params["email"] = email
-        fetch_response = client.get(
-            url="https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
-            params=fetch_params,
-            headers={"Accept": "application/xml"},
-            timeout=timeout,
-        )
-        fetch_response.raise_for_status()
-        abstract = extract_abstract_from_xml(fetch_response.text)
+        with httpx.Client(follow_redirects=True) as client:
+            pubmed_id_list = _make_search_request(
+                client, api_config, search_params, timeout
+            )
+            if not pubmed_id_list:
+                logger.warning("No PubMed ID found for DOI {}", doi)
+                return None
+            fetch_response_text = _make_fetch_request(
+                pubmed_id_list, client, search_params, timeout
+            )
+        abstract = extract_abstract_from_xml(fetch_response_text)
     except (httpx.HTTPError, ValueError, ParseError) as pubmed_error:
         logger.warning("Failed PubMed retrieval for DOI {}: {}", doi, pubmed_error)
         return None
