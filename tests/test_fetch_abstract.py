@@ -8,7 +8,6 @@ from pydantic import AnyUrl
 
 from far.data_models.generic import AbstractUnpackError
 from far.fetch_abstract import AbstractFetcher, prepare_api_config
-from far.providers.pubmed import extract_abstract_from_xml
 
 
 def test_prepare_api_config_success(
@@ -31,8 +30,8 @@ def test_prepare_api_config_success(
     batch_results = result["batch"]
     assert set(batch_results.keys()) == {
         "CROSSREF_BATCH",
-        "PUBMED_BATCH",
         "SCOPUS_BATCH",
+        "PUBMED_BATCH",
     }
     assert not batch_results["SCOPUS_BATCH"].unpack_strategy.clean_abstract_string
     assert batch_results["SCOPUS_BATCH"].headers["X-API-Key"] == "dummy_scopus_key"
@@ -40,6 +39,12 @@ def test_prepare_api_config_success(
     assert batch_results["CROSSREF_BATCH"].headers == {"Accept": "application/json"}
     assert batch_results["CROSSREF_BATCH"].api_key_env_var_name is None
     assert batch_results["CROSSREF_BATCH"].unpack_strategy.clean_abstract_string
+    assert batch_results["PUBMED_BATCH"].headers == {"Accept": "application/json"}
+    assert batch_results["PUBMED_BATCH"].api_key_env_var_name is None
+    assert batch_results["PUBMED_BATCH"].unpack_strategy.strategy == ["unused"]
+    assert batch_results["PUBMED_BATCH"].url == AnyUrl(
+        "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+    )
 
 
 def test_prepare_api_config_missing_key(
@@ -145,6 +150,8 @@ def test_fetch_http_error(request, api_config_fixture, test_settings):
     ("api_config_fixture"),
     [
         ("scopus_api_config_valid_batch"),
+        ("crossref_api_config_valid_batch"),
+        ("pubmed_api_config_valid_batch"),
     ],
 )
 def test_unpack_many_abstracts_success_batch_input_of_one_item(
@@ -253,6 +260,7 @@ def test_unpack_many_abstracts_scopus_batch_success(
     [
         "scopus_api_config_valid_batch",
         "crossref_api_config_valid_batch",
+        "pubmed_api_config_valid_batch",
     ],
 )
 def test_unpack_one_abstract_keyerror(request, api_config_fixture, test_settings):
@@ -432,31 +440,6 @@ def test_clean_abstract_string_removes_all_tags():
     raw = "<jats:p>This is a <b>test</b> abstract.</jats:p>"
     cleaned = AbstractFetcher.clean_abstract_string(raw)
     assert cleaned == "This is a test abstract."
-
-
-def test_extract_pubmed_abstract_from_xml_success():
-    xml = """
-        <PubmedArticleSet>
-            <PubmedArticle>
-                <MedlineCitation>
-                    <Article>
-                        <Abstract>
-                            <AbstractText>Part one.</AbstractText>
-                            <AbstractText Label=\"Methods\">Part two.</AbstractText>
-                        </Abstract>
-                    </Article>
-                </MedlineCitation>
-            </PubmedArticle>
-        </PubmedArticleSet>
-        """
-    result = extract_abstract_from_xml(xml)
-    assert result == "Part one.\nMethods: Part two."
-
-
-def test_extract_pubmed_abstract_from_xml_missing_abstract():
-    xml = "<PubmedArticleSet><PubmedArticle /></PubmedArticleSet>"
-    result = extract_abstract_from_xml(xml)
-    assert result is None
 
 
 def test_clean_abstract_string_fallback_regex():
@@ -686,6 +669,7 @@ def test_fetch_many_abstracts_crossref_single_unpack_error(
     [
         "scopus_api_config_valid_batch",
         "crossref_api_config_valid_batch",
+        "pubmed_api_config_valid_batch",
     ],
 )
 def test_get_many_abstracts_cycling_apis_success(
@@ -715,11 +699,16 @@ def test_get_many_abstracts_cycling_apis_no_abstracts_found(
     mocker,
     crossref_api_config_valid_batch,
     scopus_api_config_valid_batch,
+    pubmed_api_config_valid_batch,
     test_settings,
 ):
     fetcher = AbstractFetcher(
         master_api_config=prepare_api_config(
-            [crossref_api_config_valid_batch, scopus_api_config_valid_batch],
+            [
+                crossref_api_config_valid_batch,
+                scopus_api_config_valid_batch,
+                pubmed_api_config_valid_batch,
+            ],
             test_settings,
         )
     )
@@ -732,6 +721,10 @@ def test_get_many_abstracts_cycling_apis_no_abstracts_found(
         in caplog.text
     )
     assert "No abstracts found in SCOPUS_BATCH with query type batch." in caplog.text
+    assert (
+        "No abstracts found in PUBMED_BATCH with query type batched_single."
+        in caplog.text
+    )
     assert (
         f"0 abstracts retrieved of {len(test_dois)} valid DOIs requested" in caplog.text
     )
