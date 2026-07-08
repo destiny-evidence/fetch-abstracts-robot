@@ -8,8 +8,6 @@ from pydantic import AnyUrl, BaseModel, Field, model_validator
 
 from far.config import Settings
 
-ProviderFetchHook = Callable[[str, "APIConfig", int], str | None]
-
 
 class APIKeyNotPresentError(Exception):
     """Raised when the required API key is not present in the settings."""
@@ -129,7 +127,7 @@ class APIConfig(BaseModel):
     unpack_strategy: AbstractUnpackStrategy = Field(
         description="Unpack strategy to employ to get a plain-text abstract"
     )
-    provider_fetch_hook: ProviderFetchHook | None = Field(
+    provider_fetch_hook: Callable[[str, "APIConfig", int], str | None] | None = Field(
         default=None,
         description=(
             "Optional provider-specific hook for retrieval strategies that "

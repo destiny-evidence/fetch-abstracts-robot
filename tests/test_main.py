@@ -17,6 +17,7 @@ def test_generate_abstract_enhancement(
     test_abstract_enhancement_processor: AbstractEnhancementProcessor,
     scopus_api_config_valid_batch,
     crossref_api_config_valid_batch,
+    pubmed_api_config_valid_batch,
 ) -> None:
     """Test that abstract enhancements are generated with valid abstracts."""
     reference_ids = [uuid.uuid4() for _ in range(3)]
@@ -26,6 +27,7 @@ def test_generate_abstract_enhancement(
     available_api_configs = [
         scopus_api_config_valid_batch,
         crossref_api_config_valid_batch,
+        pubmed_api_config_valid_batch,
     ]
 
     output_enhancements = [
