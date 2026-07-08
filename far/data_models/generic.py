@@ -1,5 +1,6 @@
 """Generic data models and validators for working with external APIs."""
 
+from collections.abc import Callable
 from enum import StrEnum
 
 from loguru import logger
@@ -123,6 +124,13 @@ class APIConfig(BaseModel):
     )
     unpack_strategy: AbstractUnpackStrategy = Field(
         description="Unpack strategy to employ to get a plain-text abstract"
+    )
+    provider_fetch_hook: Callable[[str, "APIConfig", int], str | None] | None = Field(
+        default=None,
+        description=(
+            "Optional provider-specific hook for retrieval strategies that "
+            "cannot be expressed as a single generic fetch + unpack call."
+        ),
     )
 
     @model_validator(mode="before")
