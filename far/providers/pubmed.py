@@ -113,15 +113,14 @@ def fetch_abstract_by_doi(
                 pubmed_id_list, client, search_params, timeout
             )
         abstract = extract_abstract_from_xml(fetch_response_text)
+
+        if abstract:
+            logger.debug(f"PubMed abstract fetched for DOI {doi}")
+
     except (httpx.HTTPError, ValueError, ParseError) as pubmed_error:
         logger.warning("Failed PubMed retrieval for DOI {}: {}", doi, pubmed_error)
         return None
-    else:
-        if abstract:
-            logger.debug(f"PubMed abstract fetched for DOI {doi}")
-        return abstract
-    finally:
-        client.close()
+    return abstract
 
 
 def extract_abstract_from_xml(xml_string: str) -> str | None:

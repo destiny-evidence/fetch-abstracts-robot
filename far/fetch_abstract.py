@@ -295,6 +295,10 @@ class AbstractFetcher:
         """
         Fetch many abstracts from a target API given a list of DOIs.
 
+        Provider hook, where present, should treat expected failures
+        gracefully and return `None` for the abstract if the fetch
+        fails for any reason.
+
         Args:
             dois (list[str]): List of DOIs to fetch abstracts for.
             api_config (APIConfig): API configuration object containing
