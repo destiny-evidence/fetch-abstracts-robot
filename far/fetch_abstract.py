@@ -319,7 +319,7 @@ class AbstractFetcher:
             ]
             dois = chunked_dois  # type: ignore[no-redef, assignment]
             logger.debug(
-                (f"Chunked into {len(dois)} sublists of max {doi_batch_size} each.",)
+                f"Chunked into {len(dois)} sublists of max {doi_batch_size} each."
             )
         for i, _chunk in enumerate(dois):
             logger.debug(f"Sending get request for chunk {i + 1} out of {len(dois)}")
