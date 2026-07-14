@@ -383,9 +383,9 @@ def test_generate_abstract_enhancement_batch_request_partial_success_empty_abstr
     )
     assert len(result) == len(test_two_references)
     assert any(isinstance(result_item, Enhancement) for result_item in result)
-    assert (
-        expected_error in result
-    ), "Expect a LinkedRobotError for the missing abstract but normal enhancements otherwise."
+    assert expected_error in result, (
+        "Expect a LinkedRobotError for the missing abstract but normal enhancements otherwise."
+    )
 
 
 def test_generate_abstract_enhancement_batch_request_appropriate_visibility(
@@ -435,12 +435,12 @@ def test_generate_abstract_enhancement_batch_request_appropriate_visibility(
         )
     )
 
-    assert (
-        result[0].visibility.upper() == "RESTRICTED"
-    ), "Expect RESTRICTED visibility for SCOPUS sourced abstract."
-    assert (
-        result[1].visibility.upper() == "PUBLIC"
-    ), "Expect PUBLIC visibility for crossref sourced abstract."
+    assert result[0].visibility.upper() == "RESTRICTED", (
+        "Expect RESTRICTED visibility for SCOPUS sourced abstract."
+    )
+    assert result[1].visibility.upper() == "PUBLIC", (
+        "Expect PUBLIC visibility for crossref sourced abstract."
+    )
 
 
 def test_generate_abstract_enhancement_batch_request_total_failure_no_abstracts_found_for_any_reference(

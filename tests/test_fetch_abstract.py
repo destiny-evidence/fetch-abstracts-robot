@@ -577,9 +577,9 @@ def test_get_many_abstracts_single_invalid_doi(
         result = fetcher.get_many_abstracts_cycling_apis(dois)
         assert f"Invalid DOI {invalid_doi} provided" in caplog.text
         assert len(result) == 2, "Still expect the bad DOI to be represented in output."
-        assert (
-            valid_doi_response in result
-        ), "Expect valid DOI to be represented in output."
+        assert valid_doi_response in result, (
+            "Expect valid DOI to be represented in output."
+        )
         assert any(
             item["doi"] == invalid_doi and item["abstract"] is None for item in result
         )
@@ -606,9 +606,9 @@ def test_fetch_many_abstracts_http_error(
         assert (
             "Encountered HTTPError on attempting to retrieve abstract." in caplog.text
         )
-        assert (
-            output == [{"doi": test_doi_list[0], "abstract": None}]
-        ), "Expect that we return an appropriate result for the repository on HTTPErrors."
+        assert output == [{"doi": test_doi_list[0], "abstract": None}], (
+            "Expect that we return an appropriate result for the repository on HTTPErrors."
+        )
 
 
 def test_fetch_many_abstracts_crossref_single_unpack_error(
@@ -635,9 +635,9 @@ def test_fetch_many_abstracts_crossref_single_unpack_error(
         )
         results = next(result_generator)
         assert "Test Abstract Unpack Failure" in caplog.text
-        assert (
-            results == [{"doi": [test_dois_list[0]], "abstract": None}]
-        ), "Expect that we return a null abstract on an unpack error for a single record."
+        assert results == [{"doi": [test_dois_list[0]], "abstract": None}], (
+            "Expect that we return a null abstract on an unpack error for a single record."
+        )
 
 
 @pytest.mark.parametrize(
