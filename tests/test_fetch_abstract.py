@@ -731,10 +731,10 @@ def test_get_many_abstracts_cycling_apis_batch_removes_all_found_dois(
     found = [r for r in result if r.get("abstract") is not None]
     not_found = [r for r in result if r.get("abstract") is None]
 
-    assert len(found) == len(
-        found_dois
-    ), "All DOIs with abstracts in the batch response should be counted as retrieved"
-    assert len(not_found) == len(
-        not_found_dois
-    ), "Only DOIs absent from the batch response should remain as not-retrieved"
+    assert len(found) == len(found_dois), (
+        "All DOIs with abstracts in the batch response should be counted as retrieved"
+    )
+    assert len(not_found) == len(not_found_dois), (
+        "Only DOIs absent from the batch response should remain as not-retrieved"
+    )
     assert {r["doi"] for r in not_found} == set(not_found_dois)

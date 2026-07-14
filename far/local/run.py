@@ -58,8 +58,7 @@ def main(
         )
     except BatchEnhancementGenerationError as no_abstracts_found_error:
         error_message = (
-            "Error during abstract enhancement generation: "
-            f"{no_abstracts_found_error}"
+            f"Error during abstract enhancement generation: {no_abstracts_found_error}"
         )
         logger.error(error_message)
         with output_file.open("w") as file:
