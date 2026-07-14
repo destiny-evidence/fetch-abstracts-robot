@@ -1,6 +1,7 @@
 """Define the main function to run the local abstract fetcher robot."""
 
 import json
+import sys
 from pathlib import Path
 
 from cyclopts import App
@@ -19,10 +20,6 @@ app = App(
     name="fetch-abstracts",
     version=get_version_number(),
 )
-
-
-class AbstractRetrievalError(Exception):
-    """Custom exception for errors during local abstract retrieval."""
 
 
 @app.default
@@ -60,7 +57,7 @@ def main(
         error_message = (
             f"Error during abstract enhancement generation: {no_abstracts_found_error}"
         )
-        logger.error(error_message)
+        logger.critical(error_message)
         with output_file.open("w") as file:
             json_output = {
                 "abstracts": None,
@@ -70,7 +67,7 @@ def main(
                 ],
             }
             file.write(json.dumps(json_output, indent=2))
-        raise AbstractRetrievalError(error_message) from no_abstracts_found_error
+        sys.exit(1)
 
     abstract_ids = []
     for enhancement in enhancements:
