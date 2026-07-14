@@ -1,4 +1,4 @@
-# ruff: noqa: E501, S106
+# ruff: noqa: S106
 import logging
 import uuid
 from collections.abc import Generator

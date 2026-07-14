@@ -194,9 +194,9 @@ class AbstractFetcher:
                     if not empty_abstract:
                         retrieved_abstracts.append(enhancement_dict)
                         logger.info(
-                            f"Abstract hit:{enhancement_dict.get("doi")} from {api=}."
+                            f"Abstract hit:{enhancement_dict.get('doi')} from {api=}."
                         )
-                        logger.debug(f"doi to remove: {enhancement_dict.get("doi")}.")
+                        logger.debug(f"doi to remove: {enhancement_dict.get('doi')}.")
                         doi_to_remove = enhancement_dict.get("doi")
                 if doi_to_remove:
                     dois.remove(self.process_doi(doi_to_remove))
@@ -319,10 +319,10 @@ class AbstractFetcher:
             ]
             dois = chunked_dois  # type: ignore[no-redef, assignment]
             logger.debug(
-                (f"Chunked into {len(dois)} sublists of max {doi_batch_size} each.",)
+                f"Chunked into {len(dois)} sublists of max {doi_batch_size} each."
             )
         for i, _chunk in enumerate(dois):
-            logger.debug(f"Sending get request for chunk {i+1} out of {len(dois)}")
+            logger.debug(f"Sending get request for chunk {i + 1} out of {len(dois)}")
             logger.debug(f"Chunk contains: {_chunk}")
             query_result = api_config.populate_query(query=_chunk)
 
@@ -551,7 +551,7 @@ class AbstractFetcher:
         logger.debug(f"number of batches to process: {len(batches)}")
 
         for batch_idx, batch in enumerate(batches):
-            logger.debug(f"processing batch {batch_idx+1} of {len(batches)}")
+            logger.debug(f"processing batch {batch_idx + 1} of {len(batches)}")
             entries = self._traverse(batch, shared_prefix)
 
             if not isinstance(entries, list):
@@ -560,12 +560,14 @@ class AbstractFetcher:
                 )
                 continue
 
-            logger.debug(f"batch {batch_idx+1}: found {len(entries)} entries.")
+            logger.debug(f"batch {batch_idx + 1}: found {len(entries)} entries.")
             for entry_idx, entry in enumerate(entries):
-                logger.debug(f"processing entry {entry_idx+1} in batch {batch_idx+1}")
+                logger.debug(
+                    f"processing entry {entry_idx + 1} in batch {batch_idx + 1}"
+                )
                 doi = self._traverse(entry, doi_suffix)
                 abstract = self._traverse(entry, abstract_suffix)
-                logger.debug(f"entry {entry_idx+1}: DOI: {doi}, abstract: {abstract}")
+                logger.debug(f"entry {entry_idx + 1}: DOI: {doi}, abstract: {abstract}")
 
                 if doi and abstract:
                     if clean:
