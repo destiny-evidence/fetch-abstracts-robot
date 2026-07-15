@@ -1,6 +1,5 @@
 """Define the main function to run the local abstract fetcher robot."""
 
-import json
 import os
 import sys
 from pathlib import Path
@@ -13,6 +12,7 @@ from far.config import Environment, get_settings
 from far.data_models.generic import ExternalAPI
 from far.enhancement_processor import BatchEnhancementGenerationError
 from far.local.config import set_up_processor
+from far.local.models import LocalAbstractRetrievalOutput
 from far.local.utils import get_destiny_references
 from far.logger import set_up_logger
 from far.utils import get_version_number
@@ -63,14 +63,14 @@ def main(
         )
         logger.critical(error_message)
         with output_file.open("w") as file:
-            json_output = {
-                "abstracts": None,
-                "dois_with_abstracts": None,
-                "dois_without_abstracts": [
+            error_output = LocalAbstractRetrievalOutput(
+                abstracts=None,
+                dois_with_abstracts=None,
+                dois_without_abstracts=[
                     reference.identifiers[0].identifier for reference in references
                 ],
-            }
-            file.write(json.dumps(json_output, indent=2))
+            )
+            file.write(error_output.model_dump_json(indent=2))
         sys.exit(1)
 
     abstract_ids = []
@@ -114,12 +114,12 @@ def main(
     logger.info(f"DOIs without abstracts: {dois_without_abstracts}")
 
     with output_file.open("w") as file:
-        json_output = {
-            "abstracts": abstract_dois,
-            "dois_with_abstracts": dois_with_abstracts,
-            "dois_without_abstracts": dois_without_abstracts,
-        }
-        file.write(json.dumps(json_output, indent=2))
+        local_abstract_retrieval_output = LocalAbstractRetrievalOutput(
+            abstracts=abstract_dois,
+            dois_with_abstracts=dois_with_abstracts,
+            dois_without_abstracts=dois_without_abstracts,
+        )
+        file.write(local_abstract_retrieval_output.model_dump_json(indent=2))
 
 
 if __name__ == "__main__":
