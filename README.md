@@ -45,7 +45,9 @@ uv sync --all-extras
 
 ## Running as a local application
 
-The Fetch Abstracts Robot can be run locally as an application provided users bring their own API keys for third-party APIs. Crossref does not require an API key, so can be used for testing without any additional configuration. To run the robot locally, set up the `.env` file with the necessary configuration variables (see `.env.example` for reference). Then run:
+The Fetch Abstracts Robot can be run locally as an application provided users bring their own API keys for third-party APIs. Crossref does not require an API key, so can be used for testing without any additional configuration. To run the robot locally, set up the `.env` file with the necessary configuration variables (see `.env.example` for reference) providing keys for any APIs you wish to use of the available selection. Note that none of these variables are _required_.
+
+Then run:
 
 ```sh
 fetch-abstracts --doi-list doi-file

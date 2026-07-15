@@ -1,6 +1,7 @@
 """Define the main function to run the local abstract fetcher robot."""
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -8,13 +9,16 @@ from cyclopts import App
 from destiny_sdk.robots import LinkedRobotError
 from loguru import logger
 
-from far.config import get_settings
+from far.config import Environment, get_settings
 from far.data_models.generic import ExternalAPI
 from far.enhancement_processor import BatchEnhancementGenerationError
 from far.local.config import set_up_processor
 from far.local.utils import get_destiny_references
 from far.logger import set_up_logger
 from far.utils import get_version_number
+
+os.environ["ENV"] = Environment.LOCAL
+os.environ["DESTINY_REPOSITORY_URL"] = "https://example.com"
 
 app = App(
     name="fetch-abstracts",
