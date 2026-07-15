@@ -205,6 +205,15 @@
 </nav>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#running-as-a-local-application">
+<span class="md-ellipsis">
+      
+        Running as a local application
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#development">
 <span class="md-ellipsis">
       
@@ -370,6 +379,15 @@
 </nav>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#running-as-a-local-application">
+<span class="md-ellipsis">
+      
+        Running as a local application
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#development">
 <span class="md-ellipsis">
       
@@ -487,6 +505,19 @@
 <p>To install additional development and test dependencies, run:</p>
 <div class="highlight"><pre><span></span><code>uv<span class="w"> </span>sync<span class="w"> </span>--all-extras
 </code></pre></div>
+<h2 id="running-as-a-local-application">Running as a local application</h2>
+<p>The Fetch Abstracts Robot can be run locally as an application provided users bring their own API keys for third-party APIs. Crossref does not require an API key, so can be used for testing without any additional configuration. To run the robot locally, set up the <code>.env</code> file with the necessary configuration variables (see <code>.env.example</code> for reference) providing keys for any APIs you wish to use of the available selection. Note that none of these variables are <em>required</em>.</p>
+<p>Then run:</p>
+<div class="highlight"><pre><span></span><code>fetch-abstracts<span class="w"> </span>--doi-list<span class="w"> </span>doi-file
+</code></pre></div>
+<p>where <code>doi-file</code> is a newline-separated text file containing DOIs to retrieve abstracts for. This can have any extension, such as <code>.txt</code> or <code>.csv</code>. For example:</p>
+<div class="highlight"><pre><span></span><code>fetch-abstracts<span class="w"> </span>--doi-list<span class="w"> </span>data/test_doi_list.txt
+</code></pre></div>
+<p>For more options when running the robot locally, you can run</p>
+<div class="highlight"><pre><span></span><code>fetch-abstracts<span class="w"> </span>--help
+</code></pre></div>
+<p>which highlights other selectable options, such as the output directory.</p>
+<p>The local tool will write out a JSON file containing the retrieved abstracts and associated metadata for each DOI in the input file. If an abstract cannot be retrieved for a given DOI, this will be noted in the output JSON file.</p>
 <h2 id="development">Development</h2>
 <p>Before commiting any changes, please run the pre-commit hooks. This will ensure that the code is formatted correctly and minimise diffs to code changes when submitting a pull request.</p>
 <p>After installing dependencies as shown above, install the pre-commit hooks:</p>
@@ -497,7 +528,7 @@
 </code></pre></div>
 <p>See <code>.pre-commit-config.yaml</code> for the list of pre-commit hooks and their configuration.</p>
 <h2 id="application">Application</h2>
-<p>Run the application locally with:</p>
+<p>Run the application <em>as a robot</em> locally for testing with:</p>
 <div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>run_robot.py
 </code></pre></div>
 <h2 id="implemented-request-flow">Implemented request flow</h2>
