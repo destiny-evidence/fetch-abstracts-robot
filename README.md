@@ -43,6 +43,32 @@ To install additional development and test dependencies, run:
 uv sync --all-extras
 ```
 
+## Running as a local application
+
+The Fetch Abstracts Robot can be run locally as an application provided users bring their own API keys for third-party APIs. Crossref does not require an API key, so can be used for testing without any additional configuration. To run the robot locally, set up the `.env` file with the necessary configuration variables (see `.env.example` for reference) providing keys for any APIs you wish to use of the available selection. Note that none of these variables are _required_.
+
+Then run:
+
+```sh
+fetch-abstracts --doi-list doi-file
+```
+
+where `doi-file` is a newline-separated text file containing DOIs to retrieve abstracts for. This can have any extension, such as `.txt` or `.csv`. For example:
+
+```sh
+fetch-abstracts --doi-list data/test_doi_list.txt
+```
+
+For more options when running the robot locally, you can run
+
+```sh
+fetch-abstracts --help
+```
+
+which highlights other selectable options, such as the output directory.
+
+The local tool will write out a JSON file containing the retrieved abstracts and associated metadata for each DOI in the input file. If an abstract cannot be retrieved for a given DOI, this will be noted in the output JSON file.
+
 ## Development
 
 Before commiting any changes, please run the pre-commit hooks. This will ensure that the code is formatted correctly and minimise diffs to code changes when submitting a pull request.
@@ -63,7 +89,7 @@ See `.pre-commit-config.yaml` for the list of pre-commit hooks and their configu
 
 ## Application
 
-Run the application locally with:
+Run the application _as a robot_ locally for testing with:
 
 ```sh
 uv run run_robot.py

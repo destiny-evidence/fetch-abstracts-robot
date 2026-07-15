@@ -6,6 +6,7 @@ from destiny_sdk.enhancements import (
     AbstractProcessType,
     Enhancement,
 )
+from destiny_sdk.identifiers import DOIIdentifier
 from destiny_sdk.references import Reference
 from destiny_sdk.robots import LinkedRobotError, RobotEnhancementBatch
 from pytest_httpx import HTTPXMock
@@ -87,6 +88,35 @@ def test_create_abstract_enhancement_success(
         enhancement_generation_mock.assert_called_once(),
         "Expected enhancement_generation_mock to be called once per batch of references.",
     )
+
+
+def test_create_abstract_enhancement_matches_despite_doi_case_mismatch(
+    mocker: MockerFixture,
+    test_abstract_enhancement_processor: AbstractEnhancementProcessor,
+) -> None:
+    """
+    Regression: a reference whose DOI is uppercase should still be matched
+    when the API returns the same DOI in lowercase.
+    """
+    ref = Reference(
+        id=uuid.uuid4(),
+        identifiers=[DOIIdentifier(identifier="10.1000/UPPER123")],
+    )
+    mocker.patch(
+        "far.fetch_abstract.AbstractFetcher.get_many_abstracts_cycling_apis",
+        return_value=[{"doi": "10.1000/upper123", "abstract": "An abstract."}],
+    )
+    generation_mock = mocker.patch(
+        "far.enhancement_processor.AbstractEnhancementProcessor.generate_abstract_enhancement_batch_request",
+        return_value=[],
+    )
+
+    test_abstract_enhancement_processor.create_abstract_enhancement([ref])
+
+    called_map = generation_mock.call_args.kwargs["enhancements_references_map"]
+    assert len(called_map) == 1, "Reference should be matched despite DOI case mismatch"
+    assert called_map[0]["id"] == ref.id
+    assert called_map[0]["abstract"] == "An abstract."
 
 
 def test_create_abstract_enhancement_batch_enhancement_generation_failure(

@@ -698,3 +698,43 @@ def test_get_many_abstracts_cycling_apis_no_abstracts_found(
     assert len(list(null_enhancements)) == len(test_dois)
     assert all(item["abstract"] is None for item in null_enhancements)
     assert all(item["source"] is None for item in null_enhancements)
+
+
+def test_get_many_abstracts_cycling_apis_batch_removes_all_found_dois(
+    scopus_api_config_valid_batch, test_settings
+):
+    """
+    Regression: all DOIs in a multi-abstract batch response must be removed
+    from the pending list, not just the last one.
+    """
+    fetcher = AbstractFetcher(
+        master_api_config=prepare_api_config(
+            [scopus_api_config_valid_batch], test_settings
+        )
+    )
+    found_dois = ["10.1000/xyz123", "10.1000/xyz124"]
+    not_found_dois = ["10.1000/xyz125", "10.1000/xyz126"]
+    all_dois = found_dois + not_found_dois
+
+    batch_response = [
+        [
+            {"doi": found_dois[0], "abstract": "Abstract one"},
+            {"doi": found_dois[1], "abstract": "Abstract two"},
+        ]
+    ]
+
+    with patch.object(
+        fetcher, "fetch_many_abstracts", return_value=iter(batch_response)
+    ):
+        result = fetcher.get_many_abstracts_cycling_apis(all_dois)
+
+    found = [r for r in result if r.get("abstract") is not None]
+    not_found = [r for r in result if r.get("abstract") is None]
+
+    assert len(found) == len(found_dois), (
+        "All DOIs with abstracts in the batch response should be counted as retrieved"
+    )
+    assert len(not_found) == len(not_found_dois), (
+        "Only DOIs absent from the batch response should remain as not-retrieved"
+    )
+    assert {r["doi"] for r in not_found} == set(not_found_dois)

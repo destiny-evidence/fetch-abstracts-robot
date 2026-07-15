@@ -11,6 +11,7 @@ from far.utils import (
     VersionInfoNotFoundError,
     get_doi_from_reference,
     get_version_number,
+    normalise_doi,
     validate_doi,
 )
 
@@ -126,6 +127,36 @@ def test_get_version_number_success(mocker):
     mocker.patch("far.utils.version", return_value="1.2.3")
     version = get_version_number("fetch-abstracts-robot")
     assert version == "1.2.3"
+
+
+@pytest.mark.parametrize(
+    ("doi", "expected"),
+    [
+        ("10.1000/xyz123", "10.1000/xyz123"),
+        ("10.1000/XYZ123", "10.1000/xyz123"),
+        ("https://doi.org/10.1000/xyz123", "10.1000/xyz123"),
+        ("http://doi.org/10.1000/XYZ123", "10.1000/xyz123"),
+    ],
+)
+def test_normalise_doi_returns_lowercase_stripped(doi, expected):
+    """normalise_doi strips URL prefixes and lowercases valid DOIs."""
+    assert normalise_doi(doi) == expected
+
+
+@pytest.mark.parametrize(
+    "invalid_doi",
+    [
+        "not-a-doi",
+        "https://doi.org/foo",
+        "",
+    ],
+)
+def test_normalise_doi_returns_none_for_invalid(invalid_doi, caplog):
+    """normalise_doi returns None (and warns) for inputs that fail SDK validation."""
+    with caplog.at_level("WARNING"):
+        result = normalise_doi(invalid_doi)
+    assert result is None
+    assert "Could not normalise DOI" in caplog.text
 
 
 def test_get_version_number_version_not_found():

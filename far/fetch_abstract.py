@@ -185,7 +185,6 @@ class AbstractFetcher:
             found_responses = False
             for response in retrieved_responses:
                 found_responses = True
-                doi_to_remove = None
                 logger.debug(f"Response: {response}")
                 for enhancement_dict in response:
                     enhancement_dict["source"] = api
@@ -193,18 +192,16 @@ class AbstractFetcher:
                     empty_abstract: bool = enhancement_dict.get("abstract") is None
                     if not empty_abstract:
                         retrieved_abstracts.append(enhancement_dict)
-                        logger.info(
-                            f"Abstract hit:{enhancement_dict.get('doi')} from {api=}."
-                        )
-                        logger.debug(f"doi to remove: {enhancement_dict.get('doi')}.")
                         doi_to_remove = enhancement_dict.get("doi")
-                if doi_to_remove:
-                    dois.remove(self.process_doi(doi_to_remove))
-                    logger.info(
-                        f"Retrieved abstract for doi {doi_to_remove} from {api=}. "
-                        "Removing from master list."
-                    )
-                    api_count += 1
+                        logger.info(f"Abstract hit:{doi_to_remove} from {api=}.")
+                        try:
+                            dois.remove(self.process_doi(doi_to_remove))
+                            api_count += 1
+                        except ValueError:
+                            logger.warning(
+                                f"DOI {doi_to_remove} not in remaining list "
+                                "(may have been retrieved by a previous API)."
+                            )
             if not found_responses:
                 error_message = (
                     f"No abstracts found in {api} with"

@@ -2,6 +2,7 @@
 import logging
 import uuid
 from collections.abc import Generator
+from contextlib import suppress
 
 import destiny_sdk
 import pytest
@@ -9,6 +10,7 @@ from fastapi import status
 from loguru import logger
 from pytest_httpx import HTTPXMock, IteratorStream
 
+from far import logger as far_logger_module
 from far.config import Settings
 from far.data_models.generic import (
     AbstractUnpackStrategy,
@@ -19,6 +21,7 @@ from far.data_models.generic import (
 from far.data_models.scopus import ScopusAPIConfig
 from far.enhancement_processor import AbstractEnhancementProcessor
 from far.fetch_abstract import prepare_api_config
+from far.local import run as local_run_module
 
 pytest_plugins = [
     "tests.fixtures.generic",
@@ -117,14 +120,47 @@ def test_settings(set_test_environment_variables) -> Settings:
 
 
 @pytest.fixture
-def caplog(caplog):
+def caplog(caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch):
+    """
+    Define a custom caplog fixture for testing loguru logging in pytest.
+
+    Tests using caplog should not lose their loguru bridge due to logger
+    reconfiguration. This extends the default caplog fixture to ensure that
+    loguru logs are captured even when the logger is reconfigured in the code
+    under test.
+
+    Args:
+        caplog (pytest.LogCaptureFixture): The default caplog fixture provided by pytest.
+        monkeypatch (pytest.MonkeyPatch): The default monkeypatch fixture provided by pytest.
+
+    Yields:
+        pytest.LogCaptureFixture: The extended caplog fixture that captures loguru logs.
+
+    """
+
     class PropogateHandler(logging.Handler):
-        def emit(self, record) -> None:
+        """Custom logging handler to propagate loguru logs to pytest's caplog."""
+
+        def emit(self, record: logging.LogRecord) -> None:
+            """
+            Emit a log record to the pytest caplog.
+
+            Args:
+                record (logging.LogRecord): The log record to emit.
+
+            """
             logging.getLogger(record.name).handle(record)
+
+    monkeypatch.setattr(far_logger_module, "set_up_logger", lambda: logger)
+    monkeypatch.setattr(local_run_module, "set_up_logger", lambda: logger)
 
     handler_id = logger.add(PropogateHandler(), format="{message}")
     yield caplog
-    logger.remove(handler_id)
+    suppressed_value_error = suppress(ValueError)
+
+    # Suppress ValueError that may occur if the handler has already been removed in code
+    with suppressed_value_error:
+        logger.remove(handler_id)
 
 
 @pytest.fixture

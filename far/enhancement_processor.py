@@ -18,7 +18,7 @@ from loguru import logger
 
 from far.data_models.generic import APIConfig
 from far.fetch_abstract import AbstractFetcher
-from far.utils import get_doi_from_reference, get_version_number
+from far.utils import get_doi_from_reference, get_version_number, normalise_doi
 
 
 class BatchEnhancementGenerationError(Exception):
@@ -84,15 +84,28 @@ class AbstractEnhancementProcessor:
             dois
         )
 
+        # Pre-normalise once per reference (O(n)) and once per abstract entry (O(m))
+        # to avoid O(n*m) validate_doi calls inside the nested comprehension.
+        ref_normalised_dois = {
+            ref.id: doi
+            for ref in references
+            if (doi := normalise_doi(get_doi_from_reference(ref))) is not None
+        }
+        normalised_abstracts_map = {
+            key: entry
+            for entry in abstracts_dois_dict
+            if (key := normalise_doi(entry.get("doi", ""))) is not None
+        }
+
         enhancement_reference_map = [
             {
                 "id": ref.id,
-                "doi": abstract_doi.get("doi"),
-                "abstract": abstract_doi.get("abstract"),
+                "doi": matched.get("doi"),
+                "abstract": matched.get("abstract"),
             }
             for ref in references
-            for abstract_doi in abstracts_dois_dict
-            if get_doi_from_reference(ref) == abstract_doi.get("doi")
+            if (ref_doi := ref_normalised_dois.get(ref.id)) is not None
+            and (matched := normalised_abstracts_map.get(ref_doi)) is not None
         ]
 
         try:
