@@ -37,7 +37,7 @@ def _make_search_request(
     )
     search_response.raise_for_status()
     pubmed_id_list = search_response.json().get("esearchresult", {}).get("idlist", [])
-    return pubmed_id_list if pubmed_id_list else None
+    return pubmed_id_list or None
 
 
 def _make_fetch_request(

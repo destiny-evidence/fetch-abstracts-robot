@@ -96,9 +96,9 @@ def test_fetch_abstract_by_doi_success(
     )
 
     assert result == expected_abstract_text
-    assert mocked_get.call_count == len(
-        expected_get_responses
-    ), "Expected call for fetch for search."
+    assert mocked_get.call_count == len(expected_get_responses), (
+        "Expected call for fetch for search."
+    )
     _, esearch_kwargs = mocked_get.call_args_list[0]
     _, efetch_kwargs = mocked_get.call_args_list[-1]
     assert esearch_kwargs == expected_esearch_kwargs
@@ -205,9 +205,9 @@ def test_fetch_many_abstracts_pubmed_hook_used_and_handles_chunking(
     )
 
     assert results == expected_doi_abstract_response, "Expect an abstract per DOI."
-    assert len(mocked_hook.call_args_list) == len(
-        test_dois
-    ), "Provider hook called once for each DOI."
+    assert len(mocked_hook.call_args_list) == len(test_dois), (
+        "Provider hook called once for each DOI."
+    )
     first_args, first_kwargs = mocked_hook.call_args_list[0]
     second_args, second_kwargs = mocked_hook.call_args_list[1]
     assert first_kwargs == {}
