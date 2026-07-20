@@ -37,7 +37,7 @@ resource "azurerm_role_assignment" "fetch_abstracts_robot_role_assignment" {
 }
 
 resource "azurerm_network_security_group" "fetch_abstracts_robot_nsg" {
-  name                = "nsg-${var.app_name}-${var.environment}"
+  name                = "nsg-${var.robot_name}-${var.environment}"
   location            = azurerm_resource_group.robot_resource_group.location
   resource_group_name = azurerm_resource_group.robot_resource_group.name
   tags = {
@@ -48,7 +48,7 @@ resource "azurerm_network_security_group" "fetch_abstracts_robot_nsg" {
 }
 
 resource "azurerm_virtual_network" "fetch_abstracts_robot_vnet" {
-  name                = "vnet-${var.app_name}-${var.environment}"
+  name                = "vnet-${var.robot_name}-${var.environment}"
   location            = azurerm_resource_group.robot_resource_group.location
   resource_group_name = azurerm_resource_group.robot_resource_group.name
   address_space       = ["10.0.0.0/21"]
@@ -61,7 +61,7 @@ resource "azurerm_virtual_network" "fetch_abstracts_robot_vnet" {
 }
 
 resource "azurerm_subnet" "fetch_abstracts_robot_subnet" {
-  name                 = "subnet-${var.app_name}-${var.environment}"
+  name                 = "subnet-${var.robot_name}-${var.environment}"
   resource_group_name  = azurerm_resource_group.robot_resource_group.name
   virtual_network_name = azurerm_virtual_network.fetch_abstracts_robot_vnet.name
   address_prefixes     = ["10.0.0.0/21"]

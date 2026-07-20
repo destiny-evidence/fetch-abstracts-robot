@@ -50,11 +50,6 @@ variable "environment" {
   default     = "development"
 }
 
-variable "subscription_id" {
-  description = "The Azure subscription ID to use for the deployment."
-  type        = string
-}
-
 variable "owner_name" {
   description = "Name of the owner of the robot."
 }
