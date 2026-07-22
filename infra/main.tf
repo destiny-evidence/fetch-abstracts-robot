@@ -11,15 +11,9 @@ data "azurerm_key_vault" "destiny_data_ingest_shared_kv" {
 # This might exist for you if your robot has already been deployed.
 # In this case, you can use a data resource instead https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/resource_group
 resource "azurerm_resource_group" "robot_resource_group" {
-  name     = "rg-${var.robot_name}-${var.environment}"
+  name     = "rg-${var.robot_name}-${var.deployment_environment}"
   location = "swedencentral"
-  tags = {
-    "Budget Code" = "destiny-evidence"
-    "Created by" = "${var.owner_name}"
-    "Owner" = "${var.owner_email}"
-    "Environment" = "${var.environment_description}"
-    "Region" = "${var.region_friendly_name}"
-  }
+  tags = local.extended_resource_tags
 }
 
 
@@ -37,31 +31,23 @@ resource "azurerm_role_assignment" "fetch_abstracts_robot_role_assignment" {
 }
 
 resource "azurerm_network_security_group" "fetch_abstracts_robot_nsg" {
-  name                = "nsg-${var.robot_name}-${var.environment}"
+  name                = "nsg-${var.robot_name}-${var.deployment_environment}"
   location            = azurerm_resource_group.robot_resource_group.location
   resource_group_name = azurerm_resource_group.robot_resource_group.name
-  tags = {
-    "Created by"  = var.owner_name
-    "Environment" = var.environment_description
-    "Owner"       = var.owner_email
-  }
+  tags = local.minimum_resource_tags
 }
 
 resource "azurerm_virtual_network" "fetch_abstracts_robot_vnet" {
-  name                = "vnet-${var.robot_name}-${var.environment}"
+  name                = "vnet-${var.robot_name}-${var.deployment_environment}"
   location            = azurerm_resource_group.robot_resource_group.location
   resource_group_name = azurerm_resource_group.robot_resource_group.name
   address_space       = ["10.0.0.0/21"]
 
-  tags = {
-    "Created by"  = var.owner_name
-    "Environment" = var.environment_description
-    "Owner"       = var.owner_email
-  }
+  tags = local.minimum_resource_tags
 }
 
 resource "azurerm_subnet" "fetch_abstracts_robot_subnet" {
-  name                 = "subnet-${var.robot_name}-${var.environment}"
+  name                 = "subnet-${var.robot_name}-${var.deployment_environment}"
   resource_group_name  = azurerm_resource_group.robot_resource_group.name
   virtual_network_name = azurerm_virtual_network.fetch_abstracts_robot_vnet.name
   address_prefixes     = ["10.0.0.0/21"]
@@ -89,7 +75,7 @@ module "container_app_fetch_abstracts_robot" {
   source                          = "app.terraform.io/destiny-evidence/container-app/azure"
   version                         = "1.8.2"
   app_name                        = var.robot_name
-  environment                     = var.environment
+  environment                     = var.deployment_environment
   container_registry_id           = data.azurerm_container_registry.destiny_shared_infra.id
   container_registry_login_server = data.azurerm_container_registry.destiny_shared_infra.login_server
   resource_group_name             = azurerm_resource_group.robot_resource_group.name
@@ -117,7 +103,7 @@ module "container_app_fetch_abstracts_robot" {
     },
     {
       name        = "ENV"
-      value = var.environment
+      value = var.deployment_environment
     },
     {
       name        = "ELSEVIER_SCOPUS_KEY"
@@ -168,6 +154,8 @@ module "container_app_fetch_abstracts_robot" {
       percentage      = 100
     }
   }
+
+  tags = local.extended_resource_tags
 
   # You can see here that we're passing the user assigned identity that we created above to the client application.
   # This identity has the robot role assignment and will allow the robot to authenticate with destiny repository.

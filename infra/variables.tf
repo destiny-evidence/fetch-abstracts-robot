@@ -45,10 +45,16 @@ variable "key_vault_resource_group_name" {
   description = "Name of the Key Vault resource group."
 }
 
-variable "environment" {
+variable "deployment_environment" {
   description = "Environment for the Fetch Abstracts Robot, should be either development, staging or production."
   default     = "development"
+  type = string
+  validation {
+    condition     = contains(["development", "staging", "production"], var.deployment_environment)
+    error_message = "Environment must be one of 'development', 'staging' or 'production'."
+  }
 }
+
 
 variable "owner_name" {
   description = "Name of the owner of the robot."
@@ -56,6 +62,10 @@ variable "owner_name" {
 
 variable "owner_email" {
   description = "Email of the owner of the robot."
+}
+
+variable "budget_code" {
+  description = "Budget code for the robot."
 }
 
 variable "environment_description" {
@@ -76,4 +86,18 @@ variable "poll_interval_seconds" {
 variable "batch_size" {
   description = "Number of abstracts to fetch in each batch."
   default     = "10"
+}
+
+locals {
+  app_name = "incremental-updater"
+  app_job_name = "job-openalex-refresh"
+  minimum_resource_tags = {
+    "Created by"  = var.owner_name
+    "Environment" = var.deployment_environment
+    "Owner"       = var.owner_email
+    "Region" = var.region_friendly_name
+  }
+  extended_resource_tags = merge(local.minimum_resource_tags, {
+    "Budget code" = var.budget_code
+  })
 }
