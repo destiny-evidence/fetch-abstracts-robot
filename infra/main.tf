@@ -16,6 +16,12 @@ resource "azurerm_resource_group" "robot_resource_group" {
   tags = local.extended_resource_tags
 }
 
+resource "azurerm_role_assignment" "github_actions_sp_contributor_role" {
+  scope                = azurerm_resource_group.robot_resource_group.id
+  role_definition_name = "Contributor"
+  principal_id         = var.github_actions_service_principal_object_id
+}
+
 
 # Create a user assigned identity for our robot. This is the identity used when authenticating.
 resource "azurerm_user_assigned_identity" "fetch_abstracts_robot" {

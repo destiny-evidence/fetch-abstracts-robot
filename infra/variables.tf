@@ -45,6 +45,11 @@ variable "key_vault_resource_group_name" {
   description = "Name of the Key Vault resource group."
 }
 
+variable "github_actions_service_principal_object_id" {
+  description = "The Object ID of the Azure Service Principal used by GitHub Actions to deploy the Incremental Updater App and App Job."
+  type = string
+}
+
 variable "deployment_environment" {
   description = "Environment for the Fetch Abstracts Robot, should be either development, staging or production."
   default     = "development"
