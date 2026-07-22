@@ -13,12 +13,14 @@ from far.fetch_abstract import AbstractFetcher, prepare_api_config
 def test_prepare_api_config_success(
     scopus_api_config_valid_batch,
     crossref_api_config_valid_batch,
+    pubmed_api_config_valid_batch,
     external_api_priorities,
     test_settings,
 ):
     configs = [
         scopus_api_config_valid_batch,
         crossref_api_config_valid_batch,
+        pubmed_api_config_valid_batch,
     ]
     result = prepare_api_config(
         configs,
@@ -26,13 +28,23 @@ def test_prepare_api_config_success(
         external_api_priority_batch=external_api_priorities["batch"],
     )
     batch_results = result["batch"]
-    assert set(batch_results.keys()) == {"CROSSREF_BATCH", "SCOPUS_BATCH"}
+    assert set(batch_results.keys()) == {
+        "CROSSREF_BATCH",
+        "SCOPUS_BATCH",
+        "PUBMED_BATCH",
+    }
     assert not batch_results["SCOPUS_BATCH"].unpack_strategy.clean_abstract_string
     assert batch_results["SCOPUS_BATCH"].headers["X-API-Key"] == "dummy_scopus_key"
     assert batch_results["SCOPUS_BATCH"].headers["X-Inst-Token"] == "dummy_inst_token"
     assert batch_results["CROSSREF_BATCH"].headers == {"Accept": "application/json"}
     assert batch_results["CROSSREF_BATCH"].api_key_env_var_name is None
     assert batch_results["CROSSREF_BATCH"].unpack_strategy.clean_abstract_string
+    assert batch_results["PUBMED_BATCH"].headers == {"Accept": "application/json"}
+    assert batch_results["PUBMED_BATCH"].api_key_env_var_name is None
+    assert batch_results["PUBMED_BATCH"].unpack_strategy.strategy == ["unused"]
+    assert batch_results["PUBMED_BATCH"].url == AnyUrl(
+        "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+    )
 
 
 def test_prepare_api_config_missing_key(
@@ -57,6 +69,9 @@ def test_prepare_api_config_missing_key(
         {
             "batch": "crossref_api_config_valid_batch",
         },
+        {
+            "batch": "pubmed_api_config_valid_batch",
+        },
     ],
 )
 def test_abstract_fetcher_init_logs(request, api_config_fixture, test_settings):
@@ -80,6 +95,9 @@ def test_abstract_fetcher_init_logs(request, api_config_fixture, test_settings):
         },
         {
             "batch": "crossref_api_config_valid_batch",
+        },
+        {
+            "batch": "pubmed_api_config_valid_batch",
         },
     ],
 )
@@ -108,6 +126,9 @@ def test_fetch_success(request, api_config_fixture, test_settings):
         {
             "batch": "crossref_api_config_valid_batch",
         },
+        {
+            "batch": "pubmed_api_config_valid_batch",
+        },
     ],
 )
 def test_fetch_http_error(request, api_config_fixture, test_settings):
@@ -129,6 +150,8 @@ def test_fetch_http_error(request, api_config_fixture, test_settings):
     ("api_config_fixture"),
     [
         ("scopus_api_config_valid_batch"),
+        ("crossref_api_config_valid_batch"),
+        ("pubmed_api_config_valid_batch"),
     ],
 )
 def test_unpack_many_abstracts_success_batch_input_of_one_item(
@@ -237,6 +260,7 @@ def test_unpack_many_abstracts_scopus_batch_success(
     [
         "scopus_api_config_valid_batch",
         "crossref_api_config_valid_batch",
+        "pubmed_api_config_valid_batch",
     ],
 )
 def test_unpack_one_abstract_keyerror(request, api_config_fixture, test_settings):
@@ -645,6 +669,7 @@ def test_fetch_many_abstracts_crossref_single_unpack_error(
     [
         "scopus_api_config_valid_batch",
         "crossref_api_config_valid_batch",
+        "pubmed_api_config_valid_batch",
     ],
 )
 def test_get_many_abstracts_cycling_apis_success(
@@ -674,11 +699,16 @@ def test_get_many_abstracts_cycling_apis_no_abstracts_found(
     mocker,
     crossref_api_config_valid_batch,
     scopus_api_config_valid_batch,
+    pubmed_api_config_valid_batch,
     test_settings,
 ):
     fetcher = AbstractFetcher(
         master_api_config=prepare_api_config(
-            [crossref_api_config_valid_batch, scopus_api_config_valid_batch],
+            [
+                crossref_api_config_valid_batch,
+                scopus_api_config_valid_batch,
+                pubmed_api_config_valid_batch,
+            ],
             test_settings,
         )
     )
@@ -691,6 +721,10 @@ def test_get_many_abstracts_cycling_apis_no_abstracts_found(
         in caplog.text
     )
     assert "No abstracts found in SCOPUS_BATCH with query type batch." in caplog.text
+    assert (
+        "No abstracts found in PUBMED_BATCH with query type batched_single."
+        in caplog.text
+    )
     assert (
         f"0 abstracts retrieved of {len(test_dois)} valid DOIs requested" in caplog.text
     )

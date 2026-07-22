@@ -30,8 +30,10 @@ def test_custom_exceptions():
 def test_external_api_enum():
     assert ExternalAPI.SCOPUS_BATCH == "scopus_batch"
     assert ExternalAPI.CROSSREF_BATCH == "crossref_batch"
+    assert ExternalAPI.PUBMED_BATCH == "pubmed_batch"
     assert set(ExternalAPI) == {
         ExternalAPI.CROSSREF_BATCH,
+        ExternalAPI.PUBMED_BATCH,
         ExternalAPI.SCOPUS_BATCH,
     }
 
@@ -41,11 +43,13 @@ def test_external_api_priority_model():
         name="test_priority",
         priorities={
             ExternalAPI.CROSSREF_BATCH: 1,
-            ExternalAPI.SCOPUS_BATCH: 2,
+            ExternalAPI.PUBMED_BATCH: 2,
+            ExternalAPI.SCOPUS_BATCH: 3,
         },
     )
     assert model.priorities[ExternalAPI.CROSSREF_BATCH] == 1
-    assert model.priorities[ExternalAPI.SCOPUS_BATCH] == 2
+    assert model.priorities[ExternalAPI.PUBMED_BATCH] == 2
+    assert model.priorities[ExternalAPI.SCOPUS_BATCH] == 3
 
 
 def test_abstract_unpack_strategy_():
@@ -85,6 +89,18 @@ def test_abstract_unpack_strategy_():
             ExternalAPI.CROSSREF_BATCH,
             ["message", "abstract"],
         ),
+        (
+            "pubmed_api_config_valid_batch",
+            {"Accept": "application/json"},
+            ExternalAPI.PUBMED_BATCH,
+            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+            {
+                "db": "pubmed",
+                "retmode": "json",
+            },
+            ExternalAPI.PUBMED_BATCH,
+            ["unused"],
+        ),
     ],
 )
 def test_api_config_validator_success(
@@ -111,6 +127,7 @@ def test_api_config_validator_success(
     [
         ("scopus_api_config_valid_batch"),
         ("crossref_api_config_valid_batch"),
+        ("pubmed_api_config_valid_batch"),
     ],
 )
 def test_api_config_validator_failure(request, api_config_fixture, monkeypatch):
@@ -132,6 +149,7 @@ def test_api_config_validator_failure(request, api_config_fixture, monkeypatch):
     [
         ("scopus_api_config_valid_batch", "X-API-Key", "dummy_scopus_key"),
         ("crossref_api_config_valid_batch", None, None),
+        ("pubmed_api_config_valid_batch", None, None),
     ],
 )
 def test_api_config_init_api_key_success(

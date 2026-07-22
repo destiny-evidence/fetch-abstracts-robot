@@ -24,7 +24,8 @@ def external_api_priorities() -> dict[str, ExternalAPIPriority]:
             name="batch",
             priorities={
                 ExternalAPI.CROSSREF_BATCH: 1,
-                ExternalAPI.SCOPUS_BATCH: 2,
+                ExternalAPI.PUBMED_BATCH: 2,
+                ExternalAPI.SCOPUS_BATCH: 3,
             },
         ),
     }
