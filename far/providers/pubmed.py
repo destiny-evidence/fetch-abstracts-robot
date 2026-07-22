@@ -9,6 +9,8 @@ from loguru import logger
 if TYPE_CHECKING:
     from far.data_models.generic import APIConfig
 
+PUBMED_FETCH_API_ENDPOINT = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+
 
 def _make_search_request(
     client: httpx.Client,
@@ -59,7 +61,7 @@ def _make_fetch_request(
         str: The XML response potentially containing the abstract.
 
     """
-    fetch_api_endpoint = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+    fetch_api_endpoint = PUBMED_FETCH_API_ENDPOINT
 
     fetch_params: dict[str, str] = {
         "db": "pubmed",
