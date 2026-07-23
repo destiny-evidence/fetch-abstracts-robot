@@ -82,11 +82,10 @@ Before you can use the deployment of fetch-abstracts-robot, you will need to dep
 
 these also automatically run on a successful PR merge to the main branch. This will build an image from the head of the selected branch, tag it with the commit hash, push it to the Azure container registry and deploy it in the relevant environment. You must set GitHub environment-specific variables in order for this to work. Do this by going to `Settings` -> `Environments` -> `staging` (or your custom environment name) and adding the following variables
 
-| Name                           | Value                                                                             |
-| ------------------------------ | --------------------------------------------------------------------------------- |
-| CONTAINER_APP_JOB_NAME_STAGING | The name of the Container App Job                                                 |
-| CONTAINER_APP_NAME_STAGING     | The name of the Container App                                                     |
-| RESOURCE_GROUP_STAGING         | The name of the resource group containing the Container App and Container App Job |
+| Name                       | Value                                                                             |
+| -------------------------- | --------------------------------------------------------------------------------- |
+| CONTAINER_APP_NAME_STAGING | The name of the Container App                                                     |
+| RESOURCE_GROUP_STAGING     | The name of the resource group containing the Container App and Container App Job |
 
 See also `deploy_staging.yml` in `.github/workflows` for more details on how these variables are used.
 
