@@ -94,8 +94,6 @@ variable "batch_size" {
 }
 
 locals {
-  app_name = "incremental-updater"
-  app_job_name = "job-openalex-refresh"
   minimum_resource_tags = {
     "Created by"  = var.owner_name
     "Environment" = var.deployment_environment
