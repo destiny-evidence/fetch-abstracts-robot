@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools>=82.0,<83.0", "wheel"]
+requires = ["setuptools>=83.0,<84.0", "wheel"]
 
 [project]
 authors = [
@@ -34,6 +34,7 @@ dev = [
     "pytest-httpx>=0.35.0",
     "pytest>=9.1.1",
     "ruff>=0.15.22",
+    "setuptools>=83.0",
 ]
 docs = [
     "mkdocs",
