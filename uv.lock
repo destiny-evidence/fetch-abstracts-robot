@@ -786,7 +786,6 @@ dev = [
     { name = "pytest" },
     { name = "pytest-httpx" },
     { name = "ruff" },
-    { name = "setuptools" },
 ]
 docs = [
     { name = "mkdocs" },
@@ -833,7 +832,6 @@ requires-dist = [
     { name = "pytest-httpx", marker = "extra == 'dev'", specifier = ">=0.35.0" },
     { name = "pytest-mock", marker = "extra == 'test'", specifier = ">=3.14.1" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.22" },
-    { name = "setuptools", marker = "extra == 'dev'", specifier = ">=83.0" },
     { name = "toml", specifier = ">=0.10.2" },
 ]
 provides-extras = ["dev", "docs", "test"]
