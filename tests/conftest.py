@@ -14,6 +14,7 @@ from far import logger as far_logger_module
 from far.config import Settings
 from far.enhancements.processor import AbstractEnhancementProcessor
 from far.fetch_abstract import prepare_api_config
+from far.fetching.pubmed import fetch_abstract_by_doi
 from far.local import run as local_run_module
 from far.provider_data_models.generic import (
     AbstractUnpackStrategy,
@@ -22,7 +23,6 @@ from far.provider_data_models.generic import (
     QueryType,
 )
 from far.provider_data_models.scopus import ScopusAPIConfig
-from far.providers.pubmed import fetch_abstract_by_doi
 
 pytest_plugins = [
     "tests.fixtures.generic",

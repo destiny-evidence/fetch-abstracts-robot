@@ -3,12 +3,12 @@
 from pydantic import HttpUrl
 
 from far.config import Settings
+from far.fetching.pubmed import fetch_abstract_by_doi
 from far.provider_data_models.generic import (
     AbstractUnpackStrategy,
     APIConfig,
     ExternalAPI,
 )
-from far.providers.pubmed import fetch_abstract_by_doi
 
 PUBMED_SEARCH_URL = HttpUrl(
     "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"

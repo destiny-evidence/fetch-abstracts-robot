@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from far.fetch_abstract import AbstractFetcher, prepare_api_config
-from far.providers.pubmed import extract_abstract_from_xml, fetch_abstract_by_doi
+from far.fetching.pubmed import extract_abstract_from_xml, fetch_abstract_by_doi
 
 
 @pytest.fixture
