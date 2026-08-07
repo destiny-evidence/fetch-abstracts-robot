@@ -3,7 +3,11 @@
 from pydantic import HttpUrl
 
 from far.config import Settings
-from far.data_models.generic import AbstractUnpackStrategy, APIConfig, ExternalAPI
+from far.provider_data_models.generic import (
+    AbstractUnpackStrategy,
+    APIConfig,
+    ExternalAPI,
+)
 from far.providers.pubmed import fetch_abstract_by_doi
 
 PUBMED_SEARCH_URL = HttpUrl(

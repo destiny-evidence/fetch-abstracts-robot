@@ -12,16 +12,16 @@ from pytest_httpx import HTTPXMock, IteratorStream
 
 from far import logger as far_logger_module
 from far.config import Settings
-from far.data_models.generic import (
+from far.enhancements.processor import AbstractEnhancementProcessor
+from far.fetch_abstract import prepare_api_config
+from far.local import run as local_run_module
+from far.provider_data_models.generic import (
     AbstractUnpackStrategy,
     APIConfig,
     ExternalAPI,
     QueryType,
 )
-from far.data_models.scopus import ScopusAPIConfig
-from far.enhancements.processor import AbstractEnhancementProcessor
-from far.fetch_abstract import prepare_api_config
-from far.local import run as local_run_module
+from far.provider_data_models.scopus import ScopusAPIConfig
 from far.providers.pubmed import fetch_abstract_by_doi
 
 pytest_plugins = [

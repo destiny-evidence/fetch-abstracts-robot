@@ -1,8 +1,8 @@
 import pytest
 
-from far.data_models.generic import ExternalAPI
 from far.enhancements.processor import AbstractEnhancementProcessor
 from far.local.config import set_up_processor
+from far.provider_data_models.generic import ExternalAPI
 
 
 def test_set_up_processor_happy_path_success(test_settings):

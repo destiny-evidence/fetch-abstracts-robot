@@ -1,6 +1,6 @@
 """Tests for PubMed API config in far/data_models/pubmed.py."""
 
-from far.data_models.pubmed import get_pubmed_batch_api_config
+from far.provider_data_models.pubmed import get_pubmed_batch_api_config
 
 
 def test_get_pubmed_batch_api_config_includes_tool_and_email(test_settings):

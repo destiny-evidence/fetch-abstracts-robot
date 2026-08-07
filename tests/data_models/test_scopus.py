@@ -1,11 +1,11 @@
 import pytest
 
 from far.config import Settings
-from far.data_models.generic import (
+from far.provider_data_models.generic import (
     AbstractUnpackStrategy,
     APIKeyNotPresentError,
 )
-from far.data_models.scopus import ScopusAPIConfig
+from far.provider_data_models.scopus import ScopusAPIConfig
 
 
 def test_scopus_api_config_creation_success_no_inst_token(

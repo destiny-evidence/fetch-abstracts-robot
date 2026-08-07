@@ -5,11 +5,11 @@ import sys
 from loguru import logger
 
 from far.config import Settings
-from far.data_models.crossref import get_crossref_batch_api_config
-from far.data_models.generic import APIConfig, ExternalAPI
-from far.data_models.scopus import get_scopus_batch_api_config
 from far.enhancements.processor import AbstractEnhancementProcessor
 from far.fetch_abstract import prepare_api_config
+from far.provider_data_models.crossref import get_crossref_batch_api_config
+from far.provider_data_models.generic import APIConfig, ExternalAPI
+from far.provider_data_models.scopus import get_scopus_batch_api_config
 
 
 def set_up_processor(

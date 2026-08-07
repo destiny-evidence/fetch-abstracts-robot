@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from far.config import get_settings
-from far.data_models.generic import (
+from far.provider_data_models.generic import (
     AbstractNotFoundError,
     AbstractUnpackError,
     AbstractUnpackStrategy,

@@ -16,8 +16,8 @@ from destiny_sdk.robots import (
 from destiny_sdk.visibility import Visibility
 from loguru import logger
 
-from far.data_models.generic import APIConfig
 from far.fetch_abstract import AbstractFetcher
+from far.provider_data_models.generic import APIConfig
 from far.utils import get_doi_from_reference, get_version_number, normalise_doi
 
 

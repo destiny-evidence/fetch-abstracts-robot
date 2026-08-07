@@ -6,8 +6,8 @@ import httpx
 import pytest
 from pydantic import AnyUrl
 
-from far.data_models.generic import AbstractUnpackError
 from far.fetch_abstract import AbstractFetcher, prepare_api_config
+from far.provider_data_models.generic import AbstractUnpackError
 
 
 def test_prepare_api_config_success(

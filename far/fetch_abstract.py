@@ -14,7 +14,7 @@ from loguru import logger
 from pydantic import AnyUrl
 
 from far.config import Settings
-from far.data_models.generic import (
+from far.provider_data_models.generic import (
     AbstractUnpackError,
     AbstractUnpackStrategy,
     APIConfig,

@@ -15,15 +15,15 @@ from destiny_sdk.robots import (
 )
 
 from far.config import Settings, get_settings
-from far.data_models.crossref import get_crossref_batch_api_config
-from far.data_models.pubmed import get_pubmed_batch_api_config
-from far.data_models.scopus import get_scopus_batch_api_config
 from far.enhancements.processor import (
     AbstractEnhancementProcessor,
     FullBatchFailureError,
 )
 from far.fetch_abstract import prepare_api_config
 from far.logger import logger, set_up_logger
+from far.provider_data_models.crossref import get_crossref_batch_api_config
+from far.provider_data_models.pubmed import get_pubmed_batch_api_config
+from far.provider_data_models.scopus import get_scopus_batch_api_config
 from far.server import start_health_check_server
 from far.utils import get_version_number
 
