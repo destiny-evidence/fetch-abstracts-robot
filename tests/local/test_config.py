@@ -1,7 +1,7 @@
 import pytest
 
 from far.data_models.generic import ExternalAPI
-from far.enhancement_processor import AbstractEnhancementProcessor
+from far.enhancements.processor import AbstractEnhancementProcessor
 from far.local.config import set_up_processor
 
 

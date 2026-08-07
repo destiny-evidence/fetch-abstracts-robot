@@ -13,7 +13,7 @@ from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
 from far.config import Settings
-from far.enhancement_processor import (
+from far.enhancements.processor import (
     AbstractEnhancementProcessor,
     BatchEnhancementGenerationError,
     FullBatchFailureError,
@@ -68,7 +68,7 @@ def test_create_abstract_enhancement_success(
     )
 
     enhancement_generation_mock = mocker.patch(
-        "far.enhancement_processor.AbstractEnhancementProcessor.generate_abstract_enhancement_batch_request",
+        "far.enhancements.processor.AbstractEnhancementProcessor.generate_abstract_enhancement_batch_request",
         return_value=expected_generate_abstracts_response,
     )
 
@@ -107,7 +107,7 @@ def test_create_abstract_enhancement_matches_despite_doi_case_mismatch(
         return_value=[{"doi": "10.1000/upper123", "abstract": "An abstract."}],
     )
     generation_mock = mocker.patch(
-        "far.enhancement_processor.AbstractEnhancementProcessor.generate_abstract_enhancement_batch_request",
+        "far.enhancements.processor.AbstractEnhancementProcessor.generate_abstract_enhancement_batch_request",
         return_value=[],
     )
 
@@ -142,7 +142,7 @@ def test_create_abstract_enhancement_batch_enhancement_generation_failure(
     )
 
     enhancement_generation_mock = mocker.patch(
-        "far.enhancement_processor.AbstractEnhancementProcessor.generate_abstract_enhancement_batch_request",
+        "far.enhancements.processor.AbstractEnhancementProcessor.generate_abstract_enhancement_batch_request",
         side_effect=BatchEnhancementGenerationError("Test batch generation error."),
     )
 
@@ -194,17 +194,17 @@ async def test_process_batch_success(
     )
 
     download_references_mock = mocker.patch(
-        "far.enhancement_processor.AbstractEnhancementProcessor.download_references",
+        "far.enhancements.processor.AbstractEnhancementProcessor.download_references",
         return_value=test_references,
     )
 
     create_abstract_enhancement_mock = mocker.patch(
-        "far.enhancement_processor.AbstractEnhancementProcessor.create_abstract_enhancement",
+        "far.enhancements.processor.AbstractEnhancementProcessor.create_abstract_enhancement",
         return_value=expected_generate_abstracts_response,
     )
 
     upload_enhancements_mock = mocker.patch(
-        "far.enhancement_processor.AbstractEnhancementProcessor.upload_enhancements",
+        "far.enhancements.processor.AbstractEnhancementProcessor.upload_enhancements",
         return_value=None,
     )
 
@@ -232,17 +232,17 @@ async def test_process_batch_full_batch_failure(
     )
 
     download_references_mock = mocker.patch(
-        "far.enhancement_processor.AbstractEnhancementProcessor.download_references",
+        "far.enhancements.processor.AbstractEnhancementProcessor.download_references",
         return_value=test_references,
     )
 
     create_abstract_enhancement_mock = mocker.patch(
-        "far.enhancement_processor.AbstractEnhancementProcessor.create_abstract_enhancement",
+        "far.enhancements.processor.AbstractEnhancementProcessor.create_abstract_enhancement",
         side_effect=BatchEnhancementGenerationError("Test batch generation error."),
     )
 
     upload_enhancements_mock = mocker.patch(
-        "far.enhancement_processor.AbstractEnhancementProcessor.upload_enhancements",
+        "far.enhancements.processor.AbstractEnhancementProcessor.upload_enhancements",
         return_value=None,
     )
 

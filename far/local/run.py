@@ -10,7 +10,7 @@ from loguru import logger
 
 from far.config import Environment, get_settings
 from far.data_models.generic import ExternalAPI
-from far.enhancement_processor import BatchEnhancementGenerationError
+from far.enhancements.processor import BatchEnhancementGenerationError
 from far.local.config import set_up_processor
 from far.local.models import LocalAbstractRetrievalOutput
 from far.local.utils import get_destiny_references

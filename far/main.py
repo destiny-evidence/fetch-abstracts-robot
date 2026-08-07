@@ -18,7 +18,7 @@ from far.config import Settings, get_settings
 from far.data_models.crossref import get_crossref_batch_api_config
 from far.data_models.pubmed import get_pubmed_batch_api_config
 from far.data_models.scopus import get_scopus_batch_api_config
-from far.enhancement_processor import (
+from far.enhancements.processor import (
     AbstractEnhancementProcessor,
     FullBatchFailureError,
 )

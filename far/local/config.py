@@ -8,7 +8,7 @@ from far.config import Settings
 from far.data_models.crossref import get_crossref_batch_api_config
 from far.data_models.generic import APIConfig, ExternalAPI
 from far.data_models.scopus import get_scopus_batch_api_config
-from far.enhancement_processor import AbstractEnhancementProcessor
+from far.enhancements.processor import AbstractEnhancementProcessor
 from far.fetch_abstract import prepare_api_config
 
 

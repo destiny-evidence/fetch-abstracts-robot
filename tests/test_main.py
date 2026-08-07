@@ -8,7 +8,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock, IteratorStream
 
-from far.enhancement_processor import AbstractEnhancementProcessor
+from far.enhancements.processor import AbstractEnhancementProcessor
 from far.main import process_robot_enhancement_batch
 
 

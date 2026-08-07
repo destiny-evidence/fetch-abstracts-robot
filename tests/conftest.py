@@ -19,7 +19,7 @@ from far.data_models.generic import (
     QueryType,
 )
 from far.data_models.scopus import ScopusAPIConfig
-from far.enhancement_processor import AbstractEnhancementProcessor
+from far.enhancements.processor import AbstractEnhancementProcessor
 from far.fetch_abstract import prepare_api_config
 from far.local import run as local_run_module
 from far.providers.pubmed import fetch_abstract_by_doi
