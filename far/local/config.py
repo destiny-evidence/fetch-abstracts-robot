@@ -7,9 +7,8 @@ from loguru import logger
 from far.config import Settings
 from far.enhancements.processor import AbstractEnhancementProcessor
 from far.fetch_abstract import prepare_api_config
-from far.provider_data_models.crossref import get_crossref_batch_api_config
+from far.provider_data_models import get_all_provider_api_configs
 from far.provider_data_models.generic import APIConfig, ExternalAPI
-from far.provider_data_models.scopus import get_scopus_batch_api_config
 
 
 def set_up_processor(
@@ -28,12 +27,10 @@ def set_up_processor(
     """
     excluded_api_set = set(excluded_apis or [])
 
-    api_configs: list[APIConfig] = [
-        get_crossref_batch_api_config(settings),
-        get_scopus_batch_api_config(),
-    ]
+    all_api_configs: list[APIConfig] = get_all_provider_api_configs(settings)
+
     available_api_configs: list[APIConfig] = [
-        config for config in api_configs if config.name not in excluded_api_set
+        config for config in all_api_configs if config.name not in excluded_api_set
     ]
 
     if len(available_api_configs) == 0:

@@ -60,7 +60,7 @@ external_api_priority_batch = ExternalAPIPriority(
     priorities={
         ExternalAPI.CROSSREF_BATCH: 1,
         ExternalAPI.PUBMED_BATCH: 2,
-        ExternalAPI.SCOPUS_BATCH: 4,
+        ExternalAPI.SCOPUS_BATCH: 3,
     },
 )
 

@@ -24,6 +24,6 @@ def test_set_up_processor_exclude_single_api(test_settings, excluded_api):
 
 
 def test_set_up_processor_exclude_all_apis(test_settings):
-    all_excluded_apis = [ExternalAPI.CROSSREF_BATCH, ExternalAPI.SCOPUS_BATCH]
+    all_excluded_apis = list(ExternalAPI)
     with pytest.raises(SystemExit):
         set_up_processor(test_settings, excluded_apis=all_excluded_apis)

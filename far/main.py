@@ -21,9 +21,7 @@ from far.enhancements.processor import (
 )
 from far.fetch_abstract import prepare_api_config
 from far.logger import logger, set_up_logger
-from far.provider_data_models.crossref import get_crossref_batch_api_config
-from far.provider_data_models.pubmed import get_pubmed_batch_api_config
-from far.provider_data_models.scopus import get_scopus_batch_api_config
+from far.provider_data_models import get_all_provider_api_configs
 from far.server import start_health_check_server
 from far.utils import get_version_number
 
@@ -148,12 +146,8 @@ async def main() -> None:
         secret_key=settings.robot_secret,
     )
 
-    # configurations for all APIs we can hit to get abstracts
-    available_api_configs = [
-        get_crossref_batch_api_config(settings),
-        get_pubmed_batch_api_config(settings),
-        get_scopus_batch_api_config(),
-    ]
+    available_api_configs = get_all_provider_api_configs(settings)
+
     global_api_config = prepare_api_config(
         api_configs=available_api_configs, settings=settings
     )
