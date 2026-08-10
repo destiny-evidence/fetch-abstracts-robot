@@ -148,6 +148,20 @@ class APIConfig(BaseModel):
             raise ValueError(error_msg)
         return values
 
+    @staticmethod
+    def _get_secret_setting_value(
+        settings: Settings, setting_name: str | None
+    ) -> str | None:
+        """Return a secret setting value as a string, or None if not configured."""
+        if not setting_name:
+            return None
+        setting_value = getattr(settings, setting_name, None)
+        if setting_value is None:
+            return None
+        if hasattr(setting_value, "get_secret_value"):
+            return setting_value.get_secret_value()
+        return str(setting_value)
+
     def init_api_key(self, settings: Settings) -> None:
         """
         Populate proper request headers with API key if present.
@@ -158,15 +172,13 @@ class APIConfig(BaseModel):
         """
         if self.require_api_key:
             logger.debug(f"initializing API key for {self.name} API")
-            api_key = (
-                getattr(settings, self.api_key_env_var_name, None)
-                if self.api_key_env_var_name
-                else None
+            api_key_value = self._get_secret_setting_value(
+                settings, self.api_key_env_var_name
             )
-            if api_key is None:
+            if api_key_value is None:
                 error_msg = f"API key for {self.name} is not present in settings."
                 raise APIKeyNotPresentError(error_msg)
-            self.headers[self.api_key_placement] = api_key.get_secret_value()
+            self.headers[self.api_key_placement] = api_key_value
         else:
             logger.info("API does not require an API key, skipping header population.")
 

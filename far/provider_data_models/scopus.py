@@ -53,34 +53,31 @@ class ScopusAPIConfig(APIConfig):
 
         """
         logger.debug(f"initializing API key for {self.name} API")
-        api_key = (
-            getattr(settings, self.api_key_env_var_name, None)
-            if self.api_key_env_var_name
-            else None
+        api_key_value = self._get_secret_setting_value(
+            settings, self.api_key_env_var_name
         )
-        inst_token = (
-            getattr(settings, self.api_inst_token_env_var_name, None)
-            if self.api_inst_token_env_var_name
-            else None
+        inst_token_value = self._get_secret_setting_value(
+            settings, self.api_inst_token_env_var_name
         )
-        if api_key is None:
+        if api_key_value is None:
             error_message = f"API key for {self.name} is not present in settings."
             raise APIKeyNotPresentError(error_message)
-        if inst_token is None:
+        if inst_token_value is None:
             error_message = (
                 f"Inst token for {self.name} is not present in settings"
                 " skipping header population."
             )
             logger.warning(error_message)
-        self.headers[self.api_key_placement] = api_key.get_secret_value()
-        self.headers[self.api_inst_token_placement] = (
-            inst_token.get_secret_value() if inst_token else ""
-        )
+        self.headers[self.api_key_placement] = api_key_value
+        self.headers[self.api_inst_token_placement] = inst_token_value or ""
 
 
-def get_scopus_batch_api_config() -> ScopusAPIConfig:
+def get_scopus_batch_api_config(_: Settings) -> ScopusAPIConfig:
     """
     Define and return the Scopus batch API configuration.
+
+    Args:
+        _ (Settings): Application settings, unused.
 
     Returns:
         ScopusAPIConfig: The configuration for the Scopus batch API.
