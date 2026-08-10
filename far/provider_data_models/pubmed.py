@@ -32,14 +32,14 @@ def get_pubmed_batch_api_config(settings: Settings) -> APIConfig:
         query_params["email"] = str(settings.mailto)
 
     return APIConfig(
-        name=ExternalAPI.PUBMED_BATCH,
+        name=ExternalAPI.PUBMED,
         url=PUBMED_SEARCH_URL,
         require_api_key=False,
         api_key_env_var_name=None,
         api_key_placement=None,
         query_params=query_params,
         unpack_strategy=AbstractUnpackStrategy(
-            source=ExternalAPI.PUBMED_BATCH,
+            source=ExternalAPI.PUBMED,
             strategy=["unused"],
         ),
         provider_fetch_hook=fetch_abstract_by_doi,

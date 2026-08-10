@@ -11,9 +11,7 @@ def test_set_up_processor_happy_path_success(test_settings):
     assert len(processor.available_api_configs) > 0
 
 
-@pytest.mark.parametrize(
-    "excluded_api", [[ExternalAPI.CROSSREF_BATCH], [ExternalAPI.SCOPUS_BATCH]]
-)
+@pytest.mark.parametrize("excluded_api", [[ExternalAPI.CROSSREF], [ExternalAPI.SCOPUS]])
 def test_set_up_processor_exclude_single_api(test_settings, excluded_api):
     processor = set_up_processor(test_settings, excluded_apis=excluded_api)
     assert isinstance(processor, AbstractEnhancementProcessor)

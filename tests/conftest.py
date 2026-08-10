@@ -52,7 +52,7 @@ def set_test_environment_variables(
 @pytest.fixture
 def scopus_api_config_valid_batch():
     return ScopusAPIConfig(
-        name=ExternalAPI.SCOPUS_BATCH,
+        name=ExternalAPI.SCOPUS,
         url="https://api.example.com/",
         require_api_key=True,
         api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
@@ -61,7 +61,7 @@ def scopus_api_config_valid_batch():
         query_params={},
         headers={"X-API-Key": ""},
         unpack_strategy=AbstractUnpackStrategy(
-            source="scopus_batch",
+            source="scopus",
             doi_strategy=["search-results", "entry", "prism:doi"],
             strategy=["search-results", "entry", "dc:description"],
         ),
@@ -73,14 +73,14 @@ def scopus_api_config_valid_batch():
 @pytest.fixture
 def crossref_api_config_valid_batch():
     return APIConfig(
-        name=ExternalAPI.CROSSREF_BATCH,
+        name=ExternalAPI.CROSSREF,
         url="https://api.example.com/",
         require_api_key=False,
         api_key_env_var_name=None,
         api_key_placement=None,
         query_type=QueryType.BATCHED_SINGLE,
         unpack_strategy=AbstractUnpackStrategy(
-            source=ExternalAPI.CROSSREF_BATCH,
+            source=ExternalAPI.CROSSREF,
             clean_abstract_string=True,
             strategy=["message", "abstract"],
             doi_strategy=["message", "DOI"],
@@ -91,7 +91,7 @@ def crossref_api_config_valid_batch():
 @pytest.fixture
 def pubmed_api_config_valid_batch():
     return APIConfig(
-        name=ExternalAPI.PUBMED_BATCH,
+        name=ExternalAPI.PUBMED,
         url="https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
         require_api_key=False,
         api_key_env_var_name=None,
@@ -101,7 +101,7 @@ def pubmed_api_config_valid_batch():
             "retmode": "json",
         },
         unpack_strategy=AbstractUnpackStrategy(
-            source=ExternalAPI.PUBMED_BATCH,
+            source=ExternalAPI.PUBMED,
             strategy=["unused"],
         ),
         provider_fetch_hook=fetch_abstract_by_doi,

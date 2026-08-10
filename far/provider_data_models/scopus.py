@@ -13,8 +13,8 @@ from far.provider_data_models.generic import (
 SCOPUS_URL = "https://api.elsevier.com/content/abstract/doi"
 SCOPUS_QUERY_PARAMS = {"view": "META_ABS"}
 
-SCOPUS_BATCH_URL = "https://api.elsevier.com/content/search/scopus"
-SCOPUS_BATCH_QUERY_PARAMS = {"next_cursor": "*", "view": "COMPLETE"}
+SCOPUS_URL = "https://api.elsevier.com/content/search/scopus"
+SCOPUS_QUERY_PARAMS = {"next_cursor": "*", "view": "COMPLETE"}
 
 SCOPUS_HEADERS = {
     "Accept": "application/json",
@@ -22,8 +22,8 @@ SCOPUS_HEADERS = {
     "X-ELS-Insttoken": "",
 }
 
-SCOPUS_BATCH_UNPACK_STRATEGY = AbstractUnpackStrategy(
-    source="scopus_batch",
+SCOPUS_UNPACK_STRATEGY = AbstractUnpackStrategy(
+    source="scopus",
     doi_strategy=["search-results", "entry", "prism:doi"],
     strategy=["search-results", "entry", "dc:description"],
 )
@@ -84,13 +84,13 @@ def get_scopus_batch_api_config(_: Settings) -> ScopusAPIConfig:
 
     """
     return ScopusAPIConfig(
-        name="scopus_batch",
-        url=SCOPUS_BATCH_URL,
+        name="scopus",
+        url=SCOPUS_URL,
         require_api_key=True,
         api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
         api_key_placement="X-ELS-APIKey",  # pragma: allowlist secret
         query_type="batch",
-        query_params=SCOPUS_BATCH_QUERY_PARAMS,
+        query_params=SCOPUS_QUERY_PARAMS,
         headers=SCOPUS_HEADERS,
-        unpack_strategy=SCOPUS_BATCH_UNPACK_STRATEGY,
+        unpack_strategy=SCOPUS_UNPACK_STRATEGY,
     )

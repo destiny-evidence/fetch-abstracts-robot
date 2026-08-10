@@ -254,7 +254,7 @@ def test_get_many_abstracts_cycling_apis_pubmed_falls_back_to_scopus(
         {
             "doi": test_doi,
             "abstract": test_final_returned_abstract,
-            "source": "SCOPUS_BATCH",
+            "source": "SCOPUS",
         }
     ]
     mocked_pubmed_hook.assert_called_once_with(

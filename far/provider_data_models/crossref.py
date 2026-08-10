@@ -26,13 +26,13 @@ def get_crossref_batch_api_config(settings: Settings) -> APIConfig:
         "Accept": "application/json",
     }
     crossref_unpack_strategy = AbstractUnpackStrategy(
-        source="crossref_batch",
+        source="crossref",
         clean_abstract_string=True,
         strategy=["message", "abstract"],
     )
 
     return APIConfig(
-        name="crossref_batch",
+        name="crossref",
         url=crossref_url,
         require_api_key=False,
         api_key_env_var_name=None,

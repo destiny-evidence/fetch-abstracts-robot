@@ -1,7 +1,7 @@
 """Generic data models and validators for working with external APIs."""
 
 from collections.abc import Callable
-from enum import StrEnum
+from enum import StrEnum, auto
 
 from loguru import logger
 from pydantic import AnyUrl, BaseModel, Field, model_validator
@@ -30,9 +30,9 @@ class ExternalAPI(StrEnum):
     implementation of retrieving their output.
     """
 
-    CROSSREF_BATCH = "crossref_batch"
-    SCOPUS_BATCH = "scopus_batch"
-    PUBMED_BATCH = "pubmed_batch"
+    CROSSREF = auto()
+    SCOPUS = auto()
+    PUBMED = auto()
 
 
 class QueryType(StrEnum):
@@ -42,8 +42,8 @@ class QueryType(StrEnum):
 
     """
 
-    BATCH = "batch"
-    BATCHED_SINGLE = "batched_single"
+    BATCH = auto()
+    BATCHED_SINGLE = auto()
 
 
 class ExternalAPIPriority(BaseModel):
@@ -58,9 +58,9 @@ class ExternalAPIPriority(BaseModel):
 external_api_priority_batch = ExternalAPIPriority(
     name="batch",
     priorities={
-        ExternalAPI.CROSSREF_BATCH: 1,
-        ExternalAPI.PUBMED_BATCH: 2,
-        ExternalAPI.SCOPUS_BATCH: 3,
+        ExternalAPI.CROSSREF: 1,
+        ExternalAPI.PUBMED: 2,
+        ExternalAPI.SCOPUS: 3,
     },
 )
 
@@ -152,7 +152,21 @@ class APIConfig(BaseModel):
     def _get_secret_setting_value(
         settings: Settings, setting_name: str | None
     ) -> str | None:
-        """Return a secret setting value as a string, or None if not configured."""
+        """
+        Return a secret setting value as a string, or None if not configured.
+
+        This avoids repeated handling of potential missing secrets
+        and centralises the logic.
+
+        Args:
+            settings (Settings):
+                The application settings containing configuration values.
+            setting_name (str | None): The name of the setting to retrieve.
+
+        Returns:
+            str | None: The value of the secret setting, or None if not configured.
+
+        """
         if not setting_name:
             return None
         setting_value = getattr(settings, setting_name, None)
