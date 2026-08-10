@@ -5,10 +5,11 @@ import sys
 from loguru import logger
 
 from far.config import Settings
-from far.enhancements.processor import AbstractEnhancementProcessor
-from far.fetch_abstract import prepare_api_config
-from far.provider_data_models import get_all_provider_api_configs
-from far.provider_data_models.generic import APIConfig, ExternalAPI
+from far.enhancements.processor import (
+    AbstractEnhancementProcessor,
+    create_enhancement_processor,
+)
+from far.provider_data_models.generic import ExternalAPI
 
 
 def set_up_processor(
@@ -25,34 +26,16 @@ def set_up_processor(
         AbstractEnhancementProcessor: An instance of the abstract processor.
 
     """
-    excluded_api_set = set(excluded_apis or [])
-
-    all_api_configs: list[APIConfig] = get_all_provider_api_configs(settings)
-
-    available_api_configs: list[APIConfig] = [
-        config for config in all_api_configs if config.name not in excluded_api_set
-    ]
-
-    if len(available_api_configs) == 0:
+    title = "Local Abstract Fetcher"
+    try:
+        return create_enhancement_processor(
+            settings,
+            robot_version="local",
+            source_name=title,
+            excluded_apis=excluded_apis,
+        )
+    except ValueError:
         logger.critical(
             "No APIs available after applying exclusions: {}", excluded_apis
         )
         sys.exit(1)
-
-    logger.info(
-        "Available APIs after applying exclusions: {}",
-        [config.name for config in available_api_configs],
-    )
-
-    global_api_config = prepare_api_config(
-        api_configs=available_api_configs, settings=settings
-    )
-
-    title = "Local Abstract Fetcher"
-
-    return AbstractEnhancementProcessor(
-        robot_version="local",
-        source_name=title,
-        global_api_config=global_api_config,
-        available_api_configs=available_api_configs,
-    )

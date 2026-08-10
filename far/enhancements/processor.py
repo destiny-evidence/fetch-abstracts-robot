@@ -16,8 +16,10 @@ from destiny_sdk.robots import (
 from destiny_sdk.visibility import Visibility
 from loguru import logger
 
-from far.fetch_abstract import AbstractFetcher
-from far.provider_data_models.generic import APIConfig
+from far.config import Settings
+from far.fetch_abstract import AbstractFetcher, prepare_api_config
+from far.provider_data_models import get_all_provider_api_configs
+from far.provider_data_models.generic import APIConfig, ExternalAPI
 from far.utils import get_doi_from_reference, get_version_number, normalise_doi
 
 
@@ -302,3 +304,57 @@ class AbstractEnhancementProcessor:
             )
             raise FullBatchFailureError(error_message) from full_batch_failure
         return generated_enhancements
+
+
+def create_enhancement_processor(
+    settings: Settings,
+    *,
+    robot_version: str,
+    source_name: str,
+    excluded_apis: list[ExternalAPI] | None = None,
+) -> AbstractEnhancementProcessor:
+    """
+    Build an AbstractEnhancementProcessor.
+
+    Build from settings with optional provider exclusions.
+
+    Args:
+        settings (Settings): The application settings.
+        robot_version (str): The version of the robot.
+        source_name (str): The name of the source.
+        excluded_apis (list[ExternalAPI] | None, optional):
+            A list of APIs to exclude. Defaults to None.
+
+    Raises:
+        ValueError: If no APIs are available after applying exclusions.
+
+    Returns:
+        AbstractEnhancementProcessor: The configured enhancement processor.
+
+    """
+    excluded_api_set = set(excluded_apis or [])
+    all_api_configs = get_all_provider_api_configs(settings)
+    available_api_configs = [
+        config for config in all_api_configs if config.name not in excluded_api_set
+    ]
+
+    logger.info(
+        "Available APIs after exclusions: {}",
+        [config.name for config in available_api_configs],
+    )
+
+    if len(available_api_configs) == 0:
+        error_message = f"No APIs available after applying exclusions: {excluded_apis}"
+        raise ValueError(error_message)
+
+    global_api_config = prepare_api_config(
+        api_configs=available_api_configs,
+        settings=settings,
+    )
+
+    return AbstractEnhancementProcessor(
+        robot_version=robot_version,
+        source_name=source_name,
+        global_api_config=global_api_config,
+        available_api_configs=available_api_configs,
+    )

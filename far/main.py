@@ -18,10 +18,9 @@ from far.config import Settings, get_settings
 from far.enhancements.processor import (
     AbstractEnhancementProcessor,
     FullBatchFailureError,
+    create_enhancement_processor,
 )
-from far.fetch_abstract import prepare_api_config
 from far.logger import logger, set_up_logger
-from far.provider_data_models import get_all_provider_api_configs
 from far.server import start_health_check_server
 from far.utils import get_version_number
 
@@ -146,18 +145,12 @@ async def main() -> None:
         secret_key=settings.robot_secret,
     )
 
-    available_api_configs = get_all_provider_api_configs(settings)
-
-    global_api_config = prepare_api_config(
-        api_configs=available_api_configs, settings=settings
-    )
-
-    processor = AbstractEnhancementProcessor(
+    processor = create_enhancement_processor(
+        settings,
         robot_version=get_version_number(),
         source_name=title,
-        global_api_config=global_api_config,
-        available_api_configs=available_api_configs,
     )
+
     logger.info("Starting {} polling loop", title)
     logger.info("Polling interval: {} seconds", settings.poll_interval_seconds)
     logger.info("Batch size: {}", settings.batch_size)
