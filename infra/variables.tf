@@ -46,7 +46,7 @@ variable "key_vault_resource_group_name" {
 }
 
 variable "github_actions_service_principal_object_id" {
-  description = "The Object ID of the Azure Service Principal used by GitHub Actions to deploy the Incremental Updater App and App Job."
+  description = "The Object ID of the Azure Service Principal used by GitHub Actions to deploy the robot."
   type = string
 }
 
