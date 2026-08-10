@@ -10,9 +10,6 @@ from far.provider_data_models.generic import (
     APIKeyNotPresentError,
 )
 
-SCOPUS_URL = "https://api.elsevier.com/content/abstract/doi"
-SCOPUS_QUERY_PARAMS = {"view": "META_ABS"}
-
 SCOPUS_URL = "https://api.elsevier.com/content/search/scopus"
 SCOPUS_QUERY_PARAMS = {"next_cursor": "*", "view": "COMPLETE"}
 
