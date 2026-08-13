@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from far.config import get_settings
-from far.data_models.generic import (
+from far.provider_data_models.generic import (
     AbstractNotFoundError,
     AbstractUnpackError,
     AbstractUnpackStrategy,
@@ -28,13 +28,13 @@ def test_custom_exceptions():
 
 
 def test_external_api_enum():
-    assert ExternalAPI.SCOPUS_BATCH == "scopus_batch"
-    assert ExternalAPI.CROSSREF_BATCH == "crossref_batch"
-    assert ExternalAPI.PUBMED_BATCH == "pubmed_batch"
+    assert ExternalAPI.SCOPUS == "scopus"
+    assert ExternalAPI.CROSSREF == "crossref"
+    assert ExternalAPI.PUBMED == "pubmed"
     assert set(ExternalAPI) == {
-        ExternalAPI.CROSSREF_BATCH,
-        ExternalAPI.PUBMED_BATCH,
-        ExternalAPI.SCOPUS_BATCH,
+        ExternalAPI.CROSSREF,
+        ExternalAPI.PUBMED,
+        ExternalAPI.SCOPUS,
     }
 
 
@@ -42,21 +42,21 @@ def test_external_api_priority_model():
     model = ExternalAPIPriority(
         name="test_priority",
         priorities={
-            ExternalAPI.CROSSREF_BATCH: 1,
-            ExternalAPI.PUBMED_BATCH: 2,
-            ExternalAPI.SCOPUS_BATCH: 3,
+            ExternalAPI.CROSSREF: 1,
+            ExternalAPI.PUBMED: 2,
+            ExternalAPI.SCOPUS: 3,
         },
     )
-    assert model.priorities[ExternalAPI.CROSSREF_BATCH] == 1
-    assert model.priorities[ExternalAPI.PUBMED_BATCH] == 2
-    assert model.priorities[ExternalAPI.SCOPUS_BATCH] == 3
+    assert model.priorities[ExternalAPI.CROSSREF] == 1
+    assert model.priorities[ExternalAPI.PUBMED] == 2
+    assert model.priorities[ExternalAPI.SCOPUS] == 3
 
 
 def test_abstract_unpack_strategy_():
     my_strategy = AbstractUnpackStrategy(
-        source=ExternalAPI.SCOPUS_BATCH, strategy=["abstracts", "abstractText"]
+        source=ExternalAPI.SCOPUS, strategy=["abstracts", "abstractText"]
     )
-    assert my_strategy.source == ExternalAPI.SCOPUS_BATCH
+    assert my_strategy.source == ExternalAPI.SCOPUS
     assert my_strategy.strategy == ["abstracts", "abstractText"]
 
 
@@ -74,31 +74,31 @@ def test_abstract_unpack_strategy_():
         (
             "scopus_api_config_valid_batch",
             {"X-API-Key": ""},
-            ExternalAPI.SCOPUS_BATCH,
+            ExternalAPI.SCOPUS,
             "https://api.example.com/",
             {},
-            ExternalAPI.SCOPUS_BATCH,
+            ExternalAPI.SCOPUS,
             ["search-results", "entry", "dc:description"],
         ),
         (
             "crossref_api_config_valid_batch",
             {"Accept": "application/json"},
-            ExternalAPI.CROSSREF_BATCH,
+            ExternalAPI.CROSSREF,
             "https://api.example.com/",
             {},
-            ExternalAPI.CROSSREF_BATCH,
+            ExternalAPI.CROSSREF,
             ["message", "abstract"],
         ),
         (
             "pubmed_api_config_valid_batch",
             {"Accept": "application/json"},
-            ExternalAPI.PUBMED_BATCH,
+            ExternalAPI.PUBMED,
             "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
             {
                 "db": "pubmed",
                 "retmode": "json",
             },
-            ExternalAPI.PUBMED_BATCH,
+            ExternalAPI.PUBMED,
             ["unused"],
         ),
     ],

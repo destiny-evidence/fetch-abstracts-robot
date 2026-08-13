@@ -9,12 +9,12 @@ from destiny_sdk.robots import LinkedRobotError
 from loguru import logger
 
 from far.config import Environment, get_settings
-from far.data_models.generic import ExternalAPI
-from far.enhancement_processor import BatchEnhancementGenerationError
+from far.enhancements.processor import BatchEnhancementGenerationError
 from far.local.config import set_up_processor
 from far.local.models import LocalAbstractRetrievalOutput
 from far.local.utils import get_destiny_references
 from far.logger import set_up_logger
+from far.provider_data_models.generic import ExternalAPI
 from far.utils import get_version_number
 
 os.environ["ENV"] = Environment.LOCAL

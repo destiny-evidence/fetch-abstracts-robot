@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from far.fetch_abstract import AbstractFetcher, prepare_api_config
-from far.providers.pubmed import extract_abstract_from_xml, fetch_abstract_by_doi
+from far.fetching.pubmed import extract_abstract_from_xml, fetch_abstract_by_doi
 
 
 @pytest.fixture
@@ -254,7 +254,7 @@ def test_get_many_abstracts_cycling_apis_pubmed_falls_back_to_scopus(
         {
             "doi": test_doi,
             "abstract": test_final_returned_abstract,
-            "source": "SCOPUS_BATCH",
+            "source": "SCOPUS",
         }
     ]
     mocked_pubmed_hook.assert_called_once_with(

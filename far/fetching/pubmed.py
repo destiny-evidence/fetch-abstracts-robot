@@ -7,7 +7,7 @@ from defusedxml.ElementTree import ParseError, fromstring
 from loguru import logger
 
 if TYPE_CHECKING:
-    from far.data_models.generic import APIConfig
+    from far.provider_data_models.generic import APIConfig
 
 PUBMED_FETCH_API_ENDPOINT = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 

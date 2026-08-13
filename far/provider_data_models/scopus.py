@@ -4,17 +4,15 @@ from loguru import logger
 from pydantic import Field
 
 from far.config import Settings
-from far.data_models.generic import (
+from far.provider_data_models.generic import (
     AbstractUnpackStrategy,
     APIConfig,
     APIKeyNotPresentError,
+    ExternalAPI,
 )
 
-SCOPUS_URL = "https://api.elsevier.com/content/abstract/doi"
-SCOPUS_QUERY_PARAMS = {"view": "META_ABS"}
-
-SCOPUS_BATCH_URL = "https://api.elsevier.com/content/search/scopus"
-SCOPUS_BATCH_QUERY_PARAMS = {"next_cursor": "*", "view": "COMPLETE"}
+SCOPUS_URL = "https://api.elsevier.com/content/search/scopus"
+SCOPUS_QUERY_PARAMS = {"next_cursor": "*", "view": "COMPLETE"}
 
 SCOPUS_HEADERS = {
     "Accept": "application/json",
@@ -22,8 +20,8 @@ SCOPUS_HEADERS = {
     "X-ELS-Insttoken": "",
 }
 
-SCOPUS_BATCH_UNPACK_STRATEGY = AbstractUnpackStrategy(
-    source="scopus_batch",
+SCOPUS_UNPACK_STRATEGY = AbstractUnpackStrategy(
+    source=ExternalAPI.SCOPUS,
     doi_strategy=["search-results", "entry", "prism:doi"],
     strategy=["search-results", "entry", "dc:description"],
 )
@@ -53,47 +51,44 @@ class ScopusAPIConfig(APIConfig):
 
         """
         logger.debug(f"initializing API key for {self.name} API")
-        api_key = (
-            getattr(settings, self.api_key_env_var_name, None)
-            if self.api_key_env_var_name
-            else None
+        api_key_value = self._get_secret_setting_value(
+            settings, self.api_key_env_var_name
         )
-        inst_token = (
-            getattr(settings, self.api_inst_token_env_var_name, None)
-            if self.api_inst_token_env_var_name
-            else None
+        inst_token_value = self._get_secret_setting_value(
+            settings, self.api_inst_token_env_var_name
         )
-        if api_key is None:
+        if api_key_value is None:
             error_message = f"API key for {self.name} is not present in settings."
             raise APIKeyNotPresentError(error_message)
-        if inst_token is None:
+        if inst_token_value is None:
             error_message = (
                 f"Inst token for {self.name} is not present in settings"
                 " skipping header population."
             )
             logger.warning(error_message)
-        self.headers[self.api_key_placement] = api_key.get_secret_value()
-        self.headers[self.api_inst_token_placement] = (
-            inst_token.get_secret_value() if inst_token else ""
-        )
+        self.headers[self.api_key_placement] = api_key_value
+        self.headers[self.api_inst_token_placement] = inst_token_value or ""
 
 
-def get_scopus_batch_api_config() -> ScopusAPIConfig:
+def get_scopus_batch_api_config(_: Settings) -> ScopusAPIConfig:
     """
     Define and return the Scopus batch API configuration.
+
+    Args:
+        _ (Settings): Application settings, unused.
 
     Returns:
         ScopusAPIConfig: The configuration for the Scopus batch API.
 
     """
     return ScopusAPIConfig(
-        name="scopus_batch",
-        url=SCOPUS_BATCH_URL,
+        name=ExternalAPI.SCOPUS,
+        url=SCOPUS_URL,
         require_api_key=True,
         api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
         api_key_placement="X-ELS-APIKey",  # pragma: allowlist secret
         query_type="batch",
-        query_params=SCOPUS_BATCH_QUERY_PARAMS,
+        query_params=SCOPUS_QUERY_PARAMS,
         headers=SCOPUS_HEADERS,
-        unpack_strategy=SCOPUS_BATCH_UNPACK_STRATEGY,
+        unpack_strategy=SCOPUS_UNPACK_STRATEGY,
     )

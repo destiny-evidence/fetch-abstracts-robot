@@ -1,6 +1,6 @@
 import pytest
 
-from far.data_models.generic import (
+from far.provider_data_models.generic import (
     AbstractUnpackStrategy,
     APIConfig,
     ExternalAPI,
@@ -23,9 +23,9 @@ def external_api_priorities() -> dict[str, ExternalAPIPriority]:
         "batch": ExternalAPIPriority(
             name="batch",
             priorities={
-                ExternalAPI.CROSSREF_BATCH: 1,
-                ExternalAPI.PUBMED_BATCH: 2,
-                ExternalAPI.SCOPUS_BATCH: 3,
+                ExternalAPI.CROSSREF: 1,
+                ExternalAPI.PUBMED: 2,
+                ExternalAPI.SCOPUS: 3,
             },
         ),
     }
@@ -41,7 +41,7 @@ def invalid_api_config() -> APIConfig:
 
     """
     return APIConfig(
-        name=ExternalAPI.SCOPUS_BATCH,
+        name=ExternalAPI.SCOPUS,
         url="http://fake-api.com",
         require_api_key=True,
         api_key_env_var_name="FAKE_API_KEY",  # pragma: allowlist secret
@@ -50,7 +50,7 @@ def invalid_api_config() -> APIConfig:
         query_params={"param1": "value1"},
         headers={"Authorization": "Bearer fake_token", "api_key_placement": ""},
         unpack_strategy=AbstractUnpackStrategy(
-            source=ExternalAPI.SCOPUS_BATCH,
+            source=ExternalAPI.SCOPUS,
             strategy=["data", "abstract"],
         ),
     )

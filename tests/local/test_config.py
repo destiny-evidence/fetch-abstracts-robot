@@ -1,8 +1,8 @@
 import pytest
 
-from far.data_models.generic import ExternalAPI
-from far.enhancement_processor import AbstractEnhancementProcessor
+from far.enhancements.processor import AbstractEnhancementProcessor
 from far.local.config import set_up_processor
+from far.provider_data_models.generic import ExternalAPI
 
 
 def test_set_up_processor_happy_path_success(test_settings):
@@ -11,9 +11,7 @@ def test_set_up_processor_happy_path_success(test_settings):
     assert len(processor.available_api_configs) > 0
 
 
-@pytest.mark.parametrize(
-    "excluded_api", [[ExternalAPI.CROSSREF_BATCH], [ExternalAPI.SCOPUS_BATCH]]
-)
+@pytest.mark.parametrize("excluded_api", [[ExternalAPI.CROSSREF], [ExternalAPI.SCOPUS]])
 def test_set_up_processor_exclude_single_api(test_settings, excluded_api):
     processor = set_up_processor(test_settings, excluded_apis=excluded_api)
     assert isinstance(processor, AbstractEnhancementProcessor)
@@ -24,6 +22,6 @@ def test_set_up_processor_exclude_single_api(test_settings, excluded_api):
 
 
 def test_set_up_processor_exclude_all_apis(test_settings):
-    all_excluded_apis = [ExternalAPI.CROSSREF_BATCH, ExternalAPI.SCOPUS_BATCH]
+    all_excluded_apis = list(ExternalAPI)
     with pytest.raises(SystemExit):
         set_up_processor(test_settings, excluded_apis=all_excluded_apis)

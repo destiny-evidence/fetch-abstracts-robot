@@ -6,8 +6,8 @@ import httpx
 import pytest
 from pydantic import AnyUrl
 
-from far.data_models.generic import AbstractUnpackError
 from far.fetch_abstract import AbstractFetcher, prepare_api_config
+from far.provider_data_models.generic import AbstractUnpackError
 
 
 def test_prepare_api_config_success(
@@ -29,20 +29,20 @@ def test_prepare_api_config_success(
     )
     batch_results = result["batch"]
     assert set(batch_results.keys()) == {
-        "CROSSREF_BATCH",
-        "SCOPUS_BATCH",
-        "PUBMED_BATCH",
+        "CROSSREF",
+        "SCOPUS",
+        "PUBMED",
     }
-    assert not batch_results["SCOPUS_BATCH"].unpack_strategy.clean_abstract_string
-    assert batch_results["SCOPUS_BATCH"].headers["X-API-Key"] == "dummy_scopus_key"
-    assert batch_results["SCOPUS_BATCH"].headers["X-Inst-Token"] == "dummy_inst_token"
-    assert batch_results["CROSSREF_BATCH"].headers == {"Accept": "application/json"}
-    assert batch_results["CROSSREF_BATCH"].api_key_env_var_name is None
-    assert batch_results["CROSSREF_BATCH"].unpack_strategy.clean_abstract_string
-    assert batch_results["PUBMED_BATCH"].headers == {"Accept": "application/json"}
-    assert batch_results["PUBMED_BATCH"].api_key_env_var_name is None
-    assert batch_results["PUBMED_BATCH"].unpack_strategy.strategy == ["unused"]
-    assert batch_results["PUBMED_BATCH"].url == AnyUrl(
+    assert not batch_results["SCOPUS"].unpack_strategy.clean_abstract_string
+    assert batch_results["SCOPUS"].headers["X-API-Key"] == "dummy_scopus_key"
+    assert batch_results["SCOPUS"].headers["X-Inst-Token"] == "dummy_inst_token"
+    assert batch_results["CROSSREF"].headers == {"Accept": "application/json"}
+    assert batch_results["CROSSREF"].api_key_env_var_name is None
+    assert batch_results["CROSSREF"].unpack_strategy.clean_abstract_string
+    assert batch_results["PUBMED"].headers == {"Accept": "application/json"}
+    assert batch_results["PUBMED"].api_key_env_var_name is None
+    assert batch_results["PUBMED"].unpack_strategy.strategy == ["unused"]
+    assert batch_results["PUBMED"].url == AnyUrl(
         "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
     )
 
@@ -312,7 +312,7 @@ def test_unpack_many_abstracts_missing_doi_or_abstract(
     response_obj = {"search-results": {"entry": [{"prism:doi": "10.1000/xyz123"}]}}
     result = fetcher.unpack_many_abstracts(
         response_obj,
-        strategy=fetcher.master_api_config["batch"]["SCOPUS_BATCH"].unpack_strategy,
+        strategy=fetcher.master_api_config["batch"]["SCOPUS"].unpack_strategy,
     )
     assert result == []
 
@@ -330,7 +330,7 @@ def test_unpack_many_abstracts_empty_entries(
     response_obj = {"search-results": {"entry": None}}
     result = fetcher.unpack_many_abstracts(
         response_obj,
-        strategy=fetcher.master_api_config["batch"]["SCOPUS_BATCH"].unpack_strategy,
+        strategy=fetcher.master_api_config["batch"]["SCOPUS"].unpack_strategy,
     )
     assert result == []
 
@@ -338,7 +338,7 @@ def test_unpack_many_abstracts_empty_entries(
     response_obj = {"search-results": {"entry": {"prism:doi": "10.1000/xyz123"}}}
     result = fetcher.unpack_many_abstracts(
         response_obj,
-        strategy=fetcher.master_api_config["batch"]["SCOPUS_BATCH"].unpack_strategy,
+        strategy=fetcher.master_api_config["batch"]["SCOPUS"].unpack_strategy,
     )
     assert result == []
 
@@ -357,7 +357,7 @@ def test_unpack_many_abstracts_entry_missing_doi_and_abstract(
     response_obj = {"search-results": {"entry": [{}]}}
     result = fetcher.unpack_many_abstracts(
         response_obj,
-        strategy=fetcher.master_api_config["batch"]["SCOPUS_BATCH"].unpack_strategy,
+        strategy=fetcher.master_api_config["batch"]["SCOPUS"].unpack_strategy,
     )
     assert result == []
 
@@ -402,7 +402,7 @@ def test_unpack_many_abstracts_with_cleaning(
     response_obj = [batch1, batch2]
     result = fetcher.unpack_many_abstracts(
         response_obj,
-        strategy=fetcher.master_api_config["batch"]["SCOPUS_BATCH"].unpack_strategy,
+        strategy=fetcher.master_api_config["batch"]["SCOPUS"].unpack_strategy,
     )
     assert [result[i]["abstract"] for i in range(len(result))] == cleaned_abstracts
 
@@ -429,7 +429,7 @@ def test_unpack_many_abstracts_multiple_batches(
     response_obj = [batch1, batch2]
     result = fetcher.unpack_many_abstracts(
         response_obj,
-        strategy=fetcher.master_api_config["batch"]["SCOPUS_BATCH"].unpack_strategy,
+        strategy=fetcher.master_api_config["batch"]["SCOPUS"].unpack_strategy,
     )
     assert len(result) == 2
     assert result[0]["doi"] == "10.1000/xyz123"
@@ -473,7 +473,7 @@ def test_unpack_abstract_with_cleaning_crossref(
 
     result = fetcher.unpack_one_abstract(
         response_obj,
-        strategy=fetcher.master_api_config["batch"]["CROSSREF_BATCH"].unpack_strategy,
+        strategy=fetcher.master_api_config["batch"]["CROSSREF"].unpack_strategy,
     )
     assert result == "Clean me!"
 
@@ -581,7 +581,7 @@ def test_get_many_abstracts_single_invalid_doi(
     valid_doi_response = {
         "doi": dois[1],
         "abstract": abstracts[1],
-        "source": "SCOPUS_BATCH",
+        "source": "SCOPUS",
     }
     mocked_fetch_response = {
         "search-results": {
@@ -717,14 +717,10 @@ def test_get_many_abstracts_cycling_apis_no_abstracts_found(
     with caplog.at_level("DEBUG"):
         null_enhancements = fetcher.get_many_abstracts_cycling_apis(test_dois)
     assert (
-        "No abstracts found in CROSSREF_BATCH with query type batched_single."
-        in caplog.text
+        "No abstracts found in CROSSREF with query type batched_single." in caplog.text
     )
-    assert "No abstracts found in SCOPUS_BATCH with query type batch." in caplog.text
-    assert (
-        "No abstracts found in PUBMED_BATCH with query type batched_single."
-        in caplog.text
-    )
+    assert "No abstracts found in SCOPUS with query type batch." in caplog.text
+    assert "No abstracts found in PUBMED with query type batched_single." in caplog.text
     assert (
         f"0 abstracts retrieved of {len(test_dois)} valid DOIs requested" in caplog.text
     )

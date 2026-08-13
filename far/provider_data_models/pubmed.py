@@ -3,8 +3,12 @@
 from pydantic import HttpUrl
 
 from far.config import Settings
-from far.data_models.generic import AbstractUnpackStrategy, APIConfig, ExternalAPI
-from far.providers.pubmed import fetch_abstract_by_doi
+from far.fetching.pubmed import fetch_abstract_by_doi
+from far.provider_data_models.generic import (
+    AbstractUnpackStrategy,
+    APIConfig,
+    ExternalAPI,
+)
 
 PUBMED_SEARCH_URL = HttpUrl(
     "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
@@ -28,14 +32,14 @@ def get_pubmed_batch_api_config(settings: Settings) -> APIConfig:
         query_params["email"] = str(settings.mailto)
 
     return APIConfig(
-        name=ExternalAPI.PUBMED_BATCH,
+        name=ExternalAPI.PUBMED,
         url=PUBMED_SEARCH_URL,
         require_api_key=False,
         api_key_env_var_name=None,
         api_key_placement=None,
         query_params=query_params,
         unpack_strategy=AbstractUnpackStrategy(
-            source=ExternalAPI.PUBMED_BATCH,
+            source=ExternalAPI.PUBMED,
             strategy=["unused"],
         ),
         provider_fetch_hook=fetch_abstract_by_doi,
