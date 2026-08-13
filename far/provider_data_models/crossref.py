@@ -4,6 +4,7 @@ from far.config import Settings
 from far.provider_data_models.generic import (
     AbstractUnpackStrategy,
     APIConfig,
+    ExternalAPI,
     QueryType,
 )
 
@@ -26,13 +27,13 @@ def get_crossref_batch_api_config(settings: Settings) -> APIConfig:
         "Accept": "application/json",
     }
     crossref_unpack_strategy = AbstractUnpackStrategy(
-        source="crossref",
+        source=ExternalAPI.CROSSREF,
         clean_abstract_string=True,
         strategy=["message", "abstract"],
     )
 
     return APIConfig(
-        name="crossref",
+        name=ExternalAPI.CROSSREF,
         url=crossref_url,
         require_api_key=False,
         api_key_env_var_name=None,

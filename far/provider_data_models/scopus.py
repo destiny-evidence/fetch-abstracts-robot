@@ -8,6 +8,7 @@ from far.provider_data_models.generic import (
     AbstractUnpackStrategy,
     APIConfig,
     APIKeyNotPresentError,
+    ExternalAPI,
 )
 
 SCOPUS_URL = "https://api.elsevier.com/content/search/scopus"
@@ -20,7 +21,7 @@ SCOPUS_HEADERS = {
 }
 
 SCOPUS_UNPACK_STRATEGY = AbstractUnpackStrategy(
-    source="scopus",
+    source=ExternalAPI.SCOPUS,
     doi_strategy=["search-results", "entry", "prism:doi"],
     strategy=["search-results", "entry", "dc:description"],
 )
@@ -81,7 +82,7 @@ def get_scopus_batch_api_config(_: Settings) -> ScopusAPIConfig:
 
     """
     return ScopusAPIConfig(
-        name="scopus",
+        name=ExternalAPI.SCOPUS,
         url=SCOPUS_URL,
         require_api_key=True,
         api_key_env_var_name="elsevier_scopus_key",  # pragma: allowlist secret
