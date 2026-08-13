@@ -10,6 +10,7 @@ from far.enhancements.processor import (
     create_enhancement_processor,
 )
 from far.provider_data_models.generic import ExternalAPI
+from far.utils import get_version_number
 
 
 def set_up_processor(
@@ -26,11 +27,12 @@ def set_up_processor(
         AbstractEnhancementProcessor: An instance of the abstract processor.
 
     """
+    robot_version = get_version_number()
     title = "Local Abstract Fetcher"
     try:
         return create_enhancement_processor(
             settings,
-            robot_version="local",
+            robot_version=f"local-{robot_version}",
             source_name=title,
             excluded_apis=excluded_apis,
         )
