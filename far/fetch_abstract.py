@@ -363,6 +363,7 @@ class AbstractFetcher:
                 else:
                     yielded_object = [{"doi": _chunk, "abstract": None}]
                 yield yielded_object
+                continue
             if api_config.query_type == "batched_single":
                 logger.debug("yield for batched_single")
                 try:

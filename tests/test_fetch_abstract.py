@@ -612,26 +612,51 @@ def test_get_many_abstracts_single_invalid_doi(
 def test_fetch_many_abstracts_http_error(
     caplog, scopus_api_config_valid_batch, test_settings
 ):
+    """
+    Test fetching many abstracts when an HTTP error occurs during the fetch.
+
+    Tests that successful chunks still get processed after a failed chunk, via HTTPError,
+    and that the failed chunk is logged as an error and returned with a null abstract.
+
+    Setting `doi_batch_size=1` forces two chunks, we make sure that the failed chunk
+    hits the `continue` clause and that the subsequent chunk is still processed and returned.
+    """
     fetcher = AbstractFetcher(
         master_api_config=prepare_api_config(
             [scopus_api_config_valid_batch], test_settings
         )
     )
-    test_doi_list = ["10.1000/xyz123"]
+    test_doi_list = ["10.1000/xyz123", "10.1000/xyz124"]
+    second_chunk_response = {
+        "search-results": {
+            "entry": [{"prism:doi": test_doi_list[1], "dc:description": "Abstract 2"}]
+        }
+    }
     with (
         patch("far.fetch_abstract.validate_doi", return_value=True),
-        patch.object(fetcher, "fetch", side_effect=httpx.HTTPError("fail")),
+        patch.object(
+            fetcher,
+            "fetch",
+            side_effect=[httpx.HTTPError("fail"), second_chunk_response],
+        ),
         caplog.at_level("ERROR"),
     ):
         response = fetcher.fetch_many_abstracts(
-            test_doi_list, scopus_api_config_valid_batch, chunk=True
+            test_doi_list, scopus_api_config_valid_batch, chunk=True, doi_batch_size=1
         )
-        output = next(response)
+        results = list(response)
         assert (
             "Encountered HTTPError on attempting to retrieve abstract." in caplog.text
+        ), (
+            "Expect a single HTTPError is logged for the failed chunk, and that the generator continues to process subsequent chunks."
         )
-        assert output == [{"doi": test_doi_list[0], "abstract": None}], (
-            "Expect that we return an appropriate result for the repository on HTTPErrors."
+        assert results == [
+            [{"doi": test_doi_list[0], "abstract": None}],
+            [{"doi": test_doi_list[1], "abstract": "Abstract 2"}],
+        ], (
+            "Expect an error result for the failed chunk, and that the generator "
+            "completes and correctly processes the subsequent chunk without "
+            "crashing on the unbound `response` from the failed fetch."
         )
 
 
